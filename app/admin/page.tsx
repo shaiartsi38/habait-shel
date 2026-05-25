@@ -1,0 +1,798 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import {
+  Plus, Edit2, Eye, EyeOff, Trash2, X,
+  GripVertical, Upload, Check, ChevronDown,
+  Users, BarChart3, Settings, Video, Loader2,
+  RefreshCw, AlertCircle,
+} from "lucide-react";
+import { CATEGORIES, type CourseData, type CourseLesson } from "@/lib/courses-data";
+import { useCourses } from "@/lib/courses-context";
+import {
+  dbFetchCourses,
+  dbUpsertCourse,
+  dbDeleteCourse,
+  dbUploadImage,
+} from "@/lib/supabase/courses-db";
+
+// ─── Types ────────────────────────────────────────────────────────
+
+type AdminSection = "courses" | "users" | "analytics" | "settings";
+
+// ─── Helpers ─────────────────────────────────────────────────────
+
+const TIER_LABELS: Record<string, string> = { basic: "Basic", pro: "Pro", elite: "Elite" };
+
+const STATUS_CONFIG = {
+  published: { label: "פורסם",  color: "#4A9B6F", bg: "rgba(74,155,111,0.1)",   border: "rgba(74,155,111,0.3)" },
+  draft:     { label: "טיוטה",  color: "rgba(255,248,245,0.4)", bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.1)" },
+  soon:      { label: "בקרוב",  color: "#C4857A", bg: "rgba(196,133,122,0.1)", border: "rgba(196,133,122,0.3)" },
+};
+
+function getCourseStatus(c: CourseData): "published" | "draft" | "soon" {
+  if (c.isPublished) return "published";
+  if (c.isNew) return "soon";
+  return "draft";
+}
+
+function emptyLesson(): CourseLesson {
+  return { id: Math.random().toString(36).slice(2), title: "", videoId: "", videoProvider: "youtube", durationMin: 0, isFree: false };
+}
+
+function emptyCourse(): CourseData {
+  return {
+    id: Math.random().toString(36).slice(2),
+    slug: "",
+    title: "",
+    subtitle: "",
+    shortDesc: "",
+    fullDesc: "",
+    image: "",
+    videoId: "",
+    videoProvider: "youtube",
+    duration: "",
+    durationMinutes: 0,
+    category: "עיניים",
+    tier: "basic",
+    difficulty: "beginner",
+    isPublished: false,
+    isNew: false,
+    instructor: { name: "נטלי ארצי", bio: "", photoUrl: "https://i.imghippo.com/files/ZNe4792NOg.jpeg" },
+    lessons: [emptyLesson()],
+    tags: [],
+  };
+}
+
+// ─── Page ─────────────────────────────────────────────────────────
+
+export default function AdminPage() {
+  const { courses, setCourses } = useCourses();
+  const [section, setSection] = useState<AdminSection>("courses");
+  const [editing, setEditing] = useState<CourseData | null>(null);
+  const [isNewCourse, setIsNewCourse] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(false);
+  const [opError, setOpError] = useState<string | null>(null);
+
+  // Fetch live data from Supabase on mount
+  const syncFromDB = useCallback(async () => {
+    setFetchLoading(true);
+    setOpError(null);
+    try {
+      const live = await dbFetchCourses();
+      setCourses(live);
+    } catch (e) {
+      setOpError(e instanceof Error ? e.message : "שגיאה בטעינת קורסים");
+    } finally {
+      setFetchLoading(false);
+    }
+  }, [setCourses]);
+
+  useEffect(() => { syncFromDB(); }, [syncFromDB]);
+
+  const openEdit = (c: CourseData) => {
+    setEditing({ ...c, lessons: c.lessons.map((l) => ({ ...l })) });
+    setIsNewCourse(false);
+  };
+  const openAdd = () => { setEditing(emptyCourse()); setIsNewCourse(true); };
+
+  const saveEdit = async (updated: CourseData) => {
+    setOpError(null);
+    const slug = updated.slug || updated.title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const duration = updated.duration || `${updated.durationMinutes} דקות`;
+    const final = { ...updated, slug, duration };
+    try {
+      const saved = await dbUpsertCourse(final);
+      setCourses(
+        isNewCourse ? [saved, ...courses] : courses.map((c) => (c.id === saved.id ? saved : c))
+      );
+      setEditing(null);
+    } catch (e) {
+      setOpError(e instanceof Error ? e.message : "שגיאה בשמירה");
+    }
+  };
+
+  const deleteCourse = async (id: string) => {
+    setOpError(null);
+    try {
+      await dbDeleteCourse(id);
+      setCourses(courses.filter((c) => c.id !== id));
+    } catch (e) {
+      setOpError(e instanceof Error ? e.message : "שגיאה במחיקה");
+    }
+  };
+
+  const togglePublish = async (id: string) => {
+    const course = courses.find((c) => c.id === id);
+    if (!course) return;
+    const updated = { ...course, isPublished: !course.isPublished };
+    try {
+      const saved = await dbUpsertCourse(updated);
+      setCourses(courses.map((c) => (c.id === id ? saved : c)));
+    } catch (e) {
+      setOpError(e instanceof Error ? e.message : "שגיאה בעדכון");
+    }
+  };
+
+  const NAV_ITEMS: { id: AdminSection; label: string; icon: React.ElementType }[] = [
+    { id: "courses",   label: "קורסים",   icon: Video },
+    { id: "users",     label: "משתמשות",  icon: Users },
+    { id: "analytics", label: "אנליטיקס", icon: BarChart3 },
+    { id: "settings",  label: "הגדרות",   icon: Settings },
+  ];
+
+  return (
+    <div className="min-h-screen sidebar-safe" style={{ background: "var(--black)", color: "var(--white)" }}>
+      {/* Admin header */}
+      <div
+        className="sticky top-0 z-30 px-4 md:px-10 py-4 flex items-center justify-between"
+        style={{ background: "rgba(8,6,8,0.88)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(196,133,122,0.08)" }}
+      >
+        <div>
+          <p className="text-[0.55rem] tracking-[0.28em] uppercase mb-0.5" style={{ color: "#C4857A" }}>ניהול</p>
+          <h1 className="text-base font-black" style={{ color: "#FFF8F5" }}>הבית של המאפרים</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={syncFromDB}
+            disabled={fetchLoading}
+            className="p-2 rounded-xl hover:bg-white/5 transition-colors disabled:opacity-40"
+            title="רענן מהדאטהבייס"
+          >
+            <RefreshCw size={14} style={{ color: "#8B6355" }} className={fetchLoading ? "animate-spin" : ""} />
+          </button>
+          <button
+            onClick={openAdd}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-bold transition-all hover:opacity-90 active:scale-95"
+            style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608", boxShadow: "0 4px 14px rgba(196,133,122,0.3)" }}
+          >
+            <Plus size={13} /> קורס חדש
+          </button>
+        </div>
+      </div>
+
+      {/* Error banner */}
+      {opError && (
+        <div className="mx-4 md:mx-10 mt-4 flex items-center gap-2 px-4 py-3 rounded-xl text-[0.72rem]" style={{ background: "rgba(196,50,50,0.08)", color: "#e05555", border: "1px solid rgba(196,50,50,0.2)" }}>
+          <AlertCircle size={13} />
+          <span>{opError}</span>
+          <button onClick={() => setOpError(null)} className="mr-auto p-0.5 hover:opacity-70"><X size={12} /></button>
+        </div>
+      )}
+
+      <div className="flex">
+        {/* Left nav */}
+        <aside
+          className="hidden md:flex flex-col gap-0.5 w-44 shrink-0 pt-8 px-3 sticky top-16 self-start h-[calc(100vh-4rem)] overflow-y-auto"
+          style={{ borderLeft: "1px solid rgba(196,133,122,0.06)" }}
+        >
+          {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setSection(id)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[0.78rem] font-medium text-right w-full transition-colors"
+              style={{ color: section === id ? "#FFF8F5" : "#5A3830", background: section === id ? "rgba(196,133,122,0.1)" : "transparent" }}
+            >
+              <Icon size={14} style={{ color: section === id ? "#C4857A" : "currentColor" }} />
+              {label}
+            </button>
+          ))}
+        </aside>
+
+        {/* Main */}
+        <main className="flex-1 px-4 md:px-8 py-8 min-w-0">
+          {fetchLoading && courses.length === 0 ? (
+            <div className="flex items-center justify-center py-32 gap-3" style={{ color: "#5A3830" }}>
+              <Loader2 size={18} className="animate-spin" style={{ color: "#C4857A" }} />
+              <span className="text-sm">טוען קורסים...</span>
+            </div>
+          ) : section === "courses" ? (
+            <CoursesSection courses={courses} onEdit={openEdit} onDelete={deleteCourse} onTogglePublish={togglePublish} />
+          ) : (
+            <ComingSoon label={NAV_ITEMS.find((n) => n.id === section)?.label ?? ""} />
+          )}
+        </main>
+      </div>
+
+      {/* Edit / Add drawer */}
+      <Dialog.Root open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay
+            className="fixed inset-0 z-40"
+            style={{ background: "rgba(8,6,8,0.8)", backdropFilter: "blur(4px)", animation: "fadeIn 0.18s ease" }}
+          />
+          {editing && (
+            <Dialog.Content
+              className="fixed z-50 inset-y-0 left-0 w-full md:w-[640px] overflow-y-auto focus:outline-none"
+              style={{ background: "#0f0b0e", borderRight: "1px solid rgba(196,133,122,0.12)", boxShadow: "8px 0 48px rgba(0,0,0,0.6)", animation: "slideUp 0.22s ease" }}
+            >
+              <CourseEditForm
+                course={editing}
+                isNew={isNewCourse}
+                onSave={saveEdit}
+                onClose={() => setEditing(null)}
+              />
+            </Dialog.Content>
+          )}
+        </Dialog.Portal>
+      </Dialog.Root>
+    </div>
+  );
+}
+
+// ─── Course list ──────────────────────────────────────────────────
+
+function CoursesSection({
+  courses, onEdit, onDelete, onTogglePublish,
+}: {
+  courses: CourseData[];
+  onEdit: (c: CourseData) => void;
+  onDelete: (id: string) => Promise<void>;
+  onTogglePublish: (id: string) => Promise<void>;
+}) {
+  const [delConfirm, setDelConfirm] = useState<string | null>(null);
+  const [toggling, setToggling] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleToggle = async (id: string) => {
+    setToggling(id);
+    await onTogglePublish(id);
+    setToggling(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeleting(id);
+    await onDelete(id);
+    setDeleting(null);
+    setDelConfirm(null);
+  };
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>קורסים</h2>
+        <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>
+          {courses.length} קורסים · {courses.filter((c) => c.isPublished).length} פורסמו
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {courses.map((course) => {
+          const st = STATUS_CONFIG[getCourseStatus(course)];
+          const isDelConfirm = delConfirm === course.id;
+
+          return (
+            <div
+              key={course.id}
+              className="flex items-center gap-4 rounded-2xl p-4"
+              style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.07)" }}
+            >
+              {/* Thumbnail */}
+              <div className="relative w-16 h-20 md:w-20 md:h-[106px] rounded-xl overflow-hidden shrink-0" style={{ background: "#0f0b0e" }}>
+                {course.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
+                )}
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap gap-1.5 mb-1.5">
+                  <StatusPill color={st.color} bg={st.bg} border={st.border}>{st.label}</StatusPill>
+                  <StatusPill color="rgba(196,133,122,0.7)" bg="rgba(196,133,122,0.08)" border="rgba(196,133,122,0.2)">{TIER_LABELS[course.tier]}</StatusPill>
+                  {course.isNew && (
+                    <span className="inline-block px-2 py-[2px] rounded-full text-[0.5rem] font-bold uppercase" style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }}>חדש</span>
+                  )}
+                </div>
+                <h3 className="font-bold text-sm truncate mb-0.5" style={{ color: "#FFF8F5" }}>{course.title || "—"}</h3>
+                <p className="text-[0.6rem] truncate mb-1" style={{ color: "#5A3830" }}>{course.category} · {course.duration || `${course.durationMinutes} דק׳`}</p>
+                <p className="text-[0.65rem] font-semibold" style={{ color: "#8B6355" }}>{course.lessons.length} שיעורים</p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col gap-2 shrink-0">
+                <ActionBtn onClick={() => onEdit(course)} title="עריכה">
+                  <Edit2 size={14} style={{ color: "#C4857A" }} />
+                </ActionBtn>
+                <ActionBtn onClick={() => handleToggle(course.id)} title={course.isPublished ? "הסתר" : "פרסם"} disabled={toggling === course.id}>
+                  {toggling === course.id
+                    ? <Loader2 size={12} className="animate-spin" style={{ color: "#5A3830" }} />
+                    : course.isPublished
+                      ? <EyeOff size={14} style={{ color: "#5A3830" }} />
+                      : <Eye size={14} style={{ color: "#4A9B6F" }} />
+                  }
+                </ActionBtn>
+                {isDelConfirm ? (
+                  <>
+                    <ActionBtn
+                      onClick={() => handleDelete(course.id)}
+                      style={{ background: "rgba(196,50,50,0.15)" }}
+                      disabled={deleting === course.id}
+                    >
+                      {deleting === course.id
+                        ? <Loader2 size={12} className="animate-spin" style={{ color: "#e05555" }} />
+                        : <Check size={14} style={{ color: "#e05555" }} />
+                      }
+                    </ActionBtn>
+                    <ActionBtn onClick={() => setDelConfirm(null)}>
+                      <X size={13} style={{ color: "#5A3830" }} />
+                    </ActionBtn>
+                  </>
+                ) : (
+                  <ActionBtn onClick={() => setDelConfirm(course.id)} title="מחק">
+                    <Trash2 size={14} style={{ color: "#5A3830" }} />
+                  </ActionBtn>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Edit form ────────────────────────────────────────────────────
+
+function CourseEditForm({
+  course, isNew, onSave, onClose,
+}: {
+  course: CourseData;
+  isNew: boolean;
+  onSave: (c: CourseData) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState<CourseData>({ ...course, lessons: course.lessons.map((l) => ({ ...l })) });
+  const [saving, setSaving] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileRef  = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  const set = <K extends keyof CourseData>(key: K, val: CourseData[K]) =>
+    setForm((p) => ({ ...p, [key]: val }));
+
+  const setInstructor = (key: keyof CourseData["instructor"], val: string) =>
+    setForm((p) => ({ ...p, instructor: { ...p.instructor, [key]: val } }));
+
+  const setLesson = (idx: number, key: keyof CourseLesson, val: CourseLesson[keyof CourseLesson]) =>
+    setForm((p) => { const ls = [...p.lessons]; ls[idx] = { ...ls[idx], [key]: val }; return { ...p, lessons: ls }; });
+
+  const addLesson    = () => setForm((p) => ({ ...p, lessons: [...p.lessons, emptyLesson()] }));
+  const removeLesson = (idx: number) => setForm((p) => ({ ...p, lessons: p.lessons.filter((_, i) => i !== idx) }));
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "image" | "photo") => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    if (file.size > 8 * 1024 * 1024) { alert("הקובץ גדול מדי — מקסימום 8MB"); return; }
+    e.target.value = "";
+
+    if (target === "image") setUploadingImg(true);
+    else setUploadingPhoto(true);
+
+    try {
+      const url = await dbUploadImage(file);
+      if (target === "image") set("image", url);
+      else setInstructor("photoUrl", url);
+    } catch {
+      // Fall back to base64 preview if Supabase upload fails (no env keys yet)
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const b64 = ev.target?.result as string;
+        if (target === "image") set("image", b64);
+        else setInstructor("photoUrl", b64);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      if (target === "image") setUploadingImg(false);
+      else setUploadingPhoto(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!form.title.trim()) return;
+    setSaving(true);
+    await onSave(form);
+    setSaving(false);
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-6 py-5 sticky top-0 z-10"
+        style={{ background: "#0f0b0e", borderBottom: "1px solid rgba(196,133,122,0.08)" }}
+      >
+        <div>
+          <p className="text-[0.55rem] tracking-[0.28em] uppercase mb-0.5" style={{ color: "#C4857A" }}>
+            {isNew ? "קורס חדש" : "עריכת קורס"}
+          </p>
+          <Dialog.Title className="text-base font-black" style={{ color: "#FFF8F5" }}>
+            {form.title || "ללא כותרת"}
+          </Dialog.Title>
+        </div>
+        <Dialog.Close asChild>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5">
+            <X size={16} style={{ color: "#5A3830" }} />
+          </button>
+        </Dialog.Close>
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
+
+        {/* ── תמונה ווידאו ── */}
+        <FormSection title="תמונה ווידאו" icon="🎬">
+          <div
+            className="relative w-full aspect-[3/4] max-w-[130px] rounded-xl overflow-hidden mb-3 flex items-center justify-center"
+            style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.12)" }}
+          >
+            {uploadingImg ? (
+              <Loader2 size={20} className="animate-spin" style={{ color: "#C4857A" }} />
+            ) : form.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={form.image} alt="תצוגה" className="w-full h-full object-cover" />
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <Upload size={20} style={{ color: "#C4857A" }} />
+                <span className="text-[0.52rem]" style={{ color: "#5A3830" }}>תמונת תצוגה</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 mb-3">
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "image")} />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploadingImg}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold transition-colors hover:opacity-80 disabled:opacity-40"
+              style={{ background: "rgba(196,133,122,0.12)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
+            >
+              {uploadingImg ? <Loader2 size={10} className="animate-spin" /> : <Upload size={11} />} העלי מהמחשב
+            </button>
+          </div>
+
+          <FieldLabel>או הדביקי URL של תמונה</FieldLabel>
+          <Input value={form.image} onChange={(v) => set("image", v)} placeholder="https://i.imghippo.com/files/..." dir="ltr" />
+
+          <FieldLabel className="mt-3">YouTube Video ID (טיזר)</FieldLabel>
+          <Input value={form.videoId ?? ""} onChange={(v) => set("videoId", v)} placeholder="dQw4w9WgXcQ" dir="ltr" />
+        </FormSection>
+
+        {/* ── פרטי הקורס ── */}
+        <FormSection title="פרטי הקורס" icon="📚">
+          <FieldLabel>כותרת הקורס *</FieldLabel>
+          <Input value={form.title} onChange={(v) => set("title", v)} placeholder="שם הקורס" />
+
+          <FieldLabel className="mt-3">כותרת משנה</FieldLabel>
+          <Input value={form.subtitle} onChange={(v) => set("subtitle", v)} placeholder="תיאור קצר מושך" />
+
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <FieldLabel>קטגוריה</FieldLabel>
+              <Select value={form.category} onChange={(v) => set("category", v)} options={CATEGORIES.filter((c) => c !== "הכל")} />
+            </div>
+            <div>
+              <FieldLabel>רמת גישה</FieldLabel>
+              <Select value={form.tier} onChange={(v) => set("tier", v as CourseData["tier"])} options={["basic", "pro", "elite"]} labels={["Basic", "Pro", "Elite"]} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <FieldLabel>רמת קושי</FieldLabel>
+              <Select value={form.difficulty} onChange={(v) => set("difficulty", v as CourseData["difficulty"])} options={["beginner", "intermediate", "advanced"]} labels={["מתחילות", "בינוני", "מתקדם"]} />
+            </div>
+            <div>
+              <FieldLabel>משך (דקות)</FieldLabel>
+              <Input value={String(form.durationMinutes)} onChange={(v) => set("durationMinutes", parseInt(v) || 0)} placeholder="60" type="number" dir="ltr" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <FieldLabel>slug (URL)</FieldLabel>
+              <Input value={form.slug} onChange={(v) => set("slug", v)} placeholder="my-course-slug" dir="ltr" />
+            </div>
+            <div className="flex flex-col justify-end gap-2 pb-0.5">
+              <Checkbox checked={form.isPublished} onChange={(v) => set("isPublished", v)} label="מפורסם" />
+              <Checkbox checked={form.isNew} onChange={(v) => set("isNew", v)} label='תגית "חדש"' />
+            </div>
+          </div>
+        </FormSection>
+
+        {/* ── תיאורים ── */}
+        <FormSection title="תיאורים" icon="✍️">
+          <FieldLabel>תיאור קצר (לכרטיס)</FieldLabel>
+          <Textarea value={form.shortDesc} onChange={(v) => set("shortDesc", v)} rows={2} placeholder="תיאור קצר ומושך שיופיע בכרטיס הקורס..." />
+          <FieldLabel className="mt-3">תיאור מלא (Markdown)</FieldLabel>
+          <Textarea value={form.fullDesc} onChange={(v) => set("fullDesc", v)} rows={5} placeholder="תיאור מלא של הקורס..." />
+        </FormSection>
+
+        {/* ── מדריכה ── */}
+        <FormSection title="מדריכה" icon="👩‍🏫">
+          <div className="flex gap-4 items-start">
+            <div className="shrink-0 flex flex-col items-center gap-1.5">
+              <div
+                className="w-16 h-16 rounded-full overflow-hidden cursor-pointer relative"
+                style={{ border: "2px solid rgba(196,133,122,0.3)", background: "#140e12" }}
+                onClick={() => photoRef.current?.click()}
+              >
+                {uploadingPhoto ? (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Loader2 size={14} className="animate-spin" style={{ color: "#C4857A" }} />
+                  </div>
+                ) : form.instructor.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={form.instructor.photoUrl} alt="מדריכה" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Upload size={16} style={{ color: "#C4857A" }} />
+                  </div>
+                )}
+              </div>
+              <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "photo")} />
+              <span className="text-[0.48rem]" style={{ color: "#5A3830" }}>לחצי לשינוי</span>
+            </div>
+
+            <div className="flex-1 min-w-0 space-y-3">
+              <div>
+                <FieldLabel>שם המדריכה</FieldLabel>
+                <Input value={form.instructor.name} onChange={(v) => setInstructor("name", v)} placeholder="נטלי ארצי" />
+              </div>
+              <div>
+                <FieldLabel>URL תמונה (חלופי)</FieldLabel>
+                <Input value={form.instructor.photoUrl} onChange={(v) => setInstructor("photoUrl", v)} placeholder="https://..." dir="ltr" />
+              </div>
+            </div>
+          </div>
+          <FieldLabel className="mt-3">ביוגרפיה</FieldLabel>
+          <Textarea value={form.instructor.bio} onChange={(v) => setInstructor("bio", v)} rows={3} placeholder="ספרי קצת על המדריכה..." />
+        </FormSection>
+
+        {/* ── שיעורים ── */}
+        <FormSection title={`שיעורים (${form.lessons.length})`} icon="🎞️">
+          <div className="space-y-3">
+            {form.lessons.map((lesson, idx) => (
+              <LessonRow
+                key={lesson.id}
+                lesson={lesson}
+                index={idx}
+                total={form.lessons.length}
+                onChange={(key, val) => setLesson(idx, key, val)}
+                onRemove={() => removeLesson(idx)}
+              />
+            ))}
+          </div>
+          <button
+            onClick={addLesson}
+            className="mt-4 w-full py-2.5 rounded-xl text-[0.75rem] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-70"
+            style={{ border: "1px dashed rgba(196,133,122,0.25)", color: "#C4857A", background: "rgba(196,133,122,0.05)" }}
+          >
+            <Plus size={13} /> הוסיפי שיעור
+          </button>
+        </FormSection>
+      </div>
+
+      {/* Save bar */}
+      <div
+        className="sticky bottom-0 px-6 py-4 flex gap-3 justify-end"
+        style={{ background: "#0f0b0e", borderTop: "1px solid rgba(196,133,122,0.08)" }}
+      >
+        <button
+          onClick={onClose}
+          className="px-5 py-2.5 rounded-xl text-[0.8rem] font-semibold hover:bg-white/5 transition-colors"
+          style={{ color: "#5A3830", border: "1px solid rgba(196,133,122,0.12)" }}
+        >
+          ביטול
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={!form.title.trim() || saving}
+          className="px-6 py-2.5 rounded-xl text-[0.8rem] font-bold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 flex items-center gap-2"
+          style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608", boxShadow: "0 4px 14px rgba(196,133,122,0.3)" }}
+        >
+          {saving && <Loader2 size={12} className="animate-spin" />}
+          {isNew ? "צרי קורס" : "שמרי שינויים"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Lesson row ───────────────────────────────────────────────────
+
+function LessonRow({
+  lesson, index, total, onChange, onRemove,
+}: {
+  lesson: CourseLesson;
+  index: number;
+  total: number;
+  onChange: (key: keyof CourseLesson, val: CourseLesson[keyof CourseLesson]) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="rounded-xl p-3 space-y-2" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+      <div className="flex items-center gap-2">
+        <GripVertical size={13} style={{ color: "#3A2020" }} className="cursor-grab shrink-0" />
+        <span className="text-[0.6rem] font-bold tabular-nums w-5" style={{ color: "#C4857A" }}>{index + 1}</span>
+        <input
+          className="flex-1 min-w-0 bg-transparent text-[0.78rem] font-medium outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.25)] transition-colors"
+          style={{ color: "#FFF8F5" }}
+          value={lesson.title}
+          onChange={(e) => onChange("title", e.target.value)}
+          placeholder="שם השיעור"
+        />
+        <button onClick={onRemove} disabled={total <= 1} className="p-1 rounded-lg hover:bg-white/5 disabled:opacity-30">
+          <X size={11} style={{ color: "#5A3830" }} />
+        </button>
+      </div>
+      <div className="flex gap-2 items-center">
+        <input
+          className="flex-1 min-w-0 bg-transparent text-[0.68rem] outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.2)] transition-colors"
+          style={{ color: "rgba(255,248,245,0.45)", direction: "ltr" }}
+          value={lesson.videoId}
+          onChange={(e) => onChange("videoId", e.target.value)}
+          placeholder="YouTube Video ID"
+        />
+        <input
+          className="w-14 bg-transparent text-[0.68rem] text-center outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.2)] transition-colors"
+          style={{ color: "rgba(255,248,245,0.4)", direction: "ltr" }}
+          type="number"
+          value={lesson.durationMin || ""}
+          onChange={(e) => onChange("durationMin", parseInt(e.target.value) || 0)}
+          placeholder="דק׳"
+        />
+        <Checkbox checked={lesson.isFree} onChange={(v) => onChange("isFree", v)} label="חינמי" small />
+      </div>
+    </div>
+  );
+}
+
+// ─── Shared UI ────────────────────────────────────────────────────
+
+function FormSection({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-base">{icon}</span>
+        <h3 className="text-[0.8rem] font-black tracking-wide" style={{ color: "#C4857A" }}>{title}</h3>
+        <div className="flex-1 h-px" style={{ background: "rgba(196,133,122,0.08)" }} />
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function FieldLabel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <label className={`block text-[0.6rem] font-semibold mb-1.5 tracking-wider uppercase ${className}`} style={{ color: "#8B6355" }}>
+      {children}
+    </label>
+  );
+}
+
+function Input({ value, onChange, placeholder, type = "text", dir = "rtl" }: {
+  value: string | number; onChange: (v: string) => void; placeholder?: string; type?: string; dir?: string;
+}) {
+  return (
+    <input
+      type={type}
+      dir={dir}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full px-3 py-2 rounded-xl text-sm outline-none transition-all"
+      style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.12)", color: "#FFF8F5", caretColor: "#C4857A" }}
+      onFocus={(e) => (e.target.style.borderColor = "rgba(196,133,122,0.4)")}
+      onBlur={(e)  => (e.target.style.borderColor = "rgba(196,133,122,0.12)")}
+    />
+  );
+}
+
+function Textarea({ value, onChange, placeholder, rows = 3 }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; rows?: number;
+}) {
+  return (
+    <textarea
+      rows={rows}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full px-3 py-2 rounded-xl text-sm outline-none resize-none transition-all"
+      style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.12)", color: "#FFF8F5", caretColor: "#C4857A" }}
+      onFocus={(e) => (e.target.style.borderColor = "rgba(196,133,122,0.4)")}
+      onBlur={(e)  => (e.target.style.borderColor = "rgba(196,133,122,0.12)")}
+    />
+  );
+}
+
+function Select({ value, onChange, options, labels }: {
+  value: string; onChange: (v: string) => void; options: readonly string[]; labels?: string[];
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 rounded-xl text-sm outline-none appearance-none cursor-pointer transition-all"
+        style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.12)", color: "#FFF8F5" }}
+        onFocus={(e) => (e.target.style.borderColor = "rgba(196,133,122,0.4)")}
+        onBlur={(e)  => (e.target.style.borderColor = "rgba(196,133,122,0.12)")}
+      >
+        {options.map((opt, i) => (
+          <option key={opt} value={opt} style={{ background: "#0f0b0e" }}>{labels ? labels[i] : opt}</option>
+        ))}
+      </select>
+      <ChevronDown size={12} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#8B6355" }} />
+    </div>
+  );
+}
+
+function Checkbox({ checked, onChange, label, small = false }: {
+  checked: boolean; onChange: (v: boolean) => void; label: string; small?: boolean;
+}) {
+  return (
+    <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={() => onChange(!checked)}>
+      <div
+        className="flex items-center justify-center rounded-[5px] transition-all"
+        style={{ width: small ? 14 : 16, height: small ? 14 : 16, background: checked ? "linear-gradient(135deg,#C4857A,#D4998E)" : "#140e12", border: checked ? "none" : "1px solid rgba(196,133,122,0.25)" }}
+      >
+        {checked && <Check size={small ? 9 : 10} style={{ color: "#080608" }} strokeWidth={3} />}
+      </div>
+      <span className={`${small ? "text-[0.58rem]" : "text-xs"} font-medium`} style={{ color: checked ? "#C4857A" : "#8B6355" }}>
+        {label}
+      </span>
+    </label>
+  );
+}
+
+function StatusPill({ children, color, bg, border }: { children: React.ReactNode; color: string; bg: string; border: string }) {
+  return (
+    <span
+      className="inline-block px-2 py-[2px] rounded-full text-[0.5rem] font-bold tracking-wider uppercase"
+      style={{ color, background: bg, border: `1px solid ${border}` }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function ActionBtn({ onClick, title, children, style, disabled }: { onClick: () => void; title?: string; children: React.ReactNode; style?: React.CSSProperties; disabled?: boolean }) {
+  return (
+    <button onClick={onClick} title={title} disabled={disabled} className="p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-40" style={style}>
+      {children}
+    </button>
+  );
+}
+
+function ComingSoon({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-32 text-center">
+      <p className="text-3xl mb-3">✨</p>
+      <p className="text-sm font-semibold" style={{ color: "rgba(255,248,245,0.3)" }}>{label} — בקרוב</p>
+    </div>
+  );
+}

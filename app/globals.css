@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@200;300;400;500;600;700;800;900&display=swap');
+
+@layer base {
+  :root {
+    /* ── Sidebar layout ──────────────────────────────────────── */
+    --sidebar-width: 248px;
+    --sidebar-right: 1.25rem;
+    --sidebar-offset: calc(248px + 1.25rem + 1.5rem);
+
+    /* ── Brand palette ───────────────────────────────────────── */
+    --black:    #080608;
+    --deep:     #0f0b0e;
+    --card:     #140e12;
+    --rose:     #C4857A;
+    --rose2:    #D4998E;
+    --rose-dim: rgba(196, 133, 122, 0.12);
+    --brown:    #8B6355;
+    --white:    #FFF8F5;
+    --off:      rgba(255, 248, 245, 0.5);
+    --muted:    rgba(255, 248, 245, 0.25);
+    --line:     rgba(196, 133, 122, 0.1);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    background: var(--black);
+    color: var(--white);
+    font-family: "Heebo", system-ui, sans-serif;
+    direction: rtl;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--black);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: rgba(196, 133, 122, 0.22);
+    color: var(--white);
+  }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1e1318; border-radius: 99px; }
+}
+
+/* ─── Keyframe Animations ─────────────────────────────────── */
+
+@keyframes rosePulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 1.5px rgba(196, 133, 122, 0.35),
+      0 0 14px rgba(196, 133, 122, 0.12);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1.5px rgba(196, 133, 122, 0.85),
+      0 0 28px rgba(196, 133, 122, 0.32);
+  }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50%       { opacity: 1;    transform: scale(1.016); }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Utilities ───────────────────────────────────────────── */
+
+@layer utilities {
+  /* Push content left of the floating sidebar */
+  .sidebar-safe {
+    padding-right: 1.5rem;
+  }
+  @media (min-width: 768px) {
+    .sidebar-safe {
+      padding-right: var(--sidebar-offset);
+    }
+  }
+
+  .glass {
+    background: rgba(8, 6, 8, 0.62);
+    backdrop-filter: blur(32px) saturate(160%);
+    -webkit-backdrop-filter: blur(32px) saturate(160%);
+  }
+
+  .gradient-text-rose {
+    background: linear-gradient(135deg, #C4857A 0%, #D4998E 45%, #8B6355 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* legacy alias kept for existing components */
+  .gradient-text-gold {
+    background: linear-gradient(135deg, #C4857A 0%, #D4998E 45%, #8B6355 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .rose-pulse {
+    animation: rosePulse 1.4s ease-in-out infinite;
+  }
+
+  /* legacy alias */
+  .gold-pulse {
+    animation: rosePulse 1.4s ease-in-out infinite;
+  }
+
+  /* Film grain overlay */
+  .film-grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+    z-index: 2;
+  }
+}
