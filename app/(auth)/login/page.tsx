@@ -23,7 +23,13 @@ export default function LoginPage() {
       const sb = createClient();
       const { error: authErr } = await sb.auth.signInWithPassword({ email, password });
       if (authErr) throw authErr;
-      router.push("/dashboard");
+      const { data: { user } } = await sb.auth.getUser();
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("role")
+        .eq("id", user!.id)
+        .single();
+      router.push(profile?.role === "admin" ? "/admin" : "/dashboard");
       router.refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? "אימייל או סיסמה שגויים" : "שגיאה לא ידועה");

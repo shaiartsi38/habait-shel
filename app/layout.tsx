@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
-import SplashScreen from "@/components/layout/SplashScreen";
-import Sidebar from "@/components/layout/Sidebar";
+import ShellLayout from "@/components/layout/ShellLayout";
 
 export const metadata: Metadata = {
   title: "הבית של המאפרים | Natalie Artzi",
@@ -22,12 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ background: "#080608" }}>
         <Providers>
-          <SplashScreen />
-          <Sidebar isAdmin={true} />
-          {/* No margin here — sections use sidebar-safe padding so hero bleeds full-width */}
-          <main className="min-h-screen pb-24 md:pb-0">
+          <ShellLayout isAdmin={true}>
             {children}
-          </main>
+          </ShellLayout>
         </Providers>
       </body>
     </html>
