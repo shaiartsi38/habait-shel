@@ -21,6 +21,12 @@ export type Testimonial = {
   text: string;
   initials: string;
   color: string;
+  photoUrl?: string;
+};
+
+export type FaqItem = {
+  q: string;
+  a: string;
 };
 
 export type ExtraSection = {
@@ -120,6 +126,13 @@ export const DEFAULT_NATALIE: NatalieContent = {
 
 export const DEFAULT_EXTRA_SECTIONS: ExtraSection[] = [];
 
+export const DEFAULT_FAQS: FaqItem[] = [
+  { q: "למי המועדון מתאים?", a: "המועדון מתאים לכל מאפרת – ממתחילות שרוצות לבנות בסיס יציב וטכניקה נכונה, ומאפרות ותיקות שרוצות להישאר מעודכנות בטרנדים הכי חמים, לקחת את רמי הביצוע שלהן כמה צעדים קדימה, ללמוד שיטות עבודה מהירות ולשפר את התוצאות שלהן בשטח." },
+  { q: "איזה תוכן מחכה לי בפנים?", a: "בתוך הפלטפורמה תמצאי עשרות מאסטרקלאסים מפורטים באורך מלא, קורסים, פתרונות לבעיות שונות ומגוונות שמאפרות נתקלות איתן ביום יום, שיטות וטכניקות שפיתחתי במשך שנים — כמו למשל ׳הדבקת ריסים בשיטת המסקרה ב-15 דק׳, חשיפה של תיק האיפור המקצועי שלי, וגישה מלאה לקהילה סגורה ותומכת. כל חודש עולים תכנים חדשים!" },
+  { q: "האם יש התחייבות? איך אפשר לבטל?", a: "במסלול החודשי אין שום התחייבות. את יכולה לבטל את המנוי בכל רגע בלחיצת כפתור פשוטה מתוך אזור הניהול האישי שלך, והגישה תיחסם בתום תקופת החיוב הנוכחית." },
+  { q: "איך עובדת הצפייה בתכנים?", a: "הפלטפורמה מותאמת באופן מלא למובייל ולדסקטופ. תוכלי לצפות בכל השיעורים מכל מקום ובכל זמן שנוח לך, באיכות הגבוהה ביותר ובקצב האישי שלך." },
+];
+
 // ─── DB Operations ────────────────────────────────────────────────
 
 async function getContent<T>(key: string, fallback: T): Promise<T> {
@@ -147,9 +160,11 @@ export const dbGetTestimonials  = () => getContent<Testimonial[]>("testimonials"
 export const dbGetExtraSections = () => getContent<ExtraSection[]>("extra_sections", DEFAULT_EXTRA_SECTIONS);
 export const dbGetPlans         = () => getContent<SubPlan[]>("subscription_plans", DEFAULT_PLANS);
 export const dbGetNatalie       = () => getContent<NatalieContent>("natalie", DEFAULT_NATALIE);
+export const dbGetFaqs          = () => getContent<FaqItem[]>("faqs", DEFAULT_FAQS);
 
 export const dbSetHero          = (v: HeroContent)    => setContent("hero", v);
 export const dbSetTestimonials  = (v: Testimonial[])  => setContent("testimonials", v);
 export const dbSetExtraSections = (v: ExtraSection[]) => setContent("extra_sections", v);
 export const dbSetPlans         = (v: SubPlan[])       => setContent("subscription_plans", v);
 export const dbSetNatalie       = (v: NatalieContent) => setContent("natalie", v);
+export const dbSetFaqs          = (v: FaqItem[])      => setContent("faqs", v);

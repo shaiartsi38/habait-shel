@@ -9,9 +9,9 @@ import { useCourses } from "@/lib/courses-context";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { CategoryFilter } from "@/components/courses/CategoryFilter";
 import {
-  type HeroContent, type Testimonial, type SubPlan, type ExtraSection,
-  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS,
-  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections,
+  type HeroContent, type Testimonial, type SubPlan, type ExtraSection, type FaqItem,
+  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS, DEFAULT_FAQS,
+  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections, dbGetFaqs,
 } from "@/lib/supabase/content-db";
 
 // ─── Assets ─────────────────────────────────────────────────────
@@ -27,26 +27,6 @@ const FI = {
   transition:  { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
 } as const;
 
-
-const FAQS = [
-  {
-    q: "למי המועדון מתאים?",
-    a: "המועדון מתאים לכל מאפרת – ממתחילות שרוצות לבנות בסיס יציב וטכניקה נכונה, ומאפרות ותיקות שרוצות להישאר מעודכנות בטרנדים הכי חמים, לקחת את רמי הביצוע שלהן כמה צעדים קדימה, ללמוד שיטות עבודה מהירות ולשפר את התוצאות שלהן בשטח.",
-  },
-  {
-    q: "איזה תוכן מחכה לי בפנים?",
-    a: "בתוך הפלטפורמה תמצאי עשרות מאסטרקלאסים מפורטים באורך מלא, קורסים, פתרונות לבעיות שונות ומגוונות שמאפרות נתקלות איתן ביום יום, שיטות וטכניקות שפיתחתי במשך שנים — כמו למשל ׳הדבקת ריסים בשיטת המסקרה ב-15 דק׳, חשיפה של תיק האיפור המקצועי שלי, וגישה מלאה לקהילה סגורה ותומכת. כל חודש עולים תכנים חדשים!",
-  },
-  {
-    q: "האם יש התחייבות? איך אפשר לבטל?",
-    a: "במסלול החודשי אין שום התחייבות. את יכולה לבטל את המנוי בכל רגע בלחיצת כפתור פשוטה מתוך אזור הניהול האישי שלך, והגישה תיחסם בתום תקופת החיוב הנוכחית.",
-  },
-  {
-    q: "איך עובדת הצפייה בתכנים?",
-    a: "הפלטפורמה מותאמת באופן מלא למובייל ולדסקטופ. תוכלי לצפות בכל השיעורים מכל מקום ובכל זמן שנוח לך, באיכות הגבוהה ביותר ובקצב האישי שלך.",
-  },
-];
-
 function scrollToSub() {
   document.getElementById("subscription")?.scrollIntoView({ behavior: "smooth" });
 }
@@ -57,12 +37,14 @@ export default function HomePage() {
   const [testimonials, setTestimonials]   = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
   const [plans, setPlans]                 = useState<SubPlan[]>(DEFAULT_PLANS);
   const [extraSections, setExtraSections] = useState<ExtraSection[]>(DEFAULT_EXTRA_SECTIONS);
+  const [faqs, setFaqs]                   = useState<FaqItem[]>(DEFAULT_FAQS);
 
   useEffect(() => {
     dbGetHero().then(setHero).catch(() => {});
     dbGetTestimonials().then(setTestimonials).catch(() => {});
     dbGetPlans().then(setPlans).catch(() => {});
     dbGetExtraSections().then(setExtraSections).catch(() => {});
+    dbGetFaqs().then(setFaqs).catch(() => {});
   }, []);
 
   return (
@@ -74,7 +56,7 @@ export default function HomePage() {
       <NatalieSection />
       <ExtraContentSections sections={extraSections} />
       <SubscriptionSection plans={plans} />
-      <FaqSection />
+      <FaqSection faqs={faqs} />
       <ClosingCTA />
     </div>
   );
@@ -548,10 +530,14 @@ function TestimonialsSection({ testimonials }: { testimonials: Testimonial[] }) 
             {/* Profile */}
             <div className="flex items-center gap-3 mb-4">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-[0.7rem] font-black shrink-0"
+                className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-[0.7rem] font-black shrink-0"
                 style={{ background: `${t.color}18`, border: `1.5px solid ${t.color}44`, color: t.color }}
               >
-                {t.initials}
+                {t.photoUrl
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={t.photoUrl} alt={t.name} className="w-full h-full object-cover" />
+                  : t.initials
+                }
               </div>
               <div>
                 <p className="text-[0.78rem] font-bold" style={{ color: "#FFF8F5" }}>{t.name}</p>
@@ -639,7 +625,7 @@ function ExtraContentSections({ sections }: { sections: ExtraSection[] }) {
           className="py-20 px-5 sidebar-safe md:px-12 text-right"
           style={{ borderTop: "1px solid rgba(196,133,122,0.07)" }}
         >
-          <div className="max-w-3xl">
+          <div className="max-w-3xl mx-auto text-center">
             {sec.subtitle && (
               <motion.p
                 className="text-[0.56rem] tracking-[0.34em] uppercase font-semibold mb-2"
@@ -803,7 +789,7 @@ function SubscriptionSection({ plans }: { plans: SubPlan[] }) {
 }
 
 // ─── FAQ Accordion ────────────────────────────────────────────────
-function FaqSection() {
+function FaqSection({ faqs }: { faqs: FaqItem[] }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   return (
@@ -818,7 +804,7 @@ function FaqSection() {
       </motion.div>
 
       <div className="flex flex-col gap-2 max-w-2xl mx-auto">
-        {FAQS.map((faq, i) => (
+        {faqs.map((faq, i) => (
           <FaqItem
             key={i}
             question={faq.q}

@@ -263,6 +263,10 @@ export default function AdminPage() {
             <SubscriptionEditor />
           ) : section === "natalie" ? (
             <NatalieEditor />
+          ) : section === "users" ? (
+            <UsersSection />
+          ) : section === "analytics" ? (
+            <AnalyticsSection />
           ) : (
             <ComingSoon label={NAV_ITEMS.find((n) => n.id === section)?.label ?? ""} />
           )}
@@ -867,6 +871,162 @@ function ActionBtn({ onClick, title, children, style, disabled }: { onClick: () 
     <button onClick={onClick} title={title} disabled={disabled} className="p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-40" style={style}>
       {children}
     </button>
+  );
+}
+
+// ─── Users Section ────────────────────────────────────────────────
+
+type ProfileRow = { id: string; role: string; created_at: string; email?: string };
+
+function UsersSection() {
+  const [users, setUsers]       = useState<ProfileRow[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const sb = createClient();
+        const { data, error: err } = await sb
+          .from("profiles")
+          .select("id, role, created_at, email")
+          .order("created_at", { ascending: false });
+        if (err) throw err;
+        setUsers((data ?? []) as ProfileRow[]);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "שגיאה בטעינת משתמשים");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const toggleRole = async (id: string, currentRole: string) => {
+    const newRole = currentRole === "admin" ? "user" : "admin";
+    setUpdating(id);
+    try {
+      const sb = createClient();
+      const { error: err } = await sb.from("profiles").update({ role: newRole }).eq("id", id);
+      if (err) throw err;
+      setUsers(users.map((u) => u.id === id ? { ...u, role: newRole } : u));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "שגיאה בעדכון");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-32 gap-3" style={{ color: "#5A3830" }}>
+      <Loader2 size={18} className="animate-spin" style={{ color: "#C4857A" }} />
+      <span className="text-sm">טוען משתמשים...</span>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>משתמשות</h2>
+        <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>{users.length} משתמשות רשומות</p>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-[0.72rem] mb-4" style={{ background: "rgba(196,50,50,0.08)", color: "#e05555", border: "1px solid rgba(196,50,50,0.2)" }}>
+          <AlertCircle size={13} /><span>{error}</span>
+          <button onClick={() => setError(null)} className="mr-auto"><X size={12} /></button>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2">
+        {users.map((u) => (
+          <div key={u.id} className="flex items-center gap-4 rounded-xl px-4 py-3" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.07)" }}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[0.65rem] font-black" style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A" }}>
+              {u.role === "admin" ? "A" : "U"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[0.75rem] font-semibold truncate" style={{ color: "#FFF8F5" }}>{u.email ?? `${u.id.slice(0, 8)}...`}</p>
+              <p className="text-[0.58rem]" style={{ color: "#5A3830" }}>{new Date(u.created_at).toLocaleDateString("he-IL")}</p>
+            </div>
+            <StatusPill
+              color={u.role === "admin" ? "#C4857A" : "rgba(255,248,245,0.35)"}
+              bg={u.role === "admin" ? "rgba(196,133,122,0.1)" : "rgba(255,255,255,0.03)"}
+              border={u.role === "admin" ? "rgba(196,133,122,0.25)" : "rgba(255,255,255,0.08)"}
+            >
+              {u.role}
+            </StatusPill>
+            <ActionBtn
+              onClick={() => toggleRole(u.id, u.role)}
+              disabled={updating === u.id}
+              title={u.role === "admin" ? "הורד לmuser" : "העלה לאדמין"}
+            >
+              {updating === u.id
+                ? <Loader2 size={12} className="animate-spin" style={{ color: "#5A3830" }} />
+                : <Edit2 size={13} style={{ color: "#5A3830" }} />
+              }
+            </ActionBtn>
+          </div>
+        ))}
+        {users.length === 0 && !error && (
+          <p className="text-center text-sm py-12" style={{ color: "rgba(255,248,245,0.18)" }}>אין משתמשות רשומות עדיין</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Analytics Section ────────────────────────────────────────────
+
+function AnalyticsSection() {
+  const [stats, setStats]     = useState({ users: 0, courses: 0, published: 0, admins: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const sb = createClient();
+        const [{ count: users }, { count: courses }, { count: published }, { count: admins }] = await Promise.all([
+          sb.from("profiles").select("*", { count: "exact", head: true }),
+          sb.from("courses").select("*", { count: "exact", head: true }),
+          sb.from("courses").select("*", { count: "exact", head: true }).eq("is_published", true),
+          sb.from("profiles").select("*", { count: "exact", head: true }).eq("role", "admin"),
+        ]);
+        setStats({ users: users ?? 0, courses: courses ?? 0, published: published ?? 0, admins: admins ?? 0 });
+      } catch { /* show zeros */ }
+      finally { setLoading(false); }
+    })();
+  }, []);
+
+  const tiles = [
+    { label: "משתמשות רשומות", value: stats.users,     color: "#C4857A" },
+    { label: "קורסים סה\"כ",    value: stats.courses,   color: "#D4998E" },
+    { label: "קורסים פורסמו",  value: stats.published, color: "#4A9B6F" },
+    { label: "מנהלי מערכת",    value: stats.admins,    color: "#8B6355" },
+  ];
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>אנליטיקס</h2>
+        <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>נתונים כלליים על הפלטפורמה</p>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-16 gap-3" style={{ color: "#5A3830" }}>
+          <Loader2 size={18} className="animate-spin" style={{ color: "#C4857A" }} />
+          <span className="text-sm">טוען...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {tiles.map((tile) => (
+            <div key={tile.label} className="rounded-2xl p-5 text-center" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+              <p className="text-3xl font-black mb-1" style={{ color: tile.color }}>{tile.value}</p>
+              <p className="text-[0.6rem]" style={{ color: "#5A3830" }}>{tile.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Loader2, Check, X, AlertCircle, Upload } from "lucide-react";
 import {
-  type HeroContent, type Testimonial, type ExtraSection, type SubPlan, type NatalieContent,
-  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_EXTRA_SECTIONS, DEFAULT_PLANS, DEFAULT_NATALIE,
-  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie,
-  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie,
+  type HeroContent, type Testimonial, type ExtraSection, type SubPlan, type NatalieContent, type FaqItem,
+  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_EXTRA_SECTIONS, DEFAULT_PLANS, DEFAULT_NATALIE, DEFAULT_FAQS,
+  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs,
+  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs,
 } from "@/lib/supabase/content-db";
 import { dbUploadImage } from "@/lib/supabase/courses-db";
 
@@ -143,18 +143,20 @@ function LoadingScreen() {
 // ─── Homepage Editor ──────────────────────────────────────────────
 
 export function HomepageEditor() {
-  const [tab, setTab]                     = useState<"hero" | "testimonials" | "extra">("hero");
+  const [tab, setTab]                     = useState<"hero" | "testimonials" | "extra" | "faq">("hero");
   const [hero, setHero]                   = useState<HeroContent>(DEFAULT_HERO);
   const [testimonials, setTestimonials]   = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
   const [extraSections, setExtraSections] = useState<ExtraSection[]>(DEFAULT_EXTRA_SECTIONS);
+  const [faqs, setFaqs]                   = useState<FaqItem[]>(DEFAULT_FAQS);
   const [loading, setLoading]             = useState(true);
   const [saving, setSaving]               = useState(false);
   const [success, setSuccess]             = useState(false);
   const [error, setError]                 = useState<string | null>(null);
+  const [uploadingIdx, setUploadingIdx]   = useState<number | null>(null);
 
   useEffect(() => {
-    Promise.all([dbGetHero(), dbGetTestimonials(), dbGetExtraSections()])
-      .then(([h, t, e]) => { setHero(h); setTestimonials(t); setExtraSections(e); })
+    Promise.all([dbGetHero(), dbGetTestimonials(), dbGetExtraSections(), dbGetFaqs()])
+      .then(([h, t, e, f]) => { setHero(h); setTestimonials(t); setExtraSections(e); setFaqs(f); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -163,9 +165,10 @@ export function HomepageEditor() {
   const handleSave = async () => {
     setSaving(true); clearFeedback();
     try {
-      if (tab === "hero")         await dbSetHero(hero);
+      if (tab === "hero")              await dbSetHero(hero);
       else if (tab === "testimonials") await dbSetTestimonials(testimonials);
-      else                        await dbSetExtraSections(extraSections);
+      else if (tab === "extra")        await dbSetExtraSections(extraSections);
+      else                             await dbSetFaqs(faqs);
       setSuccess(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "שגיאה בשמירה");
@@ -192,7 +195,7 @@ export function HomepageEditor() {
       <Feedback success={success} error={error} onClose={clearFeedback} />
 
       <TabBar
-        tabs={[{ id: "hero", label: "הירו" }, { id: "testimonials", label: "המלצות" }, { id: "extra", label: "סקשיינים נוספים" }]}
+        tabs={[{ id: "hero", label: "הירו" }, { id: "testimonials", label: "המלצות" }, { id: "extra", label: "סקשיינים" }, { id: "faq", label: "שאלות נפוצות" }]}
         active={tab}
         onChange={(id) => { setTab(id as typeof tab); clearFeedback(); }}
       />
@@ -244,6 +247,41 @@ export function HomepageEditor() {
                   <Trash2 size={12} style={{ color: "#5A3830" }} />
                 </button>
               </div>
+
+              {/* Photo */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "#0f0b0e", border: "1px solid rgba(196,133,122,0.15)" }}>
+                  {uploadingIdx === i
+                    ? <Loader2 size={12} className="animate-spin" style={{ color: "#C4857A" }} />
+                    : t.photoUrl
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={t.photoUrl} alt={t.name} className="w-full h-full object-cover" />
+                      : <span className="text-[0.55rem] font-black" style={{ color: t.color || "#C4857A" }}>{t.initials || "?"}</span>
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <FieldLabel>URL תמונה (אופציונלי)</FieldLabel>
+                  <Input value={t.photoUrl ?? ""} onChange={(v) => updateTestimonial(i, "photoUrl", v)} dir="ltr" placeholder="https://..." />
+                </div>
+                <label className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[0.62rem] font-semibold cursor-pointer hover:opacity-80 transition-opacity" style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.18)" }}>
+                  <Upload size={10} />
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    e.target.value = "";
+                    setUploadingIdx(i);
+                    try {
+                      const { dbUploadImage } = await import("@/lib/supabase/courses-db");
+                      const url = await dbUploadImage(file);
+                      updateTestimonial(i, "photoUrl", url);
+                    } catch {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => updateTestimonial(i, "photoUrl", ev.target?.result as string);
+                      reader.readAsDataURL(file);
+                    } finally { setUploadingIdx(null); }
+                  }} />
+                </label>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <FieldLabel>שם</FieldLabel>
@@ -331,6 +369,40 @@ export function HomepageEditor() {
             style={{ border: "1px dashed rgba(196,133,122,0.25)", color: "#C4857A", background: "rgba(196,133,122,0.05)" }}
           >
             <Plus size={13} /> הוסף סקשיין
+          </button>
+        </div>
+      )}
+
+      {/* ── FAQ tab ── */}
+      {tab === "faq" && (
+        <div className="space-y-3">
+          <p className="text-[0.7rem] mb-4" style={{ color: "#5A3830" }}>
+            שאלות ותשובות שיופיעו בדף הבית ובדף המנויים.
+          </p>
+          {faqs.map((faq, i) => (
+            <div key={i} className="rounded-xl p-4 space-y-3" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[0.7rem] font-bold" style={{ color: "#C4857A" }}>שאלה {i + 1}</span>
+                <button onClick={() => setFaqs(faqs.filter((_, j) => j !== i))} className="p-1 rounded-lg hover:bg-white/5">
+                  <Trash2 size={12} style={{ color: "#5A3830" }} />
+                </button>
+              </div>
+              <div>
+                <FieldLabel>שאלה</FieldLabel>
+                <Input value={faq.q} onChange={(v) => setFaqs(faqs.map((f, j) => j === i ? { ...f, q: v } : f))} placeholder="למי המועדון מתאים?" />
+              </div>
+              <div>
+                <FieldLabel>תשובה</FieldLabel>
+                <Textarea value={faq.a} onChange={(v) => setFaqs(faqs.map((f, j) => j === i ? { ...f, a: v } : f))} rows={3} />
+              </div>
+            </div>
+          ))}
+          <button
+            onClick={() => setFaqs([...faqs, { q: "", a: "" }])}
+            className="w-full py-2.5 rounded-xl text-[0.75rem] font-semibold flex items-center justify-center gap-2 hover:opacity-70 transition-opacity"
+            style={{ border: "1px dashed rgba(196,133,122,0.25)", color: "#C4857A", background: "rgba(196,133,122,0.05)" }}
+          >
+            <Plus size={13} /> הוסף שאלה
           </button>
         </div>
       )}
