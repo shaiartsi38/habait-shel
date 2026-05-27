@@ -19,6 +19,7 @@ import {
   dbUpsertCourse,
   dbDeleteCourse,
   dbUploadImage,
+  dbSeedDefaultCourses,
 } from "@/lib/supabase/courses-db";
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -73,13 +74,22 @@ function emptyCourse(): CourseData {
 // ─── Page ─────────────────────────────────────────────────────────
 
 export default function AdminPage() {
-  const { courses, setCourses } = useCourses();
+  // Admin uses its own local state — does NOT overwrite the global context
+  // Global context (public pages) is only updated when admin saves/deletes a course
+  const { setCourses: setGlobalCourses } = useCourses();
+  const [courses, setAdminCourses] = useState<CourseData[]>([]);
   const router = useRouter();
   const [section, setSection] = useState<AdminSection>("courses");
   const [editing, setEditing] = useState<CourseData | null>(null);
   const [isNewCourse, setIsNewCourse] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [opError, setOpError] = useState<string | null>(null);
+
+  const syncCourses = (list: CourseData[]) => {
+    setAdminCourses(list);
+    setGlobalCourses(list); // keep public pages in sync
+  };
 
   // Fetch live data from Supabase on mount
   const syncFromDB = useCallback(async () => {
@@ -87,13 +97,27 @@ export default function AdminPage() {
     setOpError(null);
     try {
       const live = await dbFetchCourses();
-      setCourses(live);
+      setAdminCourses(live); // admin sees exact DB state (even if empty)
+      if (live.length > 0) setGlobalCourses(live); // only sync public pages if there's data
     } catch (e) {
       setOpError(e instanceof Error ? e.message : "שגיאה בטעינת קורסים");
     } finally {
       setFetchLoading(false);
     }
-  }, [setCourses]);
+  }, [setGlobalCourses]);
+
+  const handleSeedDefaults = async () => {
+    setSeeding(true);
+    setOpError(null);
+    try {
+      const seeded = await dbSeedDefaultCourses();
+      syncCourses(seeded);
+    } catch (e) {
+      setOpError(e instanceof Error ? e.message : "שגיאה בייבוא קורסים");
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   useEffect(() => { syncFromDB(); }, [syncFromDB]);
 
@@ -110,9 +134,8 @@ export default function AdminPage() {
     const final = { ...updated, slug, duration };
     try {
       const saved = await dbUpsertCourse(final);
-      setCourses(
-        isNewCourse ? [saved, ...courses] : courses.map((c) => (c.id === saved.id ? saved : c))
-      );
+      const newList = isNewCourse ? [saved, ...courses] : courses.map((c) => (c.id === saved.id ? saved : c));
+      syncCourses(newList);
       setEditing(null);
     } catch (e) {
       setOpError(e instanceof Error ? e.message : "שגיאה בשמירה");
@@ -123,7 +146,7 @@ export default function AdminPage() {
     setOpError(null);
     try {
       await dbDeleteCourse(id);
-      setCourses(courses.filter((c) => c.id !== id));
+      syncCourses(courses.filter((c) => c.id !== id));
     } catch (e) {
       setOpError(e instanceof Error ? e.message : "שגיאה במחיקה");
     }
@@ -135,7 +158,7 @@ export default function AdminPage() {
     const updated = { ...course, isPublished: !course.isPublished };
     try {
       const saved = await dbUpsertCourse(updated);
-      setCourses(courses.map((c) => (c.id === id ? saved : c)));
+      syncCourses(courses.map((c) => (c.id === id ? saved : c)));
     } catch (e) {
       setOpError(e instanceof Error ? e.message : "שגיאה בעדכון");
     }
@@ -233,7 +256,7 @@ export default function AdminPage() {
               <span className="text-sm">טוען קורסים...</span>
             </div>
           ) : section === "courses" ? (
-            <CoursesSection courses={courses} onEdit={openEdit} onDelete={deleteCourse} onTogglePublish={togglePublish} />
+            <CoursesSection courses={courses} onEdit={openEdit} onDelete={deleteCourse} onTogglePublish={togglePublish} onSeedDefaults={handleSeedDefaults} seeding={seeding} />
           ) : section === "homepage" ? (
             <HomepageEditor />
           ) : section === "subscription" ? (
@@ -275,12 +298,14 @@ export default function AdminPage() {
 // ─── Course list ──────────────────────────────────────────────────
 
 function CoursesSection({
-  courses, onEdit, onDelete, onTogglePublish,
+  courses, onEdit, onDelete, onTogglePublish, onSeedDefaults, seeding,
 }: {
   courses: CourseData[];
   onEdit: (c: CourseData) => void;
   onDelete: (id: string) => Promise<void>;
   onTogglePublish: (id: string) => Promise<void>;
+  onSeedDefaults?: () => Promise<void>;
+  seeding?: boolean;
 }) {
   const [delConfirm, setDelConfirm] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -298,6 +323,31 @@ function CoursesSection({
     setDeleting(null);
     setDelConfirm(null);
   };
+
+  if (courses.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center gap-5">
+        <div className="rounded-full p-5" style={{ background: "rgba(196,133,122,0.07)", border: "1px solid rgba(196,133,122,0.12)" }}>
+          <Video size={28} style={{ color: "#C4857A", opacity: 0.6 }} />
+        </div>
+        <div>
+          <p className="text-sm font-bold mb-1.5" style={{ color: "rgba(255,248,245,0.35)" }}>אין קורסים בבסיס הנתונים</p>
+          <p className="text-[0.65rem]" style={{ color: "#3A2020" }}>ייבאי את הקורסים הבסיסיים או צרי קורס חדש</p>
+        </div>
+        {onSeedDefaults && (
+          <button
+            onClick={onSeedDefaults}
+            disabled={seeding}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-[0.78rem] font-bold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+            style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608", boxShadow: "0 4px 14px rgba(196,133,122,0.3)" }}
+          >
+            {seeding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+            {seeding ? "מייבאת..." : "ייבאי קורסים בסיסיים"}
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -150,6 +150,14 @@ export async function dbDeleteCourse(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function dbSeedDefaultCourses(): Promise<CourseData[]> {
+  if (!hasSupabase()) return COURSES;
+  for (const course of COURSES) {
+    await dbUpsertCourse(course);
+  }
+  return dbFetchCourses();
+}
+
 export async function dbUploadImage(file: File): Promise<string> {
   if (!hasSupabase()) throw new Error("Supabase לא מוגדר — השתמשי ב-URL ישיר");
   const sb = createClient();

@@ -138,9 +138,9 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-[0.65rem] mt-6" style={{ color: "#3A2020" }}>
-            אין לך חשבון?{" "}
-            <Link href="/signup" className="font-semibold hover:underline" style={{ color: "#C4857A" }}>
-              הרשמי עכשיו
+            שכחת סיסמה?{" "}
+            <Link href="/forgot-password" className="font-semibold hover:underline" style={{ color: "#C4857A" }}>
+              לחצי כאן לאיפוס
             </Link>
           </p>
         </div>
