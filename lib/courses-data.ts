@@ -34,6 +34,7 @@ export interface CourseData {
   difficulty: Difficulty;
   isPublished: boolean;
   isNew: boolean;
+  showOnHome?: boolean;
   instructor: CourseInstructor;
   lessons: CourseLesson[];
   tags: string[];

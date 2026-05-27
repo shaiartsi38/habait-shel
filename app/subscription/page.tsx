@@ -1,62 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
-
-const PLANS = [
-  {
-    id: "basic",
-    name: "Basic",
-    price: "₪49",
-    period: "לחודש",
-    desc: "כניסה לעולם — קורסי מתחילות ומדגמי תוכן",
-    color: "#8B6355",
-    features: [
-      "גישה לכל קורסי Basic",
-      "שיעורים חינמיים בכל קורסי Pro",
-      "קהילה בסיסית",
-      "עדכוני תוכן חודשיים",
-    ],
-    cta: "התחילי עם Basic",
-    featured: false,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "₪89",
-    period: "לחודש",
-    desc: "הרמה הפרו — גישה לרוב התוכן + קהילה",
-    color: "#C4857A",
-    features: [
-      "גישה לכל קורסי Basic + Pro",
-      "קהילה Pro עם פידבק שבועי",
-      "שאלות ישירות לנטלי",
-      "ספריית כלים ומשאבים",
-      "הנחות על ציוד ואביזרים",
-    ],
-    cta: "הצטרפי ל-Pro",
-    featured: true,
-  },
-  {
-    id: "elite",
-    name: "Elite",
-    price: "₪149",
-    period: "לחודש",
-    desc: "כל מה שיש — ללא פשרות, ללא גבולות",
-    color: "#D4998E",
-    features: [
-      "גישה מלאה לכל הקורסים",
-      "קהילה Elite — VIP בלבד",
-      "מפגשי Live חודשיים עם נטלי",
-      "פידבק אישי על עבודות",
-      "ריטריט שנתי — הנחה מיוחדת",
-      "תעודת מקצועית דיגיטלית",
-    ],
-    cta: "הצטרפי ל-Elite",
-    featured: false,
-  },
-];
+import { type SubPlan, DEFAULT_PLANS, dbGetPlans } from "@/lib/supabase/content-db";
 
 const FAQ = [
   { q: "האם יש ניסיון חינם?", a: "כן — שיעורים מסומנים כ'חינמי' זמינים לכולן, ללא קרדיט." },
@@ -66,6 +14,12 @@ const FAQ = [
 ];
 
 export default function SubscriptionPage() {
+  const [plans, setPlans] = useState<SubPlan[]>(DEFAULT_PLANS);
+
+  useEffect(() => {
+    dbGetPlans().then(setPlans).catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen sidebar-safe px-4 md:px-12 py-16" style={{ background: "var(--black)" }}>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -83,7 +37,7 @@ export default function SubscriptionPage() {
 
         {/* Plans grid */}
         <div className="grid md:grid-cols-3 gap-5 mb-16 max-w-4xl mx-auto">
-          {PLANS.map((plan, i) => (
+          {plans.map((plan, i) => (
             <motion.div
               key={plan.id}
               className="relative rounded-2xl overflow-hidden flex flex-col"
@@ -114,7 +68,7 @@ export default function SubscriptionPage() {
 
                 {/* Price */}
                 <div className="mb-2">
-                  <span className="text-3xl font-black" style={{ color: "#FFF8F5" }}>{plan.price}</span>
+                  <span className="text-3xl font-black" style={{ color: "#FFF8F5" }}>₪{plan.price}</span>
                   <span className="text-sm font-medium mr-1" style={{ color: "#5A3830" }}>{plan.period}</span>
                 </div>
 
@@ -142,7 +96,7 @@ export default function SubscriptionPage() {
                       : { background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }
                   }
                 >
-                  {plan.cta}
+                  {plan.cta || (plan.featured ? "הצטרף עכשיו" : "בחר תוכנית")}
                 </Link>
               </div>
             </motion.div>

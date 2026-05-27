@@ -1,25 +1,20 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Instagram, Youtube, Award, BookOpen, Users } from "lucide-react";
 import Link from "next/link";
+import { type NatalieContent, DEFAULT_NATALIE, dbGetNatalie } from "@/lib/supabase/content-db";
 
-const PHOTO = "https://i.imghippo.com/files/ZNe4792NOg.jpeg";
-
-const ACHIEVEMENTS = [
-  { icon: BookOpen, value: "8+", label: "קורסים מקצועיים" },
-  { icon: Users,    value: "1,200+", label: "תלמידות" },
-  { icon: Award,    value: "10+", label: "שנות ניסיון" },
-];
-
-const MILESTONES = [
-  { year: "2014", text: "סיימה בהצטיינות את בית הספר למיצ'ה בתל אביב" },
-  { year: "2016", text: "התמחות אצל מאפרות Leading בניו יורק ופריז" },
-  { year: "2018", text: "הקימה את הסטודיו העצמאי — מאות כלות וצילומי אופנה" },
-  { year: "2022", text: 'השיקה את "הבית של המאפרים" — הפלטפורמה המובילה לחינוך מקצועי בעברית' },
-];
+const ACHIEVEMENT_ICONS = [BookOpen, Users, Award];
 
 export default function NataliePage() {
+  const [content, setContent] = useState<NatalieContent>(DEFAULT_NATALIE);
+
+  useEffect(() => {
+    dbGetNatalie().then(setContent).catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen sidebar-safe" style={{ background: "var(--black)" }}>
 
@@ -27,7 +22,7 @@ export default function NataliePage() {
       <div className="relative overflow-hidden" style={{ minHeight: "55vh", display: "flex", alignItems: "flex-end" }}>
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={PHOTO} alt="נטלי ארצי" className="w-full h-full object-cover object-top" style={{ filter: "brightness(0.45)" }} />
+          <img src={content.photo} alt="נטלי ארצי" className="w-full h-full object-cover object-top" style={{ filter: "brightness(0.45)" }} />
         </div>
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.6) 40%, transparent 80%)" }} />
 
@@ -63,30 +58,25 @@ export default function NataliePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          {ACHIEVEMENTS.map(({ icon: Icon, value, label }) => (
-            <div key={label} className="rounded-2xl p-5 text-center" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
-              <Icon size={18} className="mx-auto mb-2" style={{ color: "#C4857A" }} />
-              <p className="text-2xl font-black mb-0.5" style={{ color: "#FFF8F5" }}>{value}</p>
-              <p className="text-[0.6rem]" style={{ color: "#5A3830" }}>{label}</p>
-            </div>
-          ))}
+          {content.achievements.map(({ value, label }, i) => {
+            const Icon = ACHIEVEMENT_ICONS[i % ACHIEVEMENT_ICONS.length];
+            return (
+              <div key={label} className="rounded-2xl p-5 text-center" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+                <Icon size={18} className="mx-auto mb-2" style={{ color: "#C4857A" }} />
+                <p className="text-2xl font-black mb-0.5" style={{ color: "#FFF8F5" }}>{value}</p>
+                <p className="text-[0.6rem]" style={{ color: "#5A3830" }}>{label}</p>
+              </div>
+            );
+          })}
         </motion.div>
 
         {/* Bio */}
         <motion.div className="mb-12" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
           <h2 className="text-base font-black mb-4" style={{ color: "#FFF8F5" }}>על נטלי</h2>
           <div className="space-y-4 text-sm leading-relaxed" style={{ color: "#5A3830" }}>
-            <p>
-              נטלי ארצי היא מאפרת מקצועית עם למעלה מ-10 שנות ניסיון בתעשייה — מצילומי אופנה ועד כלות חלומות.
-              היא מאמינה שאיפור הוא לא רק טכניקה, אלא אמנות שמגיעה מהפנים החוצה.
-            </p>
-            <p>
-              לאחר שנים של עבודה מול מצלמות ובסטודיוס ברחבי העולם, החליטה נטלי להפוך את הידע שצברה
-              לנגיש לכל מאפרת בישראל — ובכך נולד הבית של המאפרים.
-            </p>
-            <p>
-              הסגנון שלה: מדויק, חושני, ולוקסוס נקי. היא מלמדת לא רק "איך" — אלא "למה".
-            </p>
+            {content.bio.map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
           </div>
         </motion.div>
 
@@ -96,7 +86,7 @@ export default function NataliePage() {
           <div className="relative">
             <div className="absolute right-[5.5rem] top-0 bottom-0 w-px" style={{ background: "rgba(196,133,122,0.12)" }} />
             <div className="space-y-6">
-              {MILESTONES.map((m, i) => (
+              {content.milestones.map((m, i) => (
                 <motion.div
                   key={m.year}
                   className="flex gap-6 items-start"
@@ -125,7 +115,7 @@ export default function NataliePage() {
         >
           <div className="flex gap-4">
             <a
-              href="https://instagram.com"
+              href={content.instagram}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-semibold transition-colors hover:opacity-80"
@@ -134,7 +124,7 @@ export default function NataliePage() {
               <Instagram size={14} /> אינסטגרם
             </a>
             <a
-              href="https://youtube.com"
+              href={content.youtube}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-semibold transition-colors hover:opacity-80"

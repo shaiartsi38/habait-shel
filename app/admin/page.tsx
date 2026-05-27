@@ -9,8 +9,9 @@ import {
   Plus, Edit2, Eye, EyeOff, Trash2, X,
   GripVertical, Upload, Check, ChevronDown,
   Users, BarChart3, Settings, Video, Loader2,
-  RefreshCw, AlertCircle, LogOut, Home,
+  RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles,
 } from "lucide-react";
+import { HomepageEditor, SubscriptionEditor, NatalieEditor } from "@/components/admin/ContentEditors";
 import { CATEGORIES, type CourseData, type CourseLesson } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import {
@@ -22,7 +23,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────
 
-type AdminSection = "courses" | "users" | "analytics" | "settings";
+type AdminSection = "courses" | "homepage" | "subscription" | "natalie" | "users" | "analytics" | "settings";
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ function emptyCourse(): CourseData {
     difficulty: "beginner",
     isPublished: false,
     isNew: false,
+    showOnHome: true,
     instructor: { name: "נטלי ארצי", bio: "", photoUrl: "https://i.imghippo.com/files/ZNe4792NOg.jpeg" },
     lessons: [emptyLesson()],
     tags: [],
@@ -140,10 +142,13 @@ export default function AdminPage() {
   };
 
   const NAV_ITEMS: { id: AdminSection; label: string; icon: React.ElementType }[] = [
-    { id: "courses",   label: "קורסים",   icon: Video },
-    { id: "users",     label: "משתמשות",  icon: Users },
-    { id: "analytics", label: "אנליטיקס", icon: BarChart3 },
-    { id: "settings",  label: "הגדרות",   icon: Settings },
+    { id: "courses",      label: "קורסים",   icon: Video },
+    { id: "homepage",     label: "דף הבית",  icon: Globe },
+    { id: "subscription", label: "מנויים",   icon: CreditCard },
+    { id: "natalie",      label: "נטלי",     icon: Sparkles },
+    { id: "users",        label: "משתמשות",  icon: Users },
+    { id: "analytics",    label: "אנליטיקס", icon: BarChart3 },
+    { id: "settings",     label: "הגדרות",   icon: Settings },
   ];
 
   return (
@@ -180,13 +185,15 @@ export default function AdminPage() {
           >
             <RefreshCw size={14} style={{ color: "#8B6355" }} className={fetchLoading ? "animate-spin" : ""} />
           </button>
-          <button
-            onClick={openAdd}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-bold transition-all hover:opacity-90 active:scale-95"
-            style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608", boxShadow: "0 4px 14px rgba(196,133,122,0.3)" }}
-          >
-            <Plus size={13} /> קורס חדש
-          </button>
+          {section === "courses" && (
+            <button
+              onClick={openAdd}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-bold transition-all hover:opacity-90 active:scale-95"
+              style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608", boxShadow: "0 4px 14px rgba(196,133,122,0.3)" }}
+            >
+              <Plus size={13} /> קורס חדש
+            </button>
+          )}
         </div>
       </div>
 
@@ -220,13 +227,19 @@ export default function AdminPage() {
 
         {/* Main */}
         <main className="flex-1 px-4 md:px-8 py-8 min-w-0">
-          {fetchLoading && courses.length === 0 ? (
+          {fetchLoading && courses.length === 0 && section === "courses" ? (
             <div className="flex items-center justify-center py-32 gap-3" style={{ color: "#5A3830" }}>
               <Loader2 size={18} className="animate-spin" style={{ color: "#C4857A" }} />
               <span className="text-sm">טוען קורסים...</span>
             </div>
           ) : section === "courses" ? (
             <CoursesSection courses={courses} onEdit={openEdit} onDelete={deleteCourse} onTogglePublish={togglePublish} />
+          ) : section === "homepage" ? (
+            <HomepageEditor />
+          ) : section === "subscription" ? (
+            <SubscriptionEditor />
+          ) : section === "natalie" ? (
+            <NatalieEditor />
           ) : (
             <ComingSoon label={NAV_ITEMS.find((n) => n.id === section)?.label ?? ""} />
           )}
@@ -537,6 +550,7 @@ function CourseEditForm({
             <div className="flex flex-col justify-end gap-2 pb-0.5">
               <Checkbox checked={form.isPublished} onChange={(v) => set("isPublished", v)} label="מפורסם" />
               <Checkbox checked={form.isNew} onChange={(v) => set("isNew", v)} label='תגית "חדש"' />
+              <Checkbox checked={form.showOnHome ?? true} onChange={(v) => set("showOnHome", v)} label="הצג בדף הבית" />
             </div>
           </div>
         </FormSection>

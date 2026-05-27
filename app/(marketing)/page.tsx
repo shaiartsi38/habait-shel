@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Lock, Check, Star, ChevronDown } from "lucide-react";
@@ -8,9 +8,13 @@ import { type Category } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { CategoryFilter } from "@/components/courses/CategoryFilter";
+import {
+  type HeroContent, type Testimonial, type SubPlan, type ExtraSection,
+  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS,
+  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections,
+} from "@/lib/supabase/content-db";
 
 // ─── Assets ─────────────────────────────────────────────────────
-const HERO_BG         = "https://i.imghippo.com/files/AOv7969jE.jpeg";
 const NATALIE_PROFILE = "https://i.imghippo.com/files/ZNe4792NOg.jpeg";
 const COMING_SOON_1   = "https://i.imghippo.com/files/buo9489kbs.jpeg";
 const COMING_SOON_2   = "https://i.imghippo.com/files/dKr6384dN.jpeg";
@@ -23,81 +27,6 @@ const FI = {
   transition:  { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
 } as const;
 
-// ─── Mock data ───────────────────────────────────────────────────
-const TESTIMONIALS = [
-  {
-    name: "מיה לוי",
-    field: "מאפרת כלות",
-    text: "מאז שהצטרפתי למועדון, הלקוחות שלי פשוט לא מאמינות לתוצאות. הקורס על כלות שינה לי את כל הגישה.",
-    initials: "מל",
-    color: "#C4857A",
-  },
-  {
-    name: "נועה ברקוביץ׳",
-    field: "מאפרת פרילנסרית",
-    text: "התוכן של נטלי הוא הכי מקצועי שמצאתי בעברית. שילמתי פחות מקורס אחד והרווחתי ידע של 10.",
-    initials: "נב",
-    color: "#D4998E",
-  },
-  {
-    name: "שירה אביב",
-    field: "סטודיו איפור, תל אביב",
-    text: "הקהילה כאן זה הבונוס הכי גדול. מאפרות מכל הארץ שמשתפות, עוזרות, ומדיחות אחת את השנייה.",
-    initials: "שא",
-    color: "#8B6355",
-  },
-  {
-    name: "ליאת כהן",
-    field: "מאפרת ואמנית עיצוב",
-    text: "הבסיס שקיבלתי מהמאסטרקלאסים כאן בנה לי קריירה. ממליצה לכל מאפרת שרצינית לגבי העסק שלה.",
-    initials: "לכ",
-    color: "#C4857A",
-  },
-];
-
-const PLANS = [
-  {
-    id: "basic",
-    name: "Basic",
-    nameHe: "בסיסי",
-    price: 49,
-    featured: false,
-    perks: [
-      "גישה לכל קורסי Basic",
-      "4+ קורסים חדשים בשנה",
-      "תעודות השלמה",
-      "תמיכה בצ׳אט",
-    ],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    nameHe: "מקצועי",
-    price: 89,
-    featured: true,
-    perks: [
-      "כל מה שב-Basic",
-      "גישה לקורסי Pro מתקדמים",
-      "שידורים חיים חודשיים",
-      "קהילה פרטית",
-      "הנחות על ציוד מקצועי",
-    ],
-  },
-  {
-    id: "elite",
-    name: "Elite",
-    nameHe: "יוקרה",
-    price: 149,
-    featured: false,
-    perks: [
-      "כל מה שב-Pro",
-      "גישה לקורסי Elite בלעדיים",
-      "שיחת ייעוץ אישית עם נטלי",
-      "ניהול פרטי בוואטסאפ",
-      "עדיפות לסדנאות חיות",
-    ],
-  },
-];
 
 const FAQS = [
   {
@@ -124,14 +53,27 @@ function scrollToSub() {
 
 // ─── Page ────────────────────────────────────────────────────────
 export default function HomePage() {
+  const [hero, setHero]                   = useState<HeroContent>(DEFAULT_HERO);
+  const [testimonials, setTestimonials]   = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
+  const [plans, setPlans]                 = useState<SubPlan[]>(DEFAULT_PLANS);
+  const [extraSections, setExtraSections] = useState<ExtraSection[]>(DEFAULT_EXTRA_SECTIONS);
+
+  useEffect(() => {
+    dbGetHero().then(setHero).catch(() => {});
+    dbGetTestimonials().then(setTestimonials).catch(() => {});
+    dbGetPlans().then(setPlans).catch(() => {});
+    dbGetExtraSections().then(setExtraSections).catch(() => {});
+  }, []);
+
   return (
     <div style={{ background: "var(--black)" }}>
       <JoinClubButton />
-      <HeroSection />
+      <HeroSection hero={hero} />
       <CoursesSection />
-      <TestimonialsSection />
+      <TestimonialsSection testimonials={testimonials} />
       <NatalieSection />
-      <SubscriptionSection />
+      <ExtraContentSections sections={extraSections} />
+      <SubscriptionSection plans={plans} />
       <FaqSection />
       <ClosingCTA />
     </div>
@@ -164,7 +106,7 @@ function JoinClubButton() {
 }
 
 // ─── Full-Bleed Parallax Hero ─────────────────────────────────────
-function HeroSection() {
+function HeroSection({ hero }: { hero: HeroContent }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const bgY = useTransform(scrollY, [0, 600], ["0%", "22%"]);
@@ -181,7 +123,7 @@ function HeroSection() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={HERO_BG}
+          src={hero.heroBg}
           alt="Hero"
           className="w-full h-full object-cover object-center"
         />
@@ -213,7 +155,7 @@ function HeroSection() {
             transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
             className="font-black leading-[0.9] tracking-tight text-4xl md:text-7xl"
           >
-            <span style={{ color: "#FFF8F5" }}>הבית של</span>
+            <span style={{ color: "#FFF8F5" }}>{hero.title1}</span>
             <br />
             <span
               style={{
@@ -224,7 +166,7 @@ function HeroSection() {
                 backgroundClip: "text",
               }}
             >
-              המאפרים
+              {hero.title2}
             </span>
           </motion.h1>
         </div>
@@ -237,8 +179,7 @@ function HeroSection() {
           className="text-base md:text-xl font-light mb-7 max-w-xl leading-relaxed mr-0"
           style={{ color: "rgba(255,248,245,0.6)" }}
         >
-          להיות צעד אחד לפני כולם. מאסטרקלאסים בלעדיים, תוכן חדש כל שבוע,
-          וקהילה שדוחפת אותך קדימה.
+          {hero.subtitle}
         </motion.p>
 
         {/* CTA row + social proof מתחתיהם */}
@@ -261,7 +202,7 @@ function HeroSection() {
               whileTap={{ scale: 0.97 }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             >
-              אני רוצה להיכנס ➔
+              {hero.ctaText}
             </motion.button>
             <Link
               href="/courses"
@@ -279,9 +220,9 @@ function HeroSection() {
           >
             <span style={{ color: "#C4857A" }}>⭐⭐⭐⭐⭐</span>
             <span className="w-px h-3" style={{ background: "rgba(255,248,245,0.1)" }} />
-            <span>24+ קורסים</span>
+            <span>{hero.statsCourses}</span>
             <span className="w-px h-3" style={{ background: "rgba(255,248,245,0.1)" }} />
-            <span>847 תלמידות</span>
+            <span>{hero.statsStudents}</span>
           </div>
         </motion.div>
       </div>
@@ -293,7 +234,7 @@ function HeroSection() {
 function CoursesSection() {
   const [activeCategory, setActiveCategory] = useState<Category>("הכל");
   const { courses } = useCourses();
-  const published = courses.filter((c) => c.isPublished);
+  const published = courses.filter((c) => c.isPublished && c.showOnHome !== false);
   const visible =
     activeCategory === "הכל"
       ? published
@@ -578,7 +519,7 @@ function ComingSoonSection() {
 }
 
 // ─── Testimonials ─────────────────────────────────────────────────
-function TestimonialsSection() {
+function TestimonialsSection({ testimonials }: { testimonials: Testimonial[] }) {
   return (
     <section
       className="py-20 px-4 sidebar-safe md:px-10 text-right"
@@ -594,7 +535,7 @@ function TestimonialsSection() {
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {TESTIMONIALS.map((t, i) => (
+        {testimonials.map((t, i) => (
           <motion.div
             key={t.name}
             className="relative rounded-2xl p-5 flex flex-col"
@@ -686,8 +627,86 @@ function NatalieSection() {
   );
 }
 
+// ─── Extra Content Sections ───────────────────────────────────────
+function ExtraContentSections({ sections }: { sections: ExtraSection[] }) {
+  const visible = sections.filter((s) => s.visible);
+  if (visible.length === 0) return null;
+  return (
+    <>
+      {visible.map((sec, i) => (
+        <section
+          key={sec.id}
+          className="py-20 px-5 sidebar-safe md:px-12 text-right"
+          style={{ borderTop: "1px solid rgba(196,133,122,0.07)" }}
+        >
+          <div className="max-w-3xl">
+            {sec.subtitle && (
+              <motion.p
+                className="text-[0.56rem] tracking-[0.34em] uppercase font-semibold mb-2"
+                style={{ color: "#C4857A" }}
+                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.5 }}
+              >
+                {sec.subtitle}
+              </motion.p>
+            )}
+            {sec.title && (
+              <motion.h2
+                className="text-2xl md:text-3xl font-black mb-5 leading-tight"
+                style={{ color: "#FFF8F5" }}
+                initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.55, delay: 0.06 }}
+              >
+                {sec.title}
+              </motion.h2>
+            )}
+            <div className={`flex gap-8 items-start ${sec.imageUrl ? "flex-col md:flex-row" : ""}`}>
+              {sec.imageUrl && (
+                <motion.div
+                  className="w-full md:w-64 shrink-0 rounded-2xl overflow-hidden"
+                  initial={{ opacity: 0, scale: 0.97 }} whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.6 }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={sec.imageUrl} alt={sec.title} className="w-full h-full object-cover" style={{ maxHeight: 240 }} />
+                </motion.div>
+              )}
+              <div className="flex-1">
+                {sec.body && (
+                  <motion.p
+                    className="text-sm leading-relaxed mb-6"
+                    style={{ color: "rgba(255,248,245,0.5)" }}
+                    initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.5, delay: 0.1 + i * 0.04 }}
+                  >
+                    {sec.body}
+                  </motion.p>
+                )}
+                {sec.ctaText && sec.ctaHref && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.4, delay: 0.18 }}
+                  >
+                    <Link
+                      href={sec.ctaHref}
+                      className="inline-flex items-center gap-2 text-sm font-semibold transition-all hover:gap-3"
+                      style={{ color: "#C4857A" }}
+                    >
+                      {sec.ctaText} ←
+                    </Link>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}
+
 // ─── Subscription Section ─────────────────────────────────────────
-function SubscriptionSection() {
+function SubscriptionSection({ plans }: { plans: SubPlan[] }) {
   return (
     <section
       id="subscription"
@@ -707,7 +726,7 @@ function SubscriptionSection() {
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-3xl mx-auto">
-        {PLANS.map((plan, i) => (
+        {plans.map((plan, i) => (
           <motion.div
             key={plan.id}
             className="relative rounded-2xl p-6 flex flex-col"
@@ -745,10 +764,10 @@ function SubscriptionSection() {
             <div className="h-px mb-5" style={{ background: "rgba(196,133,122,0.1)" }} />
 
             <ul className="flex flex-col gap-2.5 mb-8 flex-1">
-              {plan.perks.map((perk) => (
-                <li key={perk} className="flex items-start gap-2.5 text-[0.7rem]" style={{ color: "rgba(255,248,245,0.5)" }}>
+              {plan.features.map((feature) => (
+                <li key={feature} className="flex items-start gap-2.5 text-[0.7rem]" style={{ color: "rgba(255,248,245,0.5)" }}>
                   <Check size={12} className="shrink-0 mt-0.5" style={{ color: "#C4857A" }} />
-                  {perk}
+                  {feature}
                 </li>
               ))}
             </ul>

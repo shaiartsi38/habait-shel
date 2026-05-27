@@ -1,0 +1,155 @@
+import { createClient } from "./client";
+
+const hasSupabase = () =>
+  Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
+// ─── Types ────────────────────────────────────────────────────────
+
+export type HeroContent = {
+  title1: string;
+  title2: string;
+  subtitle: string;
+  ctaText: string;
+  statsStudents: string;
+  statsCourses: string;
+  heroBg: string;
+};
+
+export type Testimonial = {
+  name: string;
+  field: string;
+  text: string;
+  initials: string;
+  color: string;
+};
+
+export type ExtraSection = {
+  id: string;
+  title: string;
+  subtitle: string;
+  body: string;
+  imageUrl: string;
+  ctaText: string;
+  ctaHref: string;
+  visible: boolean;
+};
+
+export type SubPlan = {
+  id: string;
+  name: string;
+  nameHe: string;
+  price: number;
+  period: string;
+  desc: string;
+  features: string[];
+  cta: string;
+  featured: boolean;
+  color: string;
+};
+
+export type NatalieContent = {
+  photo: string;
+  instagram: string;
+  youtube: string;
+  bio: string[];
+  achievements: { value: string; label: string }[];
+  milestones: { year: string; text: string }[];
+};
+
+// ─── Defaults (fallback when Supabase isn't loaded yet) ───────────
+
+export const DEFAULT_HERO: HeroContent = {
+  title1: "הבית של",
+  title2: "המאפרים",
+  subtitle: "להיות צעד אחד לפני כולם. מאסטרקלאסים בלעדיים, תוכן חדש כל שבוע, וקהילה שדוחפת אותך קדימה.",
+  ctaText: "אני רוצה להיכנס ➔",
+  statsStudents: "847 תלמידות",
+  statsCourses: "24+ קורסים",
+  heroBg: "https://i.imghippo.com/files/AOv7969jE.jpeg",
+};
+
+export const DEFAULT_TESTIMONIALS: Testimonial[] = [
+  { name: "מיה לוי",       field: "מאפרת כלות",          text: "מאז שהצטרפתי למועדון, הלקוחות שלי פשוט לא מאמינות לתוצאות. הקורס על כלות שינה לי את כל הגישה.", initials: "מל", color: "#C4857A" },
+  { name: "נועה ברקוביץ׳", field: "מאפרת פרילנסרית",      text: "התוכן של נטלי הוא הכי מקצועי שמצאתי בעברית. שילמתי פחות מקורס אחד והרווחתי ידע של 10.",          initials: "נב", color: "#D4998E" },
+  { name: "שירה אביב",     field: "סטודיו איפור, תל אביב", text: "הקהילה כאן זה הבונוס הכי גדול. מאפרות מכל הארץ שמשתפות, עוזרות, ומדיחות אחת את השנייה.",        initials: "שא", color: "#8B6355" },
+  { name: "ליאת כהן",      field: "מאפרת ואמנית עיצוב",   text: "הבסיס שקיבלתי מהמאסטרקלאסים כאן בנה לי קריירה. ממליצה לכל מאפרת שרצינית לגבי העסק שלה.",     initials: "לכ", color: "#C4857A" },
+];
+
+export const DEFAULT_PLANS: SubPlan[] = [
+  {
+    id: "basic", name: "Basic", nameHe: "בסיסי", price: 49, period: "לחודש",
+    desc: "כניסה לעולם — קורסי מתחילות ומדגמי תוכן",
+    features: ["גישה לכל קורסי Basic", "שיעורים חינמיים בכל קורסי Pro", "קהילה בסיסית", "עדכוני תוכן חודשיים"],
+    cta: "התחיל עם Basic", featured: false, color: "#8B6355",
+  },
+  {
+    id: "pro", name: "Pro", nameHe: "מקצועי", price: 89, period: "לחודש",
+    desc: "הרמה הפרו — גישה לרוב התוכן + קהילה",
+    features: ["גישה לכל קורסי Basic + Pro", "קהילה Pro עם פידבק שבועי", "שאלות ישירות לנטלי", "ספריית כלים ומשאבים", "הנחות על ציוד ואביזרים"],
+    cta: "הצטרף ל-Pro", featured: true, color: "#C4857A",
+  },
+  {
+    id: "elite", name: "Elite", nameHe: "יוקרה", price: 149, period: "לחודש",
+    desc: "כל מה שיש — ללא פשרות, ללא גבולות",
+    features: ["גישה מלאה לכל הקורסים", "קהילה Elite — VIP בלבד", "מפגשי Live חודשיים עם נטלי", "פידבק אישי על עבודות", "ריטריט שנתי — הנחה מיוחדת", "תעודת מקצועית דיגיטלית"],
+    cta: "הצטרף ל-Elite", featured: false, color: "#D4998E",
+  },
+];
+
+export const DEFAULT_NATALIE: NatalieContent = {
+  photo: "https://i.imghippo.com/files/ZNe4792NOg.jpeg",
+  instagram: "https://instagram.com",
+  youtube: "https://youtube.com",
+  bio: [
+    "נטלי ארצי היא מאפרת מקצועית עם למעלה מ-10 שנות ניסיון בתעשייה — מצילומי אופנה ועד כלות חלומות. היא מאמינה שאיפור הוא לא רק טכניקה, אלא אמנות שמגיעה מהפנים החוצה.",
+    "לאחר שנים של עבודה מול מצלמות ובסטודיוס ברחבי העולם, החליטה נטלי להפוך את הידע שצברה לנגיש לכל מאפרת בישראל — ובכך נולד הבית של המאפרים.",
+    "הסגנון שלה: מדויק, חושני, ולוקסוס נקי. היא מלמדת לא רק \"איך\" — אלא \"למה\".",
+  ],
+  achievements: [
+    { value: "8+",     label: "קורסים מקצועיים" },
+    { value: "1,200+", label: "תלמידות" },
+    { value: "10+",    label: "שנות ניסיון" },
+  ],
+  milestones: [
+    { year: "2014", text: "סיימה בהצטיינות את בית הספר למיצ'ה בתל אביב" },
+    { year: "2016", text: "התמחות אצל מאפרות Leading בניו יורק ופריז" },
+    { year: "2018", text: "הקימה את הסטודיו העצמאי — מאות כלות וצילומי אופנה" },
+    { year: "2022", text: 'השיקה את "הבית של המאפרים" — הפלטפורמה המובילה לחינוך מקצועי בעברית' },
+  ],
+};
+
+export const DEFAULT_EXTRA_SECTIONS: ExtraSection[] = [];
+
+// ─── DB Operations ────────────────────────────────────────────────
+
+async function getContent<T>(key: string, fallback: T): Promise<T> {
+  if (!hasSupabase()) return fallback;
+  try {
+    const sb = createClient();
+    const { data } = await sb.from("site_content").select("value").eq("key", key).single();
+    if (!data) return fallback;
+    return data.value as T;
+  } catch {
+    return fallback;
+  }
+}
+
+async function setContent(key: string, value: unknown): Promise<void> {
+  const sb = createClient();
+  const { error } = await sb
+    .from("site_content")
+    .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  if (error) throw error;
+}
+
+export const dbGetHero          = () => getContent<HeroContent>("hero", DEFAULT_HERO);
+export const dbGetTestimonials  = () => getContent<Testimonial[]>("testimonials", DEFAULT_TESTIMONIALS);
+export const dbGetExtraSections = () => getContent<ExtraSection[]>("extra_sections", DEFAULT_EXTRA_SECTIONS);
+export const dbGetPlans         = () => getContent<SubPlan[]>("subscription_plans", DEFAULT_PLANS);
+export const dbGetNatalie       = () => getContent<NatalieContent>("natalie", DEFAULT_NATALIE);
+
+export const dbSetHero          = (v: HeroContent)    => setContent("hero", v);
+export const dbSetTestimonials  = (v: Testimonial[])  => setContent("testimonials", v);
+export const dbSetExtraSections = (v: ExtraSection[]) => setContent("extra_sections", v);
+export const dbSetPlans         = (v: SubPlan[])       => setContent("subscription_plans", v);
+export const dbSetNatalie       = (v: NatalieContent) => setContent("natalie", v);
