@@ -2,11 +2,14 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
   Plus, Edit2, Eye, EyeOff, Trash2, X,
   GripVertical, Upload, Check, ChevronDown,
   Users, BarChart3, Settings, Video, Loader2,
-  RefreshCw, AlertCircle,
+  RefreshCw, AlertCircle, LogOut, Home,
 } from "lucide-react";
 import { CATEGORIES, type CourseData, type CourseLesson } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
@@ -69,6 +72,7 @@ function emptyCourse(): CourseData {
 
 export default function AdminPage() {
   const { courses, setCourses } = useCourses();
+  const router = useRouter();
   const [section, setSection] = useState<AdminSection>("courses");
   const [editing, setEditing] = useState<CourseData | null>(null);
   const [isNewCourse, setIsNewCourse] = useState(false);
@@ -154,6 +158,20 @@ export default function AdminPage() {
           <h1 className="text-base font-black" style={{ color: "#FFF8F5" }}>הבית של המאפרים</h1>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[0.72rem] font-semibold hover:opacity-80 transition-opacity"
+            style={{ color: "#8B6355", border: "1px solid rgba(196,133,122,0.12)" }}
+          >
+            <Home size={12} /> לאתר
+          </Link>
+          <button
+            onClick={async () => { await createClient().auth.signOut(); router.push("/"); router.refresh(); }}
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[0.72rem] font-semibold hover:opacity-80 transition-opacity"
+            style={{ color: "#8B6355", border: "1px solid rgba(196,133,122,0.12)" }}
+          >
+            <LogOut size={12} /> יציאה
+          </button>
           <button
             onClick={syncFromDB}
             disabled={fetchLoading}

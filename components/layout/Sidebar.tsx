@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { CreditCard, Home, LayoutDashboard, Play, Settings, Sparkles, Users, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { CreditCard, Home, LayoutDashboard, Play, Settings, Sparkles, Users, PanelRightClose, PanelRightOpen, LogIn, LogOut } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const NAV = [
   { href: "/",              label: "בית",       icon: Home },
@@ -17,7 +18,25 @@ const NAV = [
 
 export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(true);
+  const router   = useRouter();
+  const [open, setOpen]       = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sb = createClient();
+    sb.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_, session) => {
+      setUserEmail(session?.user.email ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    const sb = createClient();
+    await sb.auth.signOut();
+    router.push("/");
+    router.refresh();
+  };
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -26,7 +45,7 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
     <>
       {/* ── Desktop ─────────────────────────────────────────── */}
       <>
-        {/* Toggle button — always visible on desktop */}
+        {/* Toggle button */}
         <button
           onClick={() => setOpen((v) => !v)}
           className="hidden md:flex fixed top-5 right-5 z-[60] w-9 h-9 items-center justify-center rounded-xl transition-all hover:opacity-80"
@@ -90,8 +109,28 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
                   )}
                 </div>
 
-                {/* CTA */}
-                <div className="px-4 pb-5 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                {/* Auth + CTA */}
+                <div className="px-4 pb-5 pt-4 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                  {userEmail ? (
+                    <>
+                      <p className="text-[0.55rem] truncate text-center" style={{ color: "#5A3830" }}>{userEmail}</p>
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-[0.72rem] font-semibold hover:opacity-80 transition-opacity"
+                        style={{ color: "#8B6355", border: "1px solid rgba(196,133,122,0.12)" }}
+                      >
+                        <LogOut size={12} /> יציאה
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      href="/login"
+                      className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-[0.72rem] font-semibold hover:opacity-80 transition-opacity"
+                      style={{ color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
+                    >
+                      <LogIn size={12} /> כניסה
+                    </Link>
+                  )}
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={{ type: "spring", stiffness: 500, damping: 30 }}>
                     <Link
                       href="/subscription"
@@ -102,7 +141,7 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
                         boxShadow: "0 4px 18px rgba(196,133,122,0.32)",
                       }}
                     >
-                      שדרגי את המנוי
+                      שדרג את המנוי
                     </Link>
                   </motion.div>
                 </div>

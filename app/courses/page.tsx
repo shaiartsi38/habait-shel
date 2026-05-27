@@ -76,7 +76,7 @@ export default function CoursesPage() {
       <AnimatePresence mode="popLayout">
         <motion.div
           key={activeCategory}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
+          className="grid grid-cols-2 md:grid-cols-5 gap-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
