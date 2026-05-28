@@ -24,7 +24,7 @@
 | שירות | פרטים |
 |--------|--------|
 | **Vercel** | `https://habait-shel-git-main-shai-habait-shel.vercel.app` |
-| **דומיין** | `https://natalieartzi.com` |
+| **דומיין** | `https://natalieartsi.com` |
 | **GitHub** | `git@github.com:shaiartsi38/habait-shel.git` |
 | **SSH key** | `~/.ssh/github_habait` — push ישיר ללא tokens |
 
