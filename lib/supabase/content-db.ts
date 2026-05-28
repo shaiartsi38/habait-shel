@@ -13,6 +13,20 @@ export type HeroContent = {
   statsStudents: string;
   statsCourses: string;
   heroBg: string;
+  heroType?: "image" | "video";
+  heroVideoUrl?: string;
+};
+
+export type ComingSoonItem = {
+  id: string;
+  image: string;
+  title: string;
+  subtitle: string;
+  category: string;
+  description: string;
+  trailerVideoId?: string;
+  trailerProvider?: "youtube" | "vimeo" | "direct";
+  releaseDate?: string;
 };
 
 export type Testimonial = {
@@ -124,6 +138,14 @@ export const DEFAULT_NATALIE: NatalieContent = {
   ],
 };
 
+export const DEFAULT_COMING_SOON: ComingSoonItem[] = [
+  { id: "s1", image: "https://i.imghippo.com/files/buo9489kbs.jpeg", title: "קולקציית ערב — Fall 2030", subtitle: "עם נטלי ארצי", category: "עיניים", description: "" },
+  { id: "s2", image: "https://i.imghippo.com/files/dKr6384dN.jpeg", title: "Bridal Masterclass Vol. 2", subtitle: "עם נטלי ארצי", category: "כלות", description: "" },
+  { id: "s3", image: "https://i.imghippo.com/files/buo9489kbs.jpeg", title: "Contouring Pro Series", subtitle: "עם נטלי ארצי", category: "Contouring", description: "" },
+  { id: "s4", image: "https://i.imghippo.com/files/dKr6384dN.jpeg", title: "Editorial Winter Collection", subtitle: "עם נטלי ארצי", category: "Editorial", description: "" },
+  { id: "s5", image: "https://i.imghippo.com/files/buo9489kbs.jpeg", title: "Smoky Eye Masterclass", subtitle: "עם נטלי ארצי", category: "עיניים", description: "" },
+];
+
 export const DEFAULT_EXTRA_SECTIONS: ExtraSection[] = [];
 
 export const DEFAULT_FAQS: FaqItem[] = [
@@ -161,10 +183,12 @@ export const dbGetExtraSections = () => getContent<ExtraSection[]>("extra_sectio
 export const dbGetPlans         = () => getContent<SubPlan[]>("subscription_plans", DEFAULT_PLANS);
 export const dbGetNatalie       = () => getContent<NatalieContent>("natalie", DEFAULT_NATALIE);
 export const dbGetFaqs          = () => getContent<FaqItem[]>("faqs", DEFAULT_FAQS);
+export const dbGetComingSoon    = () => getContent<ComingSoonItem[]>("coming_soon", DEFAULT_COMING_SOON);
 
-export const dbSetHero          = (v: HeroContent)    => setContent("hero", v);
-export const dbSetTestimonials  = (v: Testimonial[])  => setContent("testimonials", v);
-export const dbSetExtraSections = (v: ExtraSection[]) => setContent("extra_sections", v);
-export const dbSetPlans         = (v: SubPlan[])       => setContent("subscription_plans", v);
-export const dbSetNatalie       = (v: NatalieContent) => setContent("natalie", v);
-export const dbSetFaqs          = (v: FaqItem[])      => setContent("faqs", v);
+export const dbSetHero          = (v: HeroContent)       => setContent("hero", v);
+export const dbSetTestimonials  = (v: Testimonial[])     => setContent("testimonials", v);
+export const dbSetExtraSections = (v: ExtraSection[])    => setContent("extra_sections", v);
+export const dbSetPlans         = (v: SubPlan[])          => setContent("subscription_plans", v);
+export const dbSetNatalie       = (v: NatalieContent)    => setContent("natalie", v);
+export const dbSetFaqs          = (v: FaqItem[])         => setContent("faqs", v);
+export const dbSetComingSoon    = (v: ComingSoonItem[])  => setContent("coming_soon", v);

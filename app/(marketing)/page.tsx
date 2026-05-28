@@ -9,15 +9,13 @@ import { useCourses } from "@/lib/courses-context";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { CategoryFilter } from "@/components/courses/CategoryFilter";
 import {
-  type HeroContent, type Testimonial, type SubPlan, type ExtraSection, type FaqItem,
-  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS, DEFAULT_FAQS,
-  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections, dbGetFaqs,
+  type HeroContent, type Testimonial, type SubPlan, type ExtraSection, type FaqItem, type ComingSoonItem,
+  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS, DEFAULT_FAQS, DEFAULT_COMING_SOON,
+  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections, dbGetFaqs, dbGetComingSoon,
 } from "@/lib/supabase/content-db";
 
 // ─── Assets ─────────────────────────────────────────────────────
 const NATALIE_PROFILE = "https://i.imghippo.com/files/ZNe4792NOg.jpeg";
-const COMING_SOON_1   = "https://i.imghippo.com/files/buo9489kbs.jpeg";
-const COMING_SOON_2   = "https://i.imghippo.com/files/dKr6384dN.jpeg";
 
 // ─── Animation preset — תנועה ברורה ומורגשת ──────────────────────
 const FI = {
@@ -38,6 +36,7 @@ export default function HomePage() {
   const [plans, setPlans]                 = useState<SubPlan[]>(DEFAULT_PLANS);
   const [extraSections, setExtraSections] = useState<ExtraSection[]>(DEFAULT_EXTRA_SECTIONS);
   const [faqs, setFaqs]                   = useState<FaqItem[]>(DEFAULT_FAQS);
+  const [comingSoon, setComingSoon]       = useState<ComingSoonItem[]>(DEFAULT_COMING_SOON);
 
   useEffect(() => {
     dbGetHero().then(setHero).catch(() => {});
@@ -45,13 +44,14 @@ export default function HomePage() {
     dbGetPlans().then(setPlans).catch(() => {});
     dbGetExtraSections().then(setExtraSections).catch(() => {});
     dbGetFaqs().then(setFaqs).catch(() => {});
+    dbGetComingSoon().then(setComingSoon).catch(() => {});
   }, []);
 
   return (
     <div style={{ background: "var(--black)" }}>
       <JoinClubButton />
       <HeroSection hero={hero} />
-      <CoursesSection />
+      <CoursesSection comingSoon={comingSoon} />
       <TestimonialsSection testimonials={testimonials} />
       <NatalieSection />
       <ExtraContentSections sections={extraSections} />
@@ -92,24 +92,38 @@ function HeroSection({ hero }: { hero: HeroContent }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const bgY = useTransform(scrollY, [0, 600], ["0%", "22%"]);
+  const isVideo = hero.heroType === "video" && hero.heroVideoUrl;
 
   return (
     <section
       ref={ref}
       className="relative w-full min-h-[90vh] md:min-h-screen overflow-hidden flex flex-col"
     >
-      {/* Parallax BG */}
-      <motion.div
-        className="absolute inset-0"
-        style={{ y: bgY, scale: 1.14, transformOrigin: "center top" }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={hero.heroBg}
-          alt="Hero"
-          className="w-full h-full object-cover object-center"
-        />
-      </motion.div>
+      {/* BG — תמונה עם parallax או וידאו */}
+      {isVideo ? (
+        <div className="absolute inset-0">
+          <video
+            src={hero.heroVideoUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover object-center"
+          />
+        </div>
+      ) : (
+        <motion.div
+          className="absolute inset-0"
+          style={{ y: bgY, scale: 1.14, transformOrigin: "center top" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={hero.heroBg}
+            alt="Hero"
+            className="w-full h-full object-cover object-center"
+          />
+        </motion.div>
+      )}
 
       {/* Overlay #080608 @ 0.75 */}
       <div className="absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.75)" }} />
@@ -213,7 +227,7 @@ function HeroSection({ hero }: { hero: HeroContent }) {
 }
 
 // ─── Courses Section ──────────────────────────────────────────────
-function CoursesSection() {
+function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
   const [activeCategory, setActiveCategory] = useState<Category>("הכל");
   const { courses } = useCourses();
   const published = courses.filter((c) => c.isPublished && c.showOnHome !== false);
@@ -385,7 +399,7 @@ function CoursesSection() {
       )}
 
       {/* Coming Soon */}
-      <ComingSoonSection />
+      <ComingSoonSection items={comingSoon} />
 
       {/* All courses link */}
       <motion.div className="mt-8 flex justify-end" {...FI}>
@@ -422,14 +436,8 @@ function BreathingCard({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Coming Soon — narrow portrait cards (Netflix style) ──────────
-function ComingSoonSection() {
-  const SOON = [
-    { id: "s1", image: COMING_SOON_1, title: "קולקציית ערב — Fall 2030", subtitle: "עם נטלי ארצי" },
-    { id: "s2", image: COMING_SOON_2, title: "Bridal Masterclass Vol. 2", subtitle: "עם נטלי ארצי" },
-    { id: "s3", image: COMING_SOON_1, title: "Contouring Pro Series", subtitle: "עם נטלי ארצי" },
-    { id: "s4", image: COMING_SOON_2, title: "Editorial Winter Collection", subtitle: "עם נטלי ארצי" },
-    { id: "s5", image: COMING_SOON_1, title: "Smoky Eye Masterclass", subtitle: "עם נטלי ארצי" },
-  ];
+function ComingSoonSection({ items }: { items: ComingSoonItem[] }) {
+  const SOON = items.length > 0 ? items : [] as ComingSoonItem[];
 
   return (
     <div className="mt-14 text-right">

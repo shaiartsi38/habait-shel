@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Trash2, Loader2, Check, X, AlertCircle, Upload } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Trash2, Loader2, Check, X, AlertCircle, Upload, Image as ImageIcon, Video } from "lucide-react";
 import {
-  type HeroContent, type Testimonial, type ExtraSection, type SubPlan, type NatalieContent, type FaqItem,
-  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_EXTRA_SECTIONS, DEFAULT_PLANS, DEFAULT_NATALIE, DEFAULT_FAQS,
-  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs,
-  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs,
+  type HeroContent, type Testimonial, type ExtraSection, type SubPlan, type NatalieContent, type FaqItem, type ComingSoonItem,
+  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_EXTRA_SECTIONS, DEFAULT_PLANS, DEFAULT_NATALIE, DEFAULT_FAQS, DEFAULT_COMING_SOON,
+  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs, dbGetComingSoon,
+  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs, dbSetComingSoon,
 } from "@/lib/supabase/content-db";
-import { dbUploadImage } from "@/lib/supabase/courses-db";
+import { dbUploadImage, dbUploadVideo } from "@/lib/supabase/courses-db";
+import { CATEGORIES } from "@/lib/courses-data";
 
 // ─── Shared UI ────────────────────────────────────────────────────
 
@@ -143,20 +144,25 @@ function LoadingScreen() {
 // ─── Homepage Editor ──────────────────────────────────────────────
 
 export function HomepageEditor() {
-  const [tab, setTab]                     = useState<"hero" | "testimonials" | "extra" | "faq">("hero");
+  const [tab, setTab]                     = useState<"hero" | "testimonials" | "extra" | "faq" | "coming">("hero");
   const [hero, setHero]                   = useState<HeroContent>(DEFAULT_HERO);
   const [testimonials, setTestimonials]   = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
   const [extraSections, setExtraSections] = useState<ExtraSection[]>(DEFAULT_EXTRA_SECTIONS);
   const [faqs, setFaqs]                   = useState<FaqItem[]>(DEFAULT_FAQS);
+  const [comingSoon, setComingSoon]       = useState<ComingSoonItem[]>(DEFAULT_COMING_SOON);
   const [loading, setLoading]             = useState(true);
   const [saving, setSaving]               = useState(false);
   const [success, setSuccess]             = useState(false);
   const [error, setError]                 = useState<string | null>(null);
   const [uploadingIdx, setUploadingIdx]   = useState<number | null>(null);
+  const [uploadingHeroBg, setUploadingHeroBg]   = useState(false);
+  const [uploadingHeroVid, setUploadingHeroVid] = useState(false);
+  const heroBgRef  = useRef<HTMLInputElement>(null);
+  const heroVidRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    Promise.all([dbGetHero(), dbGetTestimonials(), dbGetExtraSections(), dbGetFaqs()])
-      .then(([h, t, e, f]) => { setHero(h); setTestimonials(t); setExtraSections(e); setFaqs(f); })
+    Promise.all([dbGetHero(), dbGetTestimonials(), dbGetExtraSections(), dbGetFaqs(), dbGetComingSoon()])
+      .then(([h, t, e, f, c]) => { setHero(h); setTestimonials(t); setExtraSections(e); setFaqs(f); setComingSoon(c); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -168,7 +174,8 @@ export function HomepageEditor() {
       if (tab === "hero")              await dbSetHero(hero);
       else if (tab === "testimonials") await dbSetTestimonials(testimonials);
       else if (tab === "extra")        await dbSetExtraSections(extraSections);
-      else                             await dbSetFaqs(faqs);
+      else if (tab === "faq")          await dbSetFaqs(faqs);
+      else                             await dbSetComingSoon(comingSoon);
       setSuccess(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "שגיאה בשמירה");
@@ -185,6 +192,11 @@ export function HomepageEditor() {
   const updateExtra = (i: number, key: keyof ExtraSection, val: string | boolean) =>
     setExtraSections(extraSections.map((s, j) => j === i ? { ...s, [key]: val } : s));
 
+  const updateComing = (i: number, key: keyof ComingSoonItem, val: string) =>
+    setComingSoon(comingSoon.map((s, j) => j === i ? { ...s, [key]: val } : s));
+
+  const heroType = hero.heroType ?? "image";
+
   return (
     <div>
       <div className="mb-6">
@@ -195,7 +207,7 @@ export function HomepageEditor() {
       <Feedback success={success} error={error} onClose={clearFeedback} />
 
       <TabBar
-        tabs={[{ id: "hero", label: "הירו" }, { id: "testimonials", label: "המלצות" }, { id: "extra", label: "סקשיינים" }, { id: "faq", label: "שאלות נפוצות" }]}
+        tabs={[{ id: "hero", label: "הירו" }, { id: "testimonials", label: "המלצות" }, { id: "extra", label: "סקשיינים" }, { id: "faq", label: "שאלות נפוצות" }, { id: "coming", label: "בקרוב" }]}
         active={tab}
         onChange={(id) => { setTab(id as typeof tab); clearFeedback(); }}
       />
@@ -229,10 +241,73 @@ export function HomepageEditor() {
               <Input value={hero.statsCourses} onChange={(v) => setHero({ ...hero, statsCourses: v })} placeholder="24+ קורסים" />
             </div>
           </div>
+
+          {/* ── Image / Video toggle ── */}
           <div>
-            <FieldLabel>URL תמונת רקע</FieldLabel>
-            <Input value={hero.heroBg} onChange={(v) => setHero({ ...hero, heroBg: v })} dir="ltr" placeholder="https://..." />
+            <FieldLabel>סוג רקע הירו</FieldLabel>
+            <div className="flex gap-2">
+              {(["image", "video"] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setHero({ ...hero, heroType: type })}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[0.75rem] font-semibold transition-all"
+                  style={heroType === type
+                    ? { background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }
+                    : { background: "#140e12", color: "#5A3830", border: "1px solid rgba(196,133,122,0.12)" }
+                  }
+                >
+                  {type === "image" ? <ImageIcon size={13} /> : <Video size={13} />}
+                  {type === "image" ? "תמונה" : "וידאו"}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {heroType === "image" && (
+            <div>
+              <FieldLabel>תמונת רקע</FieldLabel>
+              <div className="flex gap-2 mb-2">
+                <input ref={heroBgRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0]; if (!file) return; e.target.value = "";
+                  setUploadingHeroBg(true);
+                  try { const url = await dbUploadImage(file); setHero({ ...hero, heroBg: url }); }
+                  catch { const r = new FileReader(); r.onload = (ev) => setHero({ ...hero, heroBg: ev.target?.result as string }); r.readAsDataURL(file); }
+                  finally { setUploadingHeroBg(false); }
+                }} />
+                <button type="button" onClick={() => heroBgRef.current?.click()} disabled={uploadingHeroBg}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold hover:opacity-80 disabled:opacity-40"
+                  style={{ background: "rgba(196,133,122,0.12)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
+                >
+                  {uploadingHeroBg ? <Loader2 size={10} className="animate-spin" /> : <Upload size={11} />} העלי מהמחשב
+                </button>
+              </div>
+              <Input value={hero.heroBg} onChange={(v) => setHero({ ...hero, heroBg: v })} dir="ltr" placeholder="https://..." />
+            </div>
+          )}
+
+          {heroType === "video" && (
+            <div>
+              <FieldLabel>וידאו רקע (URL או העלאה)</FieldLabel>
+              <div className="flex gap-2 mb-2">
+                <input ref={heroVidRef} type="file" accept="video/*" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0]; if (!file) return; e.target.value = "";
+                  setUploadingHeroVid(true);
+                  try { const url = await dbUploadVideo(file); setHero({ ...hero, heroVideoUrl: url }); }
+                  catch (err) { setError(err instanceof Error ? err.message : "שגיאה בהעלאה"); }
+                  finally { setUploadingHeroVid(false); }
+                }} />
+                <button type="button" onClick={() => heroVidRef.current?.click()} disabled={uploadingHeroVid}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold hover:opacity-80 disabled:opacity-40"
+                  style={{ background: "rgba(196,133,122,0.12)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
+                >
+                  {uploadingHeroVid ? <Loader2 size={10} className="animate-spin" /> : <Upload size={11} />} העלי וידאו מהמחשב
+                </button>
+              </div>
+              <Input value={hero.heroVideoUrl ?? ""} onChange={(v) => setHero({ ...hero, heroVideoUrl: v })} dir="ltr" placeholder="https://... (MP4, WebM)" />
+              <p className="text-[0.56rem] mt-1" style={{ color: "#3A2020" }}>הוידאו ירוץ אוטומטית, ב-loop ובלי קול</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -407,7 +482,133 @@ export function HomepageEditor() {
         </div>
       )}
 
+      {/* ── Coming Soon tab ── */}
+      {tab === "coming" && (
+        <div className="space-y-4">
+          <p className="text-[0.7rem] mb-2" style={{ color: "#5A3830" }}>פריטים שיופיעו בסקשיין "מה הולך לקרות בקרוב" בדף הבית.</p>
+          {comingSoon.map((item, i) => (
+            <ComingSoonItemEditor
+              key={item.id}
+              item={item}
+              index={i}
+              onChange={(key, val) => updateComing(i, key, val)}
+              onRemove={() => setComingSoon(comingSoon.filter((_, j) => j !== i))}
+            />
+          ))}
+          <button
+            onClick={() => setComingSoon([...comingSoon, { id: Math.random().toString(36).slice(2), image: "", title: "", subtitle: "עם נטלי ארצי", category: "עיניים", description: "" }])}
+            className="w-full py-2.5 rounded-xl text-[0.75rem] font-semibold flex items-center justify-center gap-2 hover:opacity-70 transition-opacity"
+            style={{ border: "1px dashed rgba(196,133,122,0.25)", color: "#C4857A", background: "rgba(196,133,122,0.05)" }}
+          >
+            <Plus size={13} /> הוסף פריט
+          </button>
+        </div>
+      )}
+
       <SaveBar onSave={handleSave} saving={saving} />
+    </div>
+  );
+}
+
+// ─── Coming Soon Item Editor ──────────────────────────────────────
+
+function ComingSoonItemEditor({
+  item, index, onChange, onRemove,
+}: {
+  item: ComingSoonItem;
+  index: number;
+  onChange: (key: keyof ComingSoonItem, val: string) => void;
+  onRemove: () => void;
+}) {
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadingVid, setUploadingVid] = useState(false);
+  const imgRef = useRef<HTMLInputElement>(null);
+  const vidRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="rounded-xl p-4 space-y-3" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+      <div className="flex items-center justify-between">
+        <span className="text-[0.7rem] font-bold" style={{ color: "#C4857A" }}>פריט {index + 1}</span>
+        <button onClick={onRemove} className="p-1 rounded-lg hover:bg-white/5">
+          <Trash2 size={12} style={{ color: "#5A3830" }} />
+        </button>
+      </div>
+      <div>
+        <FieldLabel>תמונה</FieldLabel>
+        <div className="flex gap-2 mb-2 items-center">
+          {item.image && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.image} alt="" className="w-10 h-14 object-cover rounded-lg shrink-0" />
+          )}
+          <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+            const file = e.target.files?.[0]; if (!file) return; e.target.value = "";
+            setUploadingImg(true);
+            try { const url = await dbUploadImage(file); onChange("image", url); }
+            catch { const r = new FileReader(); r.onload = (ev) => onChange("image", ev.target?.result as string); r.readAsDataURL(file); }
+            finally { setUploadingImg(false); }
+          }} />
+          <button type="button" onClick={() => imgRef.current?.click()} disabled={uploadingImg}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[0.62rem] font-semibold hover:opacity-80 disabled:opacity-40"
+            style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.18)" }}
+          >
+            {uploadingImg ? <Loader2 size={10} className="animate-spin" /> : <Upload size={10} />} העלי
+          </button>
+        </div>
+        <Input value={item.image} onChange={(v) => onChange("image", v)} dir="ltr" placeholder="https://..." />
+      </div>
+      <div>
+        <FieldLabel>כותרת</FieldLabel>
+        <Input value={item.title} onChange={(v) => onChange("title", v)} placeholder="שם הקורס" />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <FieldLabel>תת-כותרת</FieldLabel>
+          <Input value={item.subtitle} onChange={(v) => onChange("subtitle", v)} placeholder="עם נטלי ארצי" />
+        </div>
+        <div>
+          <FieldLabel>קטגוריה</FieldLabel>
+          <select
+            value={item.category}
+            onChange={(e) => onChange("category", e.target.value)}
+            className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+            style={{ background: "#0f0b0e", border: "1px solid rgba(196,133,122,0.12)", color: "#FFF8F5" }}
+          >
+            {CATEGORIES.filter((c) => c !== "הכל").map((c) => (
+              <option key={c} value={c} style={{ background: "#0f0b0e" }}>{c}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div>
+        <FieldLabel>תיאור קצר</FieldLabel>
+        <Textarea value={item.description} onChange={(v) => onChange("description", v)} rows={2} placeholder="תיאור קצר של מה שמגיע..." />
+      </div>
+      <div>
+        <FieldLabel>טיזר וידאו (URL יוטיוב / Vimeo)</FieldLabel>
+        <Input value={item.trailerVideoId ?? ""} onChange={(v) => onChange("trailerVideoId", v)} dir="ltr" placeholder="https://youtube.com/watch?v=..." />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <FieldLabel>תאריך שחרור (אופציונלי)</FieldLabel>
+          <Input value={item.releaseDate ?? ""} onChange={(v) => onChange("releaseDate", v)} placeholder="ינואר 2026" />
+        </div>
+        <div>
+          <FieldLabel>העלי וידאו טיזר מהמחשב</FieldLabel>
+          <input ref={vidRef} type="file" accept="video/*" className="hidden" onChange={async (e) => {
+            const file = e.target.files?.[0]; if (!file) return; e.target.value = "";
+            setUploadingVid(true);
+            try { const url = await dbUploadVideo(file); onChange("trailerVideoId", url); onChange("trailerProvider", "direct"); }
+            catch { /* ignore */ }
+            finally { setUploadingVid(false); }
+          }} />
+          <button type="button" onClick={() => vidRef.current?.click()} disabled={uploadingVid}
+            className="w-full inline-flex items-center justify-center gap-1 py-2 rounded-xl text-[0.62rem] font-semibold hover:opacity-80 disabled:opacity-40"
+            style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.18)" }}
+          >
+            {uploadingVid ? <Loader2 size={10} className="animate-spin" /> : <Upload size={10} />} העלי
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
