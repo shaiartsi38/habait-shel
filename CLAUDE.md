@@ -109,6 +109,24 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 
 ---
 
+## Admin CMS — תוכן דף הבית (`site_content` ב-Supabase)
+
+טבלת `site_content` שומרת JSON לפי key:
+
+| Key | תוכן |
+|-----|------|
+| `hero` | `HeroContent` — כותרות, CTA, סטטיסטיקות, רקע (תמונה/וידאו) |
+| `testimonials` | `Testimonial[]` — שם, תחום, טקסט, תמונה |
+| `extra_sections` | `ExtraSection[]` — סקשיינים חופשיים בין נטלי למנויים |
+| `faqs` | `FaqItem[]` — שאלות ותשובות |
+| `coming_soon` | `ComingSoonItem[]` — קורסים עתידיים עם תמונה, כותרת, קטגוריה, טיזר, תאריך |
+| `subscription_plans` | `SubPlan[]` — תוכניות מנוי |
+| `natalie` | `NatalieContent` — עמוד "אודות נטלי" |
+
+`HeroContent` תומך ב-`heroType: "image" | "video"` + `heroVideoUrl` (וידאו רץ autoplay, muted, loop).
+
+---
+
 ## סטטוס פתוח
 
 - [ ] תיקון מנגנון יצירת Profile אוטומטי (Cardcom webhook)
