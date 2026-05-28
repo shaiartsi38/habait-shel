@@ -17,7 +17,7 @@ function lessonFromRow(row: Record<string, unknown>): CourseLesson {
     id: String(row.id),
     title: String(row.title ?? ""),
     videoId: String(row.video_id ?? ""),
-    videoProvider: (row.video_provider as "youtube" | "vimeo") ?? "youtube",
+    videoProvider: (row.video_provider as "youtube" | "vimeo" | "direct") ?? "youtube",
     durationMin: Math.round(Number(row.duration_seconds ?? 0) / 60),
     isFree: Boolean(row.is_free_preview),
   };
@@ -156,6 +156,17 @@ export async function dbSeedDefaultCourses(): Promise<CourseData[]> {
     await dbUpsertCourse(course);
   }
   return dbFetchCourses();
+}
+
+export async function dbUploadVideo(file: File): Promise<string> {
+  if (!hasSupabase()) throw new Error("Supabase לא מוגדר — השתמש ב-URL ישיר");
+  const sb = createClient();
+  const ext = file.name.split(".").pop() ?? "mp4";
+  const path = `videos/${Date.now()}.${ext}`;
+  const { data, error } = await sb.storage.from("course-media").upload(path, file, { upsert: true });
+  if (error) throw error;
+  const { data: { publicUrl } } = sb.storage.from("course-media").getPublicUrl(data.path);
+  return publicUrl;
 }
 
 export async function dbUploadImage(file: File): Promise<string> {

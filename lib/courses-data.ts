@@ -1,6 +1,6 @@
 export type Tier = "basic" | "pro" | "elite";
 export type Difficulty = "beginner" | "intermediate" | "advanced";
-export type VideoProvider = "youtube" | "vimeo";
+export type VideoProvider = "youtube" | "vimeo" | "direct";
 
 export interface CourseLesson {
   id: string;

@@ -19,8 +19,10 @@ import {
   dbUpsertCourse,
   dbDeleteCourse,
   dbUploadImage,
+  dbUploadVideo,
   dbSeedDefaultCourses,
 } from "@/lib/supabase/courses-db";
+import type { VideoProvider } from "@/lib/courses-data";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -35,6 +37,32 @@ const STATUS_CONFIG = {
   draft:     { label: "טיוטה",  color: "rgba(255,248,245,0.4)", bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.1)" },
   soon:      { label: "בקרוב",  color: "#C4857A", bg: "rgba(196,133,122,0.1)", border: "rgba(196,133,122,0.3)" },
 };
+
+function errMsg(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object" && "message" in e) return String((e as { message: unknown }).message);
+  return "שגיאה לא ידועה";
+}
+
+function parseVideoUrl(raw: string): { videoId: string; provider: VideoProvider } {
+  const s = raw.trim();
+  if (!s) return { videoId: "", provider: "youtube" };
+
+  // YouTube patterns
+  const ytMatch =
+    s.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/) ??
+    s.match(/^([A-Za-z0-9_-]{11})$/);
+  if (ytMatch) return { videoId: ytMatch[1], provider: "youtube" };
+
+  // Vimeo patterns
+  const vmMatch = s.match(/(?:vimeo\.com\/(?:video\/)?|player\.vimeo\.com\/video\/)(\d+)/);
+  if (vmMatch) return { videoId: vmMatch[1], provider: "vimeo" };
+
+  // Direct URL (http/https)
+  if (s.startsWith("http://") || s.startsWith("https://")) return { videoId: s, provider: "direct" };
+
+  return { videoId: s, provider: "youtube" };
+}
 
 function getCourseStatus(c: CourseData): "published" | "draft" | "soon" {
   if (c.isPublished) return "published";
@@ -100,7 +128,7 @@ export default function AdminPage() {
       setAdminCourses(live); // admin sees exact DB state (even if empty)
       if (live.length > 0) setGlobalCourses(live); // only sync public pages if there's data
     } catch (e) {
-      setOpError(e instanceof Error ? e.message : "שגיאה בטעינת קורסים");
+      setOpError(errMsg(e) || "שגיאה בטעינת קורסים");
     } finally {
       setFetchLoading(false);
     }
@@ -113,7 +141,7 @@ export default function AdminPage() {
       const seeded = await dbSeedDefaultCourses();
       syncCourses(seeded);
     } catch (e) {
-      setOpError(e instanceof Error ? e.message : "שגיאה בייבוא קורסים");
+      setOpError(errMsg(e) || "שגיאה בייבוא קורסים");
     } finally {
       setSeeding(false);
     }
@@ -138,7 +166,7 @@ export default function AdminPage() {
       syncCourses(newList);
       setEditing(null);
     } catch (e) {
-      setOpError(e instanceof Error ? e.message : "שגיאה בשמירה");
+      setOpError(errMsg(e) || "שגיאה בשמירה");
     }
   };
 
@@ -148,7 +176,7 @@ export default function AdminPage() {
       await dbDeleteCourse(id);
       syncCourses(courses.filter((c) => c.id !== id));
     } catch (e) {
-      setOpError(e instanceof Error ? e.message : "שגיאה במחיקה");
+      setOpError(errMsg(e) || "שגיאה במחיקה");
     }
   };
 
@@ -160,7 +188,7 @@ export default function AdminPage() {
       const saved = await dbUpsertCourse(updated);
       syncCourses(courses.map((c) => (c.id === id ? saved : c)));
     } catch (e) {
-      setOpError(e instanceof Error ? e.message : "שגיאה בעדכון");
+      setOpError(errMsg(e) || "שגיאה בעדכון");
     }
   };
 
@@ -562,8 +590,22 @@ function CourseEditForm({
           <FieldLabel>או הדביקי URL של תמונה</FieldLabel>
           <Input value={form.image} onChange={(v) => set("image", v)} placeholder="https://i.imghippo.com/files/..." dir="ltr" />
 
-          <FieldLabel className="mt-3">YouTube Video ID (טיזר)</FieldLabel>
-          <Input value={form.videoId ?? ""} onChange={(v) => set("videoId", v)} placeholder="dQw4w9WgXcQ" dir="ltr" />
+          <FieldLabel className="mt-3">סרטון טיזר (הדביקי URL של YouTube / Vimeo או ID)</FieldLabel>
+          <Input
+            value={form.videoId ?? ""}
+            onChange={(v) => {
+              const parsed = parseVideoUrl(v);
+              set("videoId", parsed.videoId || v);
+              set("videoProvider", parsed.provider);
+            }}
+            placeholder="https://www.youtube.com/watch?v=... או ID ישיר"
+            dir="ltr"
+          />
+          {form.videoId && (
+            <p className="mt-1 text-[0.55rem]" style={{ color: "#5A3830" }}>
+              זוהה: {form.videoProvider === "youtube" ? "YouTube" : form.videoProvider === "vimeo" ? "Vimeo" : "קובץ ישיר"} · ID: {form.videoId}
+            </p>
+          )}
         </FormSection>
 
         {/* ── פרטי הקורס ── */}
@@ -719,6 +761,37 @@ function LessonRow({
   onChange: (key: keyof CourseLesson, val: CourseLesson[keyof CourseLesson]) => void;
   onRemove: () => void;
 }) {
+  const videoRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleVideoUrl = (raw: string) => {
+    const parsed = parseVideoUrl(raw);
+    if (parsed.videoId && parsed.videoId !== raw) {
+      onChange("videoId", parsed.videoId);
+      onChange("videoProvider", parsed.provider);
+    } else {
+      onChange("videoId", raw);
+    }
+  };
+
+  const handleVideoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setUploading(true);
+    try {
+      const url = await dbUploadVideo(file);
+      onChange("videoId", url);
+      onChange("videoProvider", "direct");
+    } catch {
+      alert("שגיאה בהעלאת הסרטון — בדקי שמפתחות Supabase מוגדרים");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const providerLabel = lesson.videoProvider === "vimeo" ? "Vimeo" : lesson.videoProvider === "direct" ? "קובץ" : "YouTube";
+
   return (
     <div className="rounded-xl p-3 space-y-2" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
       <div className="flex items-center gap-2">
@@ -735,14 +808,37 @@ function LessonRow({
           <X size={11} style={{ color: "#5A3830" }} />
         </button>
       </div>
+
+      {/* Video input row */}
       <div className="flex gap-2 items-center">
         <input
           className="flex-1 min-w-0 bg-transparent text-[0.68rem] outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.2)] transition-colors"
-          style={{ color: "rgba(255,248,245,0.45)", direction: "ltr" }}
+          style={{ color: "rgba(255,248,245,0.55)", direction: "ltr" }}
           value={lesson.videoId}
-          onChange={(e) => onChange("videoId", e.target.value)}
-          placeholder="YouTube Video ID"
+          onChange={(e) => handleVideoUrl(e.target.value)}
+          placeholder="הדביקי URL יוטיוב / Vimeo"
+          dir="ltr"
         />
+        {lesson.videoId && (
+          <span className="text-[0.5rem] px-1.5 py-0.5 rounded-full shrink-0" style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A" }}>
+            {providerLabel}
+          </span>
+        )}
+        <button
+          type="button"
+          title="העלי סרטון מהמחשב"
+          onClick={() => videoRef.current?.click()}
+          disabled={uploading}
+          className="p-1.5 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-40 shrink-0"
+        >
+          {uploading ? <Loader2 size={11} className="animate-spin" style={{ color: "#C4857A" }} /> : <Upload size={11} style={{ color: "#8B6355" }} />}
+        </button>
+        <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={handleVideoFile} />
+      </div>
+
+      {/* Duration + free */}
+      <div className="flex gap-2 items-center">
+        <span className="text-[0.58rem]" style={{ color: "#5A3830" }}>משך:</span>
         <input
           className="w-14 bg-transparent text-[0.68rem] text-center outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.2)] transition-colors"
           style={{ color: "rgba(255,248,245,0.4)", direction: "ltr" }}
@@ -751,6 +847,8 @@ function LessonRow({
           onChange={(e) => onChange("durationMin", parseInt(e.target.value) || 0)}
           placeholder="דק׳"
         />
+        <span className="text-[0.58rem]" style={{ color: "#5A3830" }}>דקות</span>
+        <div className="flex-1" />
         <Checkbox checked={lesson.isFree} onChange={(v) => onChange("isFree", v)} label="חינמי" small />
       </div>
     </div>
@@ -895,7 +993,7 @@ function UsersSection() {
         if (err) throw err;
         setUsers((data ?? []) as ProfileRow[]);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "שגיאה בטעינת משתמשים");
+        setError(errMsg(e) || "שגיאה בטעינת משתמשים");
       } finally {
         setLoading(false);
       }
@@ -911,7 +1009,7 @@ function UsersSection() {
       if (err) throw err;
       setUsers(users.map((u) => u.id === id ? { ...u, role: newRole } : u));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "שגיאה בעדכון");
+      setError(errMsg(e) || "שגיאה בעדכון");
     } finally {
       setUpdating(null);
     }

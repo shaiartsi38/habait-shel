@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { motion } from "framer-motion";
 import { Play, Lock, Clock } from "lucide-react";
 import Link from "next/link";
-import { COURSES } from "@/lib/courses-data";
+import { COURSES, type VideoProvider } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 
 const DIFF_LABEL = { beginner: "מתחילות", intermediate: "בינוני", advanced: "מתקדם" } as const;
@@ -39,6 +39,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
           >
             <VideoPlayer
               videoId={course.videoId ?? firstLesson?.videoId ?? ""}
+              provider={course.videoId ? (course.videoProvider ?? "youtube") : (firstLesson?.videoProvider ?? "youtube")}
               poster={course.image}
               title={course.title}
             />
@@ -226,22 +227,42 @@ function CinematicHeader({ course }: { course: (typeof COURSES)[number] }) {
 }
 
 // ─── Video Player ─────────────────────────────────────────────────
-function VideoPlayer({ videoId, poster, title }: { videoId: string; poster: string; title: string }) {
+function VideoPlayer({ videoId, provider = "youtube", poster, title }: {
+  videoId: string; provider?: VideoProvider; poster: string; title: string;
+}) {
   const [playing, setPlaying] = useState(false);
+
+  const embedContent = (() => {
+    if (provider === "direct") {
+      return (
+        <video
+          src={videoId}
+          className="absolute inset-0 w-full h-full"
+          controls
+          autoPlay
+          style={{ objectFit: "cover" }}
+        />
+      );
+    }
+    const src = provider === "vimeo"
+      ? `https://player.vimeo.com/video/${videoId}?autoplay=1`
+      : `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0`;
+    return (
+      <iframe
+        src={src}
+        className="absolute inset-0 w-full h-full"
+        allow="autoplay; fullscreen; encrypted-media"
+        style={{ border: "none" }}
+      />
+    );
+  })();
 
   return (
     <div
       className="relative w-full overflow-hidden rounded-2xl"
       style={{ aspectRatio: "16/9", background: "#0f0b0e", boxShadow: "0 12px 40px rgba(0,0,0,0.55)" }}
     >
-      {playing ? (
-        <iframe
-          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0`}
-          className="absolute inset-0 w-full h-full"
-          allow="autoplay; fullscreen; encrypted-media"
-          style={{ border: "none" }}
-        />
-      ) : (
+      {playing ? embedContent : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={poster} alt={title} className="absolute inset-0 w-full h-full object-cover" style={{ filter: "brightness(0.6)" }} />
