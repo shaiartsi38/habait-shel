@@ -3,19 +3,19 @@
 ## כללי עבודה מחייבים
 
 1. **אסור לשנות** קוד, עיצוב, לוגיקה, סקשיינים או כל דבר — ללא אישור מפורש משי. ספק = שואלים קודם.
-2. **עדכון קובץ זה:** אחרי כל שינוי מהותי (סקשיין חדש, שינוי באדמין, שינוי ב-schema, פיצ'ר חדש) — לשאול את שי האם להוסיף לכאן לפני הסגירה.
-2. **קוד מודולרי.** כל שינוי ב-Schema של Supabase מחייב עדכון מקביל ב-TypeScript interfaces.
-3. **Supabase הוא מקור האמת.** אין להשתמש ב-`courses-data.ts` כמקור נתונים בפרודקשן — רק כ-fallback בסביבת dev ללא env keys.
-4. **כל עריכה באדמין** (קורסים, תמונות, סקשיינים) חייבת לעדכן את ה-DB ישירות — לא state מקומי בלבד.
-5. **SSR עדיף** על Client Components בדפים ציבוריים (SEO, ביצועים).
-6. **Zod** לולידציית נתונים מול ה-DB. אם יש סתירה בין UI לקוד — DB גובר.
+2. **עדכון קובץ זה:** אחרי כל שינוי מהותי — לשאול את שי האם להוסיף לכאן לפני הסגירה.
+3. **קוד מודולרי.** כל שינוי ב-Schema של Supabase מחייב עדכון מקביל ב-TypeScript interfaces.
+4. **Supabase הוא מקור האמת.** `courses-data.ts` הוא fallback בלבד בסביבת dev ללא env keys.
+5. **כל עריכה באדמין** חייבת לעדכן את ה-DB ישירות.
+6. **SSR עדיף** על Client Components בדפים ציבוריים.
+7. **Zod** לולידציה. אם יש סתירה בין UI לקוד — DB גובר.
 
 ---
 
 ## הפרוייקט
 
 **שם:** הבית של המאפרים | **בעלים:** שי ארצי (`shaiartsi26@gmail.com`)
-**תיאור:** פלטפורמת מנויים ליוצרת איפור — נטלי ארצי. קורסי וידאו ב-3 רמות: Basic / Pro / Elite.
+**תיאור:** פלטפורמת מנויים ליוצרת איפור — נטלי ארצי. קורסי וידאו ב-3 רמות: Basic / Pro / Elite + רכישת קורס בודד ב-₪489.
 
 ---
 
@@ -29,7 +29,6 @@
 | **SSH key** | `~/.ssh/github_habait` — push ישיר ללא tokens |
 
 ```bash
-# פרסום שינויי קוד (Vercel מפרסם אוטומטית תוך ~2 דק')
 git add <files> && git commit -m "..." && git push origin main
 ```
 
@@ -44,14 +43,17 @@ git add <files> && git commit -m "..." && git push origin main
 ## ארכיטקטורה — קבצים מרכזיים
 
 ```
-app/(marketing)/page.tsx        ← דף הבית (SSR מועדף)
-app/admin/page.tsx              ← CMS מלא
-app/courses/[slug]/page.tsx     ← דף קורס
-components/admin/ContentEditors.tsx  ← עורכי הירו, המלצות, FAQ, סקשיינים
-lib/supabase/courses-db.ts      ← CRUD קורסים + שיעורים + upload
-lib/supabase/content-db.ts      ← CRUD תוכן דף הבית
-lib/courses-data.ts             ← fallback סטטי (dev בלבד — אסור למחוק)
-middleware.ts                   ← הגנת routes לפי role
+app/(marketing)/page.tsx         ← דף הבית
+app/admin/page.tsx               ← CMS מלא
+app/courses/[slug]/page.tsx      ← דף קורס
+app/checkout/[slug]/page.tsx     ← דף רכישה בודדת (₪489, placeholder לCardcom)
+app/dashboard/page.tsx           ← דשבורד משתמש + מערכת ביטול מנוי
+app/natalie/page.tsx             ← עמוד נטלי (תמונה, ביו, רשתות חברתיות)
+components/admin/ContentEditors.tsx  ← HomepageEditor, SubscriptionEditor, NatalieEditor
+lib/supabase/courses-db.ts       ← CRUD קורסים + שיעורים + upload
+lib/supabase/content-db.ts       ← CRUD תוכן דף הבית (site_content)
+lib/courses-context.tsx          ← stale-while-revalidate: localStorage → Supabase ברקע
+middleware.ts                    ← הגנת routes לפי role
 ```
 
 ---
@@ -66,12 +68,52 @@ middleware.ts                   ← הגנת routes לפי role
 
 ---
 
+## Admin CMS — `site_content` (Supabase)
+
+כל פנייה ל-DB שולפת את **כל הטבלה בפנייה אחת** (`prefetchAll`) ושומרת ב-in-memory cache. הcache מתרענן רק אחרי `setContent`. זה מה שמונע את הטעינה האיטית.
+
+| Key | Type | תיאור |
+|-----|------|--------|
+| `hero` | `HeroContent` | כותרות, CTA, סטטיסטיקות, רקע תמונה/וידאו |
+| `testimonials` | `Testimonial[]` | שם, תחום, טקסט, תמונה |
+| `extra_sections` | `ExtraSection[]` | סקשיינים בין נטלי למנויים |
+| `faqs` | `FaqItem[]` | שאלות ותשובות |
+| `coming_soon` | `ComingSoonItem[]` | קורסים עתידיים — מוצגים מקסימום 3, עם hover float |
+| `subscription_plans` | `SubPlan[]` | תוכניות מנוי |
+| `natalie` | `NatalieContent` | תמונה, ביו, instagram/youtube/tiktok/facebook/whatsapp |
+| `terms` | `string` | תקנון המועדון — מוצג ב-ClosingCTA, 5 שורות preview |
+| `cancellation_flow` | `CancellationFlow` | שאלות/הצעות במערכת ביטול המנוי |
+
+`HeroContent`: תומך `heroType: "image" | "video"` + `heroVideoUrl`.
+
+---
+
+## מערכת רכישה בודדת (₪489)
+
+- **UI קיים:** כפתור "רכישת קורס" + מחיר על כל כרטיס, דף `/checkout/[slug]` מלא.
+- **Backend בהמשך:** Cardcom webhook → יצירת משתמש → RLS per-course → מייל Resend.
+- **DB עתידי:** טבלת `course_purchases` — `user_id, course_id, purchased_at, price`.
+
+---
+
+## מערכת ביטול מנוי (Cancellation Flow)
+
+נמצאת ב-`/dashboard`. 4 שלבים:
+1. בחירת סיבה (מה ה-`reason`)
+2. הצעה מותאמת לסיבה (`offerTitle` + `offerDesc` + `offerCta`)
+3. אישור סופי
+4. אישור ביטול
+
+**עריכת התוכן:** ניהול → מנויים → טאב "מערכת ביטול".
+
+---
+
 ## אבטחה
 
-- **RLS חובה** בכל טבלה. משתמשים ללא tier מתאים לא רואים קישורי וידאו — רק טיזרים.
-- **אסור** `EXISTS (SELECT 1 FROM profiles ...)` בתוך policy על `profiles` — גורם recursion.
-- פונקציה `get_my_role() SECURITY DEFINER` — חובה להשתמש בה בכל policy של admin.
-- **אסור להרדקוד אימייל** לבדיקת admin — תמיד `role = 'admin'` בלבד.
+- **RLS חובה** בכל טבלה. משתמשים ללא tier מתאים לא רואים קישורי וידאו.
+- **אסור** `EXISTS (SELECT 1 FROM profiles ...)` בתוך policy על `profiles` — recursion.
+- פונקציה `get_my_role() SECURITY DEFINER` — בכל policy של admin.
+- **אסור להרדקוד אימייל** — תמיד `role = 'admin'` בלבד.
 
 ---
 
@@ -79,7 +121,7 @@ middleware.ts                   ← הגנת routes לפי role
 
 - **Login:** `/login` (כולל "שכחתי סיסמה" — **אין** "הירשמי")
 - **Forgot/Reset:** `/forgot-password` → מייל → `/reset-password`
-- **Signup:** מנוי דרך Cardcom webhook בלבד. `/signup` מפנה ל-`/login`.
+- **Signup:** Cardcom webhook בלבד. `/signup` מפנה ל-`/login`.
 - **Role** נקרא מ-JWT claim (`user_role`) — גיבוי: קריאת DB.
 
 ---
@@ -89,7 +131,7 @@ middleware.ts                   ← הגנת routes לפי role
 ```ts
 type VideoProvider = "youtube" | "vimeo" | "direct"
 ```
-`parseVideoUrl(url)` — חובה לחלץ ID ולזהות ספק מכל פורמט URL אוטומטית (Shorts, youtu.be, vimeo.com, URL ישיר).
+`parseVideoUrl(url)` — מחלץ ID ומזהה ספק מכל URL (Shorts, youtu.be, vimeo.com, ישיר).
 
 ---
 
@@ -97,6 +139,7 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 
 - **פלטה:** רקע `#080608` · טקסט `#FFF8F5` · אקסנט `#C4857A`
 - **RTL עברית מלאה** · **Framer Motion — חובה לשמור** על כל האנימציות
+- `whileHover` של Framer Motion — **לא** `animate` עם state. `animate` + `whileInView` מתנגשים.
 
 ---
 
@@ -104,32 +147,15 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 
 1. `courses.id` הוא **text** (לא uuid) — שינוי דרש: drop policies → drop FK → alter type → recreate.
 2. RLS recursion על `profiles` — נפתר עם `get_my_role() SECURITY DEFINER`.
-3. שגיאות Supabase הן plain objects — להשתמש ב-`errMsg(e)`, לא `e instanceof Error`.
-4. יצירת `profiles` אוטומטית בעת Signup עדיין לא יציבה — **בעיה פתוחה**.
-
----
-
-## Admin CMS — תוכן דף הבית (`site_content` ב-Supabase)
-
-טבלת `site_content` שומרת JSON לפי key:
-
-| Key | תוכן |
-|-----|------|
-| `hero` | `HeroContent` — כותרות, CTA, סטטיסטיקות, רקע (תמונה/וידאו) |
-| `testimonials` | `Testimonial[]` — שם, תחום, טקסט, תמונה |
-| `extra_sections` | `ExtraSection[]` — סקשיינים חופשיים בין נטלי למנויים |
-| `faqs` | `FaqItem[]` — שאלות ותשובות |
-| `coming_soon` | `ComingSoonItem[]` — קורסים עתידיים עם תמונה, כותרת, קטגוריה, טיזר, תאריך |
-| `subscription_plans` | `SubPlan[]` — תוכניות מנוי |
-| `natalie` | `NatalieContent` — עמוד "אודות נטלי" |
-
-`HeroContent` תומך ב-`heroType: "image" | "video"` + `heroVideoUrl` (וידאו רץ autoplay, muted, loop).
+3. שגיאות Supabase הן plain objects — `errMsg(e)`, לא `e instanceof Error`.
+4. `animate` + `whileInView` מתנגשים ב-Framer Motion — תמיד `whileHover` לאנימציות hover.
+5. יצירת `profiles` אוטומטית בעת Signup עדיין לא יציבה — **בעיה פתוחה**.
 
 ---
 
 ## סטטוס פתוח
 
-- [ ] תיקון מנגנון יצירת Profile אוטומטי (Cardcom webhook)
-- [ ] הוספת Zod לולידציית נתונים מ-DB
-- [ ] מעבר מלא ל-SSR בדפים ציבוריים
-- [ ] בניית מערכת תשלום + Stripe webhooks
+- [ ] Cardcom webhook — יצירת משתמש + רישום רכישה + Resend מייל
+- [ ] RLS per-course (`course_purchases` table)
+- [ ] Zod לולידציה
+- [ ] SSR לדפים ציבוריים

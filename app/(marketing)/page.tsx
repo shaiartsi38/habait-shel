@@ -59,7 +59,7 @@ export default function HomePage() {
       <ExtraContentSections sections={extraSections} />
       <SubscriptionSection plans={plans} terms={terms} />
       <FaqSection faqs={faqs} />
-      <ClosingCTA />
+      <ClosingCTA terms={terms} />
     </div>
   );
 }
@@ -464,22 +464,19 @@ function ComingSoonSection({ items }: { items: ComingSoonItem[] }) {
 }
 
 function ComingSoonCard({ item, index }: { item: ComingSoonItem; index: number }) {
-  const [hovered, setHovered] = useState(false);
   return (
     <motion.div
-      className="relative rounded-xl overflow-hidden cursor-default flex-shrink-0"
+      className="relative rounded-xl overflow-hidden cursor-default flex-shrink-0 group"
       style={{ aspectRatio: "2/3", width: "calc((100% - 2rem) / 3)", maxWidth: 200, background: "#140e12" }}
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
+      whileHover={{ y: -6, scale: 1.03, transition: { type: "spring", stiffness: 380, damping: 28 } }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: index * 0.1 }}
-      animate={{ y: hovered ? -6 : 0, scale: hovered ? 1.025 : 1 }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-all duration-500"
-        style={{ opacity: hovered ? 0.7 : 0.5, filter: hovered ? "brightness(0.9)" : "brightness(0.7)" }} />
+      <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-all duration-500 group-hover:opacity-70 group-hover:brightness-90"
+        style={{ opacity: 0.5 }} />
       <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,6,8,0.98) 0%, rgba(8,6,8,0.4) 55%, transparent 100%)" }} />
 
       {/* Badge */}
@@ -488,14 +485,9 @@ function ComingSoonCard({ item, index }: { item: ComingSoonItem; index: number }
         בקרוב
       </div>
 
-      {/* Tooltip fade-in on hover */}
-      <motion.div
-        className="absolute inset-0 flex items-center justify-center px-3"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: hovered ? 1 : 0 }}
-        transition={{ duration: 0.2 }}
-      >
-        <div className="text-center px-2 py-2 rounded-xl" style={{ background: "rgba(8,6,8,0.72)", backdropFilter: "blur(8px)" }}>
+      {/* Tooltip — fade in on hover via CSS group */}
+      <div className="absolute inset-0 flex items-center justify-center px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="text-center px-3 py-2.5 rounded-xl" style={{ background: "rgba(8,6,8,0.82)", backdropFilter: "blur(10px)", border: "1px solid rgba(196,133,122,0.12)" }}>
           <p className="text-[0.62rem] font-black leading-snug" style={{ color: "#FFF8F5" }}>{item.title}</p>
           {item.category && (
             <p className="text-[0.48rem] mt-1" style={{ color: "#C4857A" }}>{item.category}</p>
@@ -504,17 +496,13 @@ function ComingSoonCard({ item, index }: { item: ComingSoonItem; index: number }
             <p className="text-[0.44rem] mt-1" style={{ color: "rgba(255,248,245,0.35)" }}>{item.releaseDate}</p>
           )}
         </div>
-      </motion.div>
+      </div>
 
-      {/* Info at bottom — visible when not hovered */}
-      <motion.div
-        className="absolute inset-x-0 bottom-0 p-2.5 text-right"
-        animate={{ opacity: hovered ? 0 : 1 }}
-        transition={{ duration: 0.15 }}
-      >
+      {/* Info at bottom — hides on hover */}
+      <div className="absolute inset-x-0 bottom-0 p-2.5 text-right group-hover:opacity-0 transition-opacity duration-150">
         <p className="text-[0.56rem] font-bold leading-snug" style={{ color: "rgba(255,248,245,0.45)" }}>{item.title}</p>
         <p className="text-[0.42rem] mt-0.5" style={{ color: "rgba(255,248,245,0.2)" }}>{item.subtitle}</p>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
@@ -725,7 +713,6 @@ function SubscriptionSection({ plans, terms }: { plans: SubPlan[]; terms: string
         <h2 className="text-2xl md:text-4xl font-black mb-3" style={{ color: "#FFF8F5" }}>
           בחרי את התוכנית שלך
         </h2>
-        <TermsSection terms={terms} />
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-3xl mx-auto">
@@ -939,7 +926,7 @@ function TermsSection({ terms }: { terms: string }) {
 }
 
 // ─── Closing CTA ──────────────────────────────────────────────────
-function ClosingCTA() {
+function ClosingCTA({ terms }: { terms: string }) {
   return (
     <section className="py-24 px-4 sidebar-safe md:px-10 flex flex-col items-center text-center">
       <motion.div
@@ -979,9 +966,7 @@ function ClosingCTA() {
           אני נכנסת ➔
         </motion.button>
 
-        <p className="text-[0.62rem]" style={{ color: "rgba(255,248,245,0.2)" }}>
-          ניסיון 7 ימים חינם · ביטול בכל עת
-        </p>
+        <TermsSection terms={terms} />
       </motion.div>
     </section>
   );
