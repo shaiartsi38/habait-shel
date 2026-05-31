@@ -473,7 +473,7 @@ function ComingSoonSection({ items }: { items: ComingSoonItem[] }) {
               src={item.image}
               alt={item.title}
               className="w-full h-full object-cover"
-              style={{ opacity: 0.22 }}
+              style={{ opacity: 0.55 }}
             />
             <div
               className="absolute inset-0"

@@ -48,19 +48,22 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
         {/* Toggle button */}
         <button
           onClick={() => setOpen((v) => !v)}
-          className="hidden md:flex fixed top-5 right-5 z-[60] w-9 h-9 items-center justify-center rounded-xl transition-all hover:opacity-80"
+          className="hidden md:flex fixed top-5 right-5 z-[60] items-center gap-2 px-3 h-10 rounded-xl transition-all hover:opacity-90 active:scale-95"
           style={{
-            background: "rgba(10,10,10,0.7)",
+            background: open ? "rgba(196,133,122,0.12)" : "linear-gradient(135deg,rgba(196,133,122,0.22),rgba(196,133,122,0.12))",
             backdropFilter: "blur(16px)",
-            border: "1px solid rgba(196,133,122,0.18)",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.45)",
+            border: "1px solid rgba(196,133,122,0.35)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.45), 0 0 0 1px rgba(196,133,122,0.08) inset",
           }}
           aria-label={open ? "סגור תפריט" : "פתח תפריט"}
         >
           {open
-            ? <PanelRightClose size={15} style={{ color: "#C4857A" }} />
-            : <PanelRightOpen  size={15} style={{ color: "#C4857A" }} />
+            ? <PanelRightClose size={16} style={{ color: "#C4857A" }} />
+            : <PanelRightOpen  size={16} style={{ color: "#C4857A" }} />
           }
+          <span className="text-[0.68rem] font-semibold" style={{ color: "#C4857A" }}>
+            {open ? "סגור" : "תפריט"}
+          </span>
         </button>
 
         {/* Sidebar panel */}
@@ -89,7 +92,7 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
                 {/* Brand */}
                 <div className="px-5 pt-6 pb-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <p className="text-[0.56rem] tracking-[0.34em] uppercase mb-1.5 font-semibold" style={{ color: "#C4857A" }}>
-                    by Natalie Artzi
+                    Natalie Artsi
                   </p>
                   <p className="text-[0.9rem] font-bold leading-tight" style={{ color: "#FFF8F5" }}>
                     הבית של המאפרים

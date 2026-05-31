@@ -42,7 +42,7 @@ export default function SplashScreen() {
                 className="text-[0.65rem] tracking-[0.35em] uppercase"
                 style={{ color: "#C4857A" }}
               >
-                by Natalie Artzi
+                Natalie Artsi
               </span>
 
               {/* שם */}

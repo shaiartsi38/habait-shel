@@ -157,12 +157,17 @@ export const DEFAULT_FAQS: FaqItem[] = [
 
 // ─── DB Operations ────────────────────────────────────────────────
 
+// in-memory cache — נמחק בעת שמירה, מונע פניות חוזרות לאותו session
+const _cache = new Map<string, unknown>();
+
 async function getContent<T>(key: string, fallback: T): Promise<T> {
   if (!hasSupabase()) return fallback;
+  if (_cache.has(key)) return _cache.get(key) as T;
   try {
     const sb = createClient();
     const { data } = await sb.from("site_content").select("value").eq("key", key).single();
     if (!data) return fallback;
+    _cache.set(key, data.value);
     return data.value as T;
   } catch {
     return fallback;
@@ -175,6 +180,7 @@ async function setContent(key: string, value: unknown): Promise<void> {
     .from("site_content")
     .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw error;
+  _cache.set(key, value); // עדכון cache מיידי לאחר שמירה
 }
 
 export const dbGetHero          = () => getContent<HeroContent>("hero", DEFAULT_HERO);

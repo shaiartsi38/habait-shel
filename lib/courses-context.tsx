@@ -4,6 +4,8 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { COURSES, type CourseData } from "./courses-data";
 import { dbFetchCourses } from "./supabase/courses-db";
 
+const STORAGE_KEY = "hbm-courses-v3";
+
 interface CoursesContextValue {
   courses: CourseData[];
   setCourses: (courses: CourseData[]) => void;
@@ -13,18 +15,36 @@ interface CoursesContextValue {
 const CoursesContext = createContext<CoursesContextValue | null>(null);
 
 export function CoursesProvider({ children }: { children: ReactNode }) {
-  const [courses, setCoursesState] = useState<CourseData[]>(COURSES);
+  const [courses, setCoursesState] = useState<CourseData[]>(() => {
+    // טעינה מיידית מ-localStorage — ללא השהייה
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as CourseData[];
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch { /* ignore */ }
+    return COURSES;
+  });
 
-  // על כל טעינה — שולפים ישירות מ-Supabase כמקור אמת
   useEffect(() => {
+    // עדכון ברקע מ-Supabase (stale-while-revalidate)
     dbFetchCourses()
-      .then((live) => { if (live.length > 0) setCoursesState(live); })
-      .catch(() => {}); // fallback: נשארים עם COURSES הסטטי
+      .then((live) => {
+        if (live.length > 0) {
+          setCoursesState(live);
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(live)); } catch { /* ignore */ }
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const setCourses = (next: CourseData[]) => setCoursesState(next);
+  const setCourses = (next: CourseData[]) => {
+    setCoursesState(next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  };
 
-  const resetToDefaults = () => setCoursesState(COURSES);
+  const resetToDefaults = () => setCourses(COURSES);
 
   return (
     <CoursesContext.Provider value={{ courses, setCourses, resetToDefaults }}>

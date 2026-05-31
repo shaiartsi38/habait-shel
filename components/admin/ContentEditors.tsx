@@ -528,7 +528,7 @@ function ComingSoonItemEditor({
   return (
     <div className="rounded-xl p-4 space-y-3" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
       <div className="flex items-center justify-between">
-        <span className="text-[0.7rem] font-bold" style={{ color: "#C4857A" }}>פריט {index + 1}</span>
+        <span className="text-base font-black" style={{ color: "#C4857A" }}>פריט {index + 1}</span>
         <button onClick={onRemove} className="p-1 rounded-lg hover:bg-white/5">
           <Trash2 size={12} style={{ color: "#5A3830" }} />
         </button>

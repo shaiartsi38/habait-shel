@@ -51,12 +51,22 @@ export default function NataliePage() {
       {/* Body */}
       <div className="px-4 md:px-12 py-12 max-w-4xl">
 
-        {/* Stats */}
+        {/* Bio */}
+        <motion.div className="mb-12" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <h2 className="text-base font-black mb-4" style={{ color: "#FFF8F5" }}>על נטלי</h2>
+          <div className="space-y-4 text-sm leading-relaxed" style={{ color: "#5A3830" }}>
+            {content.bio.map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Stats — מתחת לביו, לא מסתיר את התמונה */}
         <motion.div
           className="grid grid-cols-3 gap-4 mb-12"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.18 }}
         >
           {content.achievements.map(({ value, label }, i) => {
             const Icon = ACHIEVEMENT_ICONS[i % ACHIEVEMENT_ICONS.length];
@@ -68,16 +78,6 @@ export default function NataliePage() {
               </div>
             );
           })}
-        </motion.div>
-
-        {/* Bio */}
-        <motion.div className="mb-12" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
-          <h2 className="text-base font-black mb-4" style={{ color: "#FFF8F5" }}>על נטלי</h2>
-          <div className="space-y-4 text-sm leading-relaxed" style={{ color: "#5A3830" }}>
-            {content.bio.map((para, i) => (
-              <p key={i}>{para}</p>
-            ))}
-          </div>
         </motion.div>
 
         {/* Timeline */}
