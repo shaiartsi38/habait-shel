@@ -54,6 +54,21 @@ export type ExtraSection = {
   visible: boolean;
 };
 
+export type CancellationOffer = {
+  id: string;
+  reason: string;
+  offerTitle: string;
+  offerDesc: string;
+  offerCta: string;
+};
+
+export type CancellationFlow = {
+  mainQuestion: string;
+  step2Title: string;
+  confirmText: string;
+  offers: CancellationOffer[];
+};
+
 export type SubPlan = {
   id: string;
   name: string;
@@ -144,6 +159,18 @@ export const DEFAULT_NATALIE: NatalieContent = {
   ],
 };
 
+export const DEFAULT_CANCELLATION_FLOW: CancellationFlow = {
+  mainQuestion: "למה את עוזבת?",
+  step2Title: "לפני שאת הולכת, יש לנו הצעה מיוחדת עבורך",
+  confirmText: "אני בטוחה שאני רוצה לבטל",
+  offers: [
+    { id: "price", reason: "יקר לי", offerTitle: "50% הנחה ל-3 חודשים", offerDesc: "נמשיך ביחד — בחצי מחיר. ההנחה תחול כבר מחיוב הבא.", offerCta: "אני רוצה את ההנחה!" },
+    { id: "time", reason: "אין לי זמן כרגע", offerTitle: "הקפאת מנוי ל-60 יום", offerDesc: "קפאי את המנוי שלך — ללא חיוב, ללא אובדן תוכן. נחכה לך.", offerCta: "הקפאי את המנוי שלי" },
+    { id: "content", reason: "לא מספיק תוכן", offerTitle: "תוכן חדש כל שבוע", offerDesc: "כל שבוע עולה קורס חדש. בחודש הקרוב: מסקרה מתקדמת, עור זוהר לקיץ ועוד.", offerCta: "אשאר לראות מה מגיע" },
+    { id: "other", reason: "סיבה אחרת", offerTitle: "חודש מתנה", offerDesc: "לא רוצות לאבד אותך. קבלי חודש נוסף ללא חיוב — במתנה.", offerCta: "אקבל את החודש המתנה" },
+  ],
+};
+
 export const DEFAULT_TERMS = `תקנון המועדון — הבית של המאפרים
 
 1. כללי — שימוש בפלטפורמה מהווה הסכמה לתנאים אלו.
@@ -217,7 +244,8 @@ export const dbGetPlans         = () => getContent<SubPlan[]>("subscription_plan
 export const dbGetNatalie       = () => getContent<NatalieContent>("natalie", DEFAULT_NATALIE);
 export const dbGetFaqs          = () => getContent<FaqItem[]>("faqs", DEFAULT_FAQS);
 export const dbGetComingSoon    = () => getContent<ComingSoonItem[]>("coming_soon", DEFAULT_COMING_SOON);
-export const dbGetTerms         = () => getContent<string>("terms", DEFAULT_TERMS);
+export const dbGetTerms            = () => getContent<string>("terms", DEFAULT_TERMS);
+export const dbGetCancellationFlow = () => getContent<CancellationFlow>("cancellation_flow", DEFAULT_CANCELLATION_FLOW);
 
 export const dbSetHero          = (v: HeroContent)       => setContent("hero", v);
 export const dbSetTestimonials  = (v: Testimonial[])     => setContent("testimonials", v);
@@ -226,4 +254,5 @@ export const dbSetPlans         = (v: SubPlan[])          => setContent("subscri
 export const dbSetNatalie       = (v: NatalieContent)    => setContent("natalie", v);
 export const dbSetFaqs          = (v: FaqItem[])         => setContent("faqs", v);
 export const dbSetComingSoon    = (v: ComingSoonItem[])  => setContent("coming_soon", v);
-export const dbSetTerms         = (v: string)            => setContent("terms", v);
+export const dbSetTerms            = (v: string)             => setContent("terms", v);
+export const dbSetCancellationFlow = (v: CancellationFlow)   => setContent("cancellation_flow", v);

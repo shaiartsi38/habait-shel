@@ -57,9 +57,8 @@ export default function HomePage() {
       <TestimonialsSection testimonials={testimonials} />
       <NatalieSection />
       <ExtraContentSections sections={extraSections} />
-      <SubscriptionSection plans={plans} />
+      <SubscriptionSection plans={plans} terms={terms} />
       <FaqSection faqs={faqs} />
-      <TermsSection terms={terms} />
       <ClosingCTA />
     </div>
   );
@@ -439,9 +438,9 @@ function BreathingCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Coming Soon — narrow portrait cards (Netflix style) ──────────
+// ─── Coming Soon — max 3 cards, float on hover ────────────────────
 function ComingSoonSection({ items }: { items: ComingSoonItem[] }) {
-  const SOON = items.length > 0 ? items : [] as ComingSoonItem[];
+  const SOON = (items.length > 0 ? items : []).slice(0, 3);
 
   return (
     <div className="mt-14 text-right">
@@ -455,60 +454,68 @@ function ComingSoonSection({ items }: { items: ComingSoonItem[] }) {
         <div className="h-px mb-6" style={{ background: "linear-gradient(to left, transparent, rgba(196,133,122,0.2), transparent)" }} />
       </motion.div>
 
-      {/* Narrow portrait grid — max-w per card, flex layout */}
-      <div className="flex gap-3 flex-wrap justify-start">
+      <div className="flex gap-4 justify-start">
         {SOON.map((item, i) => (
-          <motion.div
-            key={item.id}
-            className="relative rounded-xl overflow-hidden cursor-not-allowed flex-shrink-0"
-            style={{
-              aspectRatio: "2/3",
-              width: "calc((100% - 2.25rem) / 3)",
-              maxWidth: 180,
-              background: "#140e12",
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.15 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: i * 0.07 }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={item.image}
-              alt={item.title}
-              className="w-full h-full object-cover"
-              style={{ opacity: 0.55 }}
-            />
-            <div
-              className="absolute inset-0"
-              style={{ background: "linear-gradient(to top, rgba(8,6,8,0.98) 0%, rgba(8,6,8,0.5) 55%, rgba(8,6,8,0.18) 100%)" }}
-            />
-            {/* Lock */}
-            <div
-              className="absolute top-2 left-2 w-5 h-5 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(196,133,122,0.12)", border: "1px solid rgba(196,133,122,0.18)" }}
-            >
-              <Lock size={8} style={{ color: "#C4857A" }} />
-            </div>
-            {/* Badge */}
-            <div
-              className="absolute top-2 right-2 px-1.5 py-[2px] rounded-full text-[0.4rem] font-black uppercase tracking-wider"
-              style={{ border: "1px solid rgba(196,133,122,0.2)", color: "rgba(196,133,122,0.6)", background: "rgba(196,133,122,0.05)" }}
-            >
-              בקרוב
-            </div>
-            {/* Info */}
-            <div className="absolute inset-x-0 bottom-0 p-2.5 text-right">
-              <p className="text-[0.58rem] font-bold leading-snug mb-1" style={{ color: "rgba(255,248,245,0.48)" }}>
-                {item.title}
-              </p>
-              <div className="w-4 h-[1px] mb-1 mr-auto ml-0 rounded-full" style={{ background: "rgba(196,133,122,0.28)" }} />
-              <p className="text-[0.44rem]" style={{ color: "rgba(255,248,245,0.22)" }}>{item.subtitle}</p>
-            </div>
-          </motion.div>
+          <ComingSoonCard key={item.id} item={item} index={i} />
         ))}
       </div>
     </div>
+  );
+}
+
+function ComingSoonCard({ item, index }: { item: ComingSoonItem; index: number }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <motion.div
+      className="relative rounded-xl overflow-hidden cursor-default flex-shrink-0"
+      style={{ aspectRatio: "2/3", width: "calc((100% - 2rem) / 3)", maxWidth: 200, background: "#140e12" }}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: index * 0.1 }}
+      animate={{ y: hovered ? -6 : 0, scale: hovered ? 1.025 : 1 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-all duration-500"
+        style={{ opacity: hovered ? 0.7 : 0.5, filter: hovered ? "brightness(0.9)" : "brightness(0.7)" }} />
+      <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,6,8,0.98) 0%, rgba(8,6,8,0.4) 55%, transparent 100%)" }} />
+
+      {/* Badge */}
+      <div className="absolute top-2 right-2 px-1.5 py-[2px] rounded-full text-[0.4rem] font-black uppercase tracking-wider"
+        style={{ border: "1px solid rgba(196,133,122,0.2)", color: "rgba(196,133,122,0.6)", background: "rgba(196,133,122,0.05)" }}>
+        בקרוב
+      </div>
+
+      {/* Tooltip fade-in on hover */}
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center px-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: hovered ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <div className="text-center px-2 py-2 rounded-xl" style={{ background: "rgba(8,6,8,0.72)", backdropFilter: "blur(8px)" }}>
+          <p className="text-[0.62rem] font-black leading-snug" style={{ color: "#FFF8F5" }}>{item.title}</p>
+          {item.category && (
+            <p className="text-[0.48rem] mt-1" style={{ color: "#C4857A" }}>{item.category}</p>
+          )}
+          {item.releaseDate && (
+            <p className="text-[0.44rem] mt-1" style={{ color: "rgba(255,248,245,0.35)" }}>{item.releaseDate}</p>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Info at bottom — visible when not hovered */}
+      <motion.div
+        className="absolute inset-x-0 bottom-0 p-2.5 text-right"
+        animate={{ opacity: hovered ? 0 : 1 }}
+        transition={{ duration: 0.15 }}
+      >
+        <p className="text-[0.56rem] font-bold leading-snug" style={{ color: "rgba(255,248,245,0.45)" }}>{item.title}</p>
+        <p className="text-[0.42rem] mt-0.5" style={{ color: "rgba(255,248,245,0.2)" }}>{item.subtitle}</p>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -704,7 +711,7 @@ function ExtraContentSections({ sections }: { sections: ExtraSection[] }) {
 }
 
 // ─── Subscription Section ─────────────────────────────────────────
-function SubscriptionSection({ plans }: { plans: SubPlan[] }) {
+function SubscriptionSection({ plans, terms }: { plans: SubPlan[]; terms: string }) {
   return (
     <section
       id="subscription"
@@ -718,9 +725,7 @@ function SubscriptionSection({ plans }: { plans: SubPlan[] }) {
         <h2 className="text-2xl md:text-4xl font-black mb-3" style={{ color: "#FFF8F5" }}>
           בחרי את התוכנית שלך
         </h2>
-        <p className="text-sm" style={{ color: "rgba(255,248,245,0.3)" }}>
-          ניסיון 7 ימים חינם · ביטול בכל עת · ללא התחייבות
-        </p>
+        <TermsSection terms={terms} />
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-3xl mx-auto">
@@ -902,30 +907,34 @@ function FaqItem({
 
 // ─── Terms Section ────────────────────────────────────────────────
 function TermsSection({ terms }: { terms: string }) {
-  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const lines = terms.split("\n").filter((l) => l.trim());
+  const preview = lines.slice(0, 5).join("\n");
+  const hasMore = lines.length > 5;
+
   return (
-    <section className="px-4 sidebar-safe md:px-10 pb-10 text-right">
-      <div className="max-w-3xl mx-auto">
-        <div className="h-px mb-6" style={{ background: "linear-gradient(to left, transparent, rgba(196,133,122,0.1), transparent)" }} />
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="text-[0.62rem] tracking-wider transition-opacity hover:opacity-70"
-          style={{ color: "rgba(255,248,245,0.2)" }}
-        >
-          תקנון המועדון {open ? "▲" : "▼"}
-        </button>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-5 rounded-2xl text-[0.68rem] leading-relaxed whitespace-pre-wrap"
-            style={{ background: "#140e12", color: "rgba(255,248,245,0.3)", border: "1px solid rgba(196,133,122,0.06)" }}
+    <div className="mt-6 text-center">
+      <div
+        className="inline-block text-right mx-auto px-4 py-4 rounded-2xl max-w-xl w-full"
+        style={{ background: "rgba(196,133,122,0.04)", border: "1px solid rgba(196,133,122,0.08)" }}
+      >
+        <p className="text-[0.55rem] tracking-[0.2em] uppercase mb-3 font-semibold text-center" style={{ color: "rgba(196,133,122,0.5)" }}>
+          תקנון המועדון
+        </p>
+        <p className="text-[0.64rem] leading-relaxed whitespace-pre-wrap" style={{ color: "rgba(255,248,245,0.28)" }}>
+          {expanded ? terms : preview}
+        </p>
+        {hasMore && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-2 text-[0.6rem] font-semibold transition-opacity hover:opacity-70 block w-full text-center"
+            style={{ color: "rgba(196,133,122,0.55)" }}
           >
-            {terms}
-          </motion.div>
+            {expanded ? "הסתר ▲" : "לתקנון המלא ▼"}
+          </button>
         )}
       </div>
-    </section>
+    </div>
   );
 }
 

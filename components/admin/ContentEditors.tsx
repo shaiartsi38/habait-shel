@@ -4,9 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, Loader2, Check, X, AlertCircle, Upload, Image as ImageIcon, Video } from "lucide-react";
 import {
   type HeroContent, type Testimonial, type ExtraSection, type SubPlan, type NatalieContent, type FaqItem, type ComingSoonItem,
+  type CancellationFlow, type CancellationOffer,
   DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_EXTRA_SECTIONS, DEFAULT_PLANS, DEFAULT_NATALIE, DEFAULT_FAQS, DEFAULT_COMING_SOON, DEFAULT_TERMS,
-  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs, dbGetComingSoon, dbGetTerms,
-  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs, dbSetComingSoon, dbSetTerms,
+  DEFAULT_CANCELLATION_FLOW,
+  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs, dbGetComingSoon, dbGetTerms, dbGetCancellationFlow,
+  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs, dbSetComingSoon, dbSetTerms, dbSetCancellationFlow,
 } from "@/lib/supabase/content-db";
 import { dbUploadImage, dbUploadVideo } from "@/lib/supabase/courses-db";
 import { CATEGORIES } from "@/lib/courses-data";
@@ -628,14 +630,18 @@ function ComingSoonItemEditor({
 // ─── Subscription Editor ──────────────────────────────────────────
 
 export function SubscriptionEditor() {
-  const [plans, setPlans]   = useState<SubPlan[]>(DEFAULT_PLANS);
+  const [tab, setTab]         = useState<"plans" | "cancel">("plans");
+  const [plans, setPlans]     = useState<SubPlan[]>(DEFAULT_PLANS);
+  const [cancelFlow, setCancelFlow] = useState<CancellationFlow>(DEFAULT_CANCELLATION_FLOW);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
   useEffect(() => {
-    dbGetPlans().then(setPlans).finally(() => setLoading(false));
+    Promise.all([dbGetPlans(), dbGetCancellationFlow()])
+      .then(([p, c]) => { setPlans(p); setCancelFlow(c); })
+      .finally(() => setLoading(false));
   }, []);
 
   const clearFeedback = () => { setSuccess(false); setError(null); };
@@ -660,10 +666,17 @@ export function SubscriptionEditor() {
 
   const handleSave = async () => {
     setSaving(true); clearFeedback();
-    try { await dbSetPlans(plans); setSuccess(true); }
+    try {
+      if (tab === "plans") await dbSetPlans(plans);
+      else await dbSetCancellationFlow(cancelFlow);
+      setSuccess(true);
+    }
     catch (e) { setError(e instanceof Error ? e.message : "שגיאה בשמירה"); }
     finally { setSaving(false); }
   };
+
+  const updateOffer = (i: number, key: keyof CancellationOffer, val: string) =>
+    setCancelFlow((f) => ({ ...f, offers: f.offers.map((o, j) => j === i ? { ...o, [key]: val } : o) }));
 
   if (loading) return <LoadingScreen />;
 
@@ -671,12 +684,19 @@ export function SubscriptionEditor() {
     <div>
       <div className="mb-6">
         <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>מנויים</h2>
-        <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>עריכת תוכניות המנויים</p>
+        <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>עריכת תוכניות המנויים ומערכת ביטול</p>
       </div>
 
       <Feedback success={success} error={error} onClose={clearFeedback} />
 
-      <div className="space-y-6">
+      <TabBar
+        tabs={[{ id: "plans", label: "תוכניות מנוי" }, { id: "cancel", label: "מערכת ביטול" }]}
+        active={tab}
+        onChange={(id) => { setTab(id as typeof tab); clearFeedback(); }}
+      />
+
+      {/* ── Plans tab ── */}
+      {tab === "plans" && <div className="space-y-6">
         {plans.map((plan, i) => (
           <div
             key={plan.id}
@@ -737,7 +757,63 @@ export function SubscriptionEditor() {
             </div>
           </div>
         ))}
-      </div>
+      </div>}
+
+      {/* ── Cancellation flow tab ── */}
+      {tab === "cancel" && (
+        <div className="space-y-6">
+          <div className="rounded-xl p-5 space-y-4" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+            <SectionHeader title="טקסטים כלליים" />
+            <div>
+              <FieldLabel>שאלה ראשית (שלב 1)</FieldLabel>
+              <Input value={cancelFlow.mainQuestion} onChange={(v) => setCancelFlow((f) => ({ ...f, mainQuestion: v }))} placeholder="למה את עוזבת?" />
+            </div>
+            <div>
+              <FieldLabel>כותרת ההצעה (שלב 2)</FieldLabel>
+              <Input value={cancelFlow.step2Title} onChange={(v) => setCancelFlow((f) => ({ ...f, step2Title: v }))} placeholder="לפני שאת הולכת..." />
+            </div>
+            <div>
+              <FieldLabel>כפתור אישור ביטול סופי</FieldLabel>
+              <Input value={cancelFlow.confirmText} onChange={(v) => setCancelFlow((f) => ({ ...f, confirmText: v }))} placeholder="אני בטוחה שאני רוצה לבטל" />
+            </div>
+          </div>
+
+          <SectionHeader title="סיבות וההצעות שלהן" />
+          {cancelFlow.offers.map((offer, i) => (
+            <div key={offer.id} className="rounded-xl p-5 space-y-3" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[0.7rem] font-black" style={{ color: "#C4857A" }}>סיבה {i + 1}</span>
+                <button onClick={() => setCancelFlow((f) => ({ ...f, offers: f.offers.filter((_, j) => j !== i) }))} className="p-1 rounded-lg hover:bg-white/5">
+                  <Trash2 size={12} style={{ color: "#5A3830" }} />
+                </button>
+              </div>
+              <div>
+                <FieldLabel>סיבת הביטול (מה המשתמשת בוחרת)</FieldLabel>
+                <Input value={offer.reason} onChange={(v) => updateOffer(i, "reason", v)} placeholder="יקר לי" />
+              </div>
+              <div>
+                <FieldLabel>כותרת ההצעה</FieldLabel>
+                <Input value={offer.offerTitle} onChange={(v) => updateOffer(i, "offerTitle", v)} placeholder="50% הנחה ל-3 חודשים" />
+              </div>
+              <div>
+                <FieldLabel>תיאור ההצעה</FieldLabel>
+                <Textarea value={offer.offerDesc} onChange={(v) => updateOffer(i, "offerDesc", v)} rows={2} placeholder="פרטי ההצעה..." />
+              </div>
+              <div>
+                <FieldLabel>טקסט כפתור קבלת ההצעה</FieldLabel>
+                <Input value={offer.offerCta} onChange={(v) => updateOffer(i, "offerCta", v)} placeholder="אני רוצה את ההנחה!" />
+              </div>
+            </div>
+          ))}
+          <button
+            onClick={() => setCancelFlow((f) => ({ ...f, offers: [...f.offers, { id: Math.random().toString(36).slice(2), reason: "", offerTitle: "", offerDesc: "", offerCta: "" }] }))}
+            className="w-full py-2.5 rounded-xl text-[0.75rem] font-semibold flex items-center justify-center gap-2 hover:opacity-70 transition-opacity"
+            style={{ border: "1px dashed rgba(196,133,122,0.25)", color: "#C4857A", background: "rgba(196,133,122,0.05)" }}
+          >
+            <Plus size={13} /> הוסף סיבה
+          </button>
+        </div>
+      )}
 
       <SaveBar onSave={handleSave} saving={saving} />
     </div>
