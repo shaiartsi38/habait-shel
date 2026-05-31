@@ -3,7 +3,10 @@
 import { useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ShoppingBag } from "lucide-react";
 import type { CourseData } from "@/lib/courses-data";
+
+const COURSE_PRICE = 489;
 
 const TIER_LABEL: Record<string, string> = {
   basic: "Basic",
@@ -49,7 +52,8 @@ export function CourseCard({ course }: CourseCardProps) {
   }, []);
 
   return (
-    <Link href={`/courses/${course.slug}`} className="block">
+    <div className="flex flex-col">
+      <Link href={`/courses/${course.slug}`} className="block">
       <div
         className="relative rounded-xl overflow-hidden cursor-pointer group select-none"
         style={{ aspectRatio: "3/4", background: "#140e12" }}
@@ -152,6 +156,26 @@ export function CourseCard({ course }: CourseCardProps) {
           </p>
         </div>
       </div>
-    </Link>
+      </Link>
+
+      {/* Purchase row */}
+      <div className="flex items-center justify-between mt-2 px-0.5">
+        <span className="text-[0.72rem] font-black" style={{ color: "#FFF8F5" }}>
+          ₪{COURSE_PRICE}
+        </span>
+        <Link
+          href={`/checkout/${course.slug}`}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-bold transition-all hover:opacity-90 active:scale-95"
+          style={{
+            background: "linear-gradient(135deg,#C4857A,#D4998E)",
+            color: "#080608",
+            boxShadow: "0 2px 10px rgba(196,133,122,0.35)",
+          }}
+        >
+          <ShoppingBag size={10} />
+          רכישת קורס
+        </Link>
+      </div>
+    </div>
   );
 }
