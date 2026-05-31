@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Instagram, Youtube, Award, BookOpen, Users } from "lucide-react";
+import { Instagram, Youtube, Award, BookOpen, Users, MessageCircle, Facebook } from "lucide-react";
 import Link from "next/link";
 import { type NatalieContent, DEFAULT_NATALIE, dbGetNatalie } from "@/lib/supabase/content-db";
 
@@ -22,7 +22,7 @@ export default function NataliePage() {
       <div className="relative overflow-hidden" style={{ minHeight: "75vh" }}>
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={content.photo} alt="נטלי ארצי" className="w-full h-full object-cover object-top" style={{ filter: "brightness(0.65)" }} />
+          <img src={content.photo} alt="נטלי ארצי" className="w-full h-full object-cover" style={{ filter: "brightness(0.65)", objectPosition: "center 20%" }} />
         </div>
         {/* גרדיאנט רק בתחתית — לא מכסה את הפנים */}
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.75) 22%, rgba(8,6,8,0.1) 55%, transparent 100%)" }} />
@@ -115,25 +115,42 @@ export default function NataliePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <div className="flex gap-4">
-            <a
-              href={content.instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-semibold transition-colors hover:opacity-80"
-              style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
-            >
-              <Instagram size={14} /> אינסטגרם
-            </a>
-            <a
-              href={content.youtube}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-semibold transition-colors hover:opacity-80"
-              style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
-            >
-              <Youtube size={14} /> יוטיוב
-            </a>
+          <div className="flex flex-wrap gap-3">
+            {content.instagram && (
+              <a href={content.instagram} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-semibold transition-colors hover:opacity-80"
+                style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}>
+                <Instagram size={14} /> אינסטגרם
+              </a>
+            )}
+            {content.youtube && (
+              <a href={content.youtube} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-semibold transition-colors hover:opacity-80"
+                style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}>
+                <Youtube size={14} /> יוטיוב
+              </a>
+            )}
+            {content.tiktok && (
+              <a href={content.tiktok} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-semibold transition-colors hover:opacity-80"
+                style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}>
+                <span className="text-[0.7rem] font-black">TT</span> טיקטוק
+              </a>
+            )}
+            {content.facebook && (
+              <a href={content.facebook} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-semibold transition-colors hover:opacity-80"
+                style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}>
+                <Facebook size={14} /> פייסבוק
+              </a>
+            )}
+            {content.whatsapp && (
+              <a href={content.whatsapp} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-semibold transition-colors hover:opacity-80"
+                style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}>
+                <MessageCircle size={14} /> וואטסאפ
+              </a>
+            )}
           </div>
 
           <Link

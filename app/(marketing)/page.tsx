@@ -10,8 +10,8 @@ import { CourseCard } from "@/components/courses/CourseCard";
 import { CategoryFilter } from "@/components/courses/CategoryFilter";
 import {
   type HeroContent, type Testimonial, type SubPlan, type ExtraSection, type FaqItem, type ComingSoonItem,
-  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS, DEFAULT_FAQS, DEFAULT_COMING_SOON,
-  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections, dbGetFaqs, dbGetComingSoon,
+  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS, DEFAULT_FAQS, DEFAULT_COMING_SOON, DEFAULT_TERMS,
+  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections, dbGetFaqs, dbGetComingSoon, dbGetTerms,
 } from "@/lib/supabase/content-db";
 
 // ─── Assets ─────────────────────────────────────────────────────
@@ -37,6 +37,7 @@ export default function HomePage() {
   const [extraSections, setExtraSections] = useState<ExtraSection[]>(DEFAULT_EXTRA_SECTIONS);
   const [faqs, setFaqs]                   = useState<FaqItem[]>(DEFAULT_FAQS);
   const [comingSoon, setComingSoon]       = useState<ComingSoonItem[]>(DEFAULT_COMING_SOON);
+  const [terms, setTerms]               = useState<string>(DEFAULT_TERMS);
 
   useEffect(() => {
     dbGetHero().then(setHero).catch(() => {});
@@ -45,6 +46,7 @@ export default function HomePage() {
     dbGetExtraSections().then(setExtraSections).catch(() => {});
     dbGetFaqs().then(setFaqs).catch(() => {});
     dbGetComingSoon().then(setComingSoon).catch(() => {});
+    dbGetTerms().then(setTerms).catch(() => {});
   }, []);
 
   return (
@@ -57,6 +59,7 @@ export default function HomePage() {
       <ExtraContentSections sections={extraSections} />
       <SubscriptionSection plans={plans} />
       <FaqSection faqs={faqs} />
+      <TermsSection terms={terms} />
       <ClosingCTA />
     </div>
   );
@@ -125,8 +128,9 @@ function HeroSection({ hero }: { hero: HeroContent }) {
         </motion.div>
       )}
 
-      {/* Overlay #080608 @ 0.75 */}
-      <div className="absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.75)" }} />
+      {/* Overlay — קל יותר במובייל */}
+      <div className="md:hidden absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.42)" }} />
+      <div className="hidden md:block absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.72)" }} />
       {/* Bottom vignette */}
       <div
         className="absolute inset-0 z-[2]"
@@ -275,7 +279,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
 
       {/* Row 1 */}
       {row1.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-2">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-0 md:gap-2 mb-0 md:mb-2">
           {row1.map((course, i) => (
             <motion.div
               key={course.id}
@@ -331,7 +335,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
 
       {/* Row 2 */}
       {row2.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-2">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-0 md:gap-2 mb-0 md:mb-2">
           {row2.map((course, i) => (
             <motion.div
               key={course.id}
@@ -381,7 +385,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
 
       {/* Extra rows */}
       {rest.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-0 md:gap-2 mb-0 md:mb-8">
           {rest.map((course, i) => (
             <motion.div
               key={course.id}
@@ -893,6 +897,35 @@ function FaqItem({
         </AnimatePresence>
       </div>
     </motion.div>
+  );
+}
+
+// ─── Terms Section ────────────────────────────────────────────────
+function TermsSection({ terms }: { terms: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="px-4 sidebar-safe md:px-10 pb-10 text-right">
+      <div className="max-w-3xl mx-auto">
+        <div className="h-px mb-6" style={{ background: "linear-gradient(to left, transparent, rgba(196,133,122,0.1), transparent)" }} />
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="text-[0.62rem] tracking-wider transition-opacity hover:opacity-70"
+          style={{ color: "rgba(255,248,245,0.2)" }}
+        >
+          תקנון המועדון {open ? "▲" : "▼"}
+        </button>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 p-5 rounded-2xl text-[0.68rem] leading-relaxed whitespace-pre-wrap"
+            style={{ background: "#140e12", color: "rgba(255,248,245,0.3)", border: "1px solid rgba(196,133,122,0.06)" }}
+          >
+            {terms}
+          </motion.div>
+        )}
+      </div>
+    </section>
   );
 }
 

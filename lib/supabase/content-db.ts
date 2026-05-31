@@ -71,6 +71,9 @@ export type NatalieContent = {
   photo: string;
   instagram: string;
   youtube: string;
+  tiktok?: string;
+  facebook?: string;
+  whatsapp?: string;
   bio: string[];
   achievements: { value: string; label: string }[];
   milestones: { year: string; text: string }[];
@@ -120,6 +123,9 @@ export const DEFAULT_NATALIE: NatalieContent = {
   photo: "https://i.imghippo.com/files/ZNe4792NOg.jpeg",
   instagram: "https://instagram.com",
   youtube: "https://youtube.com",
+  tiktok: "",
+  facebook: "",
+  whatsapp: "",
   bio: [
     "נטלי ארצי היא מאפרת מקצועית עם למעלה מ-10 שנות ניסיון בתעשייה — מצילומי אופנה ועד כלות חלומות. היא מאמינה שאיפור הוא לא רק טכניקה, אלא אמנות שמגיעה מהפנים החוצה.",
     "לאחר שנים של עבודה מול מצלמות ובסטודיוס ברחבי העולם, החליטה נטלי להפוך את הידע שצברה לנגיש לכל מאפרת בישראל — ובכך נולד הבית של המאפרים.",
@@ -137,6 +143,16 @@ export const DEFAULT_NATALIE: NatalieContent = {
     { year: "2022", text: 'השיקה את "הבית של המאפרים" — הפלטפורמה המובילה לחינוך מקצועי בעברית' },
   ],
 };
+
+export const DEFAULT_TERMS = `תקנון המועדון — הבית של המאפרים
+
+1. כללי — שימוש בפלטפורמה מהווה הסכמה לתנאים אלו.
+2. מנוי — המנוי הינו חודשי/שנתי וניתן לביטול בכל עת.
+3. תוכן — כל התכנים שמורים לנטלי ארצי ואין להעתיקם.
+4. תשלומים — החיוב מתבצע דרך Cardcom בצורה מאובטחת.
+5. ביטול — ניתן לבטל בכל עת, הגישה תיחסם בסוף תקופת החיוב.
+
+הניסוח המשפטי המלא יתעדכן בקרוב.`;
 
 export const DEFAULT_COMING_SOON: ComingSoonItem[] = [
   { id: "s1", image: "https://i.imghippo.com/files/buo9489kbs.jpeg", title: "קולקציית ערב — Fall 2030", subtitle: "עם נטלי ארצי", category: "עיניים", description: "" },
@@ -201,6 +217,7 @@ export const dbGetPlans         = () => getContent<SubPlan[]>("subscription_plan
 export const dbGetNatalie       = () => getContent<NatalieContent>("natalie", DEFAULT_NATALIE);
 export const dbGetFaqs          = () => getContent<FaqItem[]>("faqs", DEFAULT_FAQS);
 export const dbGetComingSoon    = () => getContent<ComingSoonItem[]>("coming_soon", DEFAULT_COMING_SOON);
+export const dbGetTerms         = () => getContent<string>("terms", DEFAULT_TERMS);
 
 export const dbSetHero          = (v: HeroContent)       => setContent("hero", v);
 export const dbSetTestimonials  = (v: Testimonial[])     => setContent("testimonials", v);
@@ -209,3 +226,4 @@ export const dbSetPlans         = (v: SubPlan[])          => setContent("subscri
 export const dbSetNatalie       = (v: NatalieContent)    => setContent("natalie", v);
 export const dbSetFaqs          = (v: FaqItem[])         => setContent("faqs", v);
 export const dbSetComingSoon    = (v: ComingSoonItem[])  => setContent("coming_soon", v);
+export const dbSetTerms         = (v: string)            => setContent("terms", v);

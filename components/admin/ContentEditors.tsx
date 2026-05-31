@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, Loader2, Check, X, AlertCircle, Upload, Image as ImageIcon, Video } from "lucide-react";
 import {
   type HeroContent, type Testimonial, type ExtraSection, type SubPlan, type NatalieContent, type FaqItem, type ComingSoonItem,
-  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_EXTRA_SECTIONS, DEFAULT_PLANS, DEFAULT_NATALIE, DEFAULT_FAQS, DEFAULT_COMING_SOON,
-  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs, dbGetComingSoon,
-  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs, dbSetComingSoon,
+  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_EXTRA_SECTIONS, DEFAULT_PLANS, DEFAULT_NATALIE, DEFAULT_FAQS, DEFAULT_COMING_SOON, DEFAULT_TERMS,
+  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs, dbGetComingSoon, dbGetTerms,
+  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs, dbSetComingSoon, dbSetTerms,
 } from "@/lib/supabase/content-db";
 import { dbUploadImage, dbUploadVideo } from "@/lib/supabase/courses-db";
 import { CATEGORIES } from "@/lib/courses-data";
@@ -144,12 +144,13 @@ function LoadingScreen() {
 // ─── Homepage Editor ──────────────────────────────────────────────
 
 export function HomepageEditor() {
-  const [tab, setTab]                     = useState<"hero" | "testimonials" | "extra" | "faq" | "coming">("hero");
+  const [tab, setTab]                     = useState<"hero" | "testimonials" | "extra" | "faq" | "coming" | "terms">("hero");
   const [hero, setHero]                   = useState<HeroContent>(DEFAULT_HERO);
   const [testimonials, setTestimonials]   = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
   const [extraSections, setExtraSections] = useState<ExtraSection[]>(DEFAULT_EXTRA_SECTIONS);
   const [faqs, setFaqs]                   = useState<FaqItem[]>(DEFAULT_FAQS);
   const [comingSoon, setComingSoon]       = useState<ComingSoonItem[]>(DEFAULT_COMING_SOON);
+  const [terms, setTerms]               = useState<string>(DEFAULT_TERMS);
   const [loading, setLoading]             = useState(true);
   const [saving, setSaving]               = useState(false);
   const [success, setSuccess]             = useState(false);
@@ -161,8 +162,8 @@ export function HomepageEditor() {
   const heroVidRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    Promise.all([dbGetHero(), dbGetTestimonials(), dbGetExtraSections(), dbGetFaqs(), dbGetComingSoon()])
-      .then(([h, t, e, f, c]) => { setHero(h); setTestimonials(t); setExtraSections(e); setFaqs(f); setComingSoon(c); })
+    Promise.all([dbGetHero(), dbGetTestimonials(), dbGetExtraSections(), dbGetFaqs(), dbGetComingSoon(), dbGetTerms()])
+      .then(([h, t, e, f, c, tr]) => { setHero(h); setTestimonials(t); setExtraSections(e); setFaqs(f); setComingSoon(c); setTerms(tr); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -175,7 +176,8 @@ export function HomepageEditor() {
       else if (tab === "testimonials") await dbSetTestimonials(testimonials);
       else if (tab === "extra")        await dbSetExtraSections(extraSections);
       else if (tab === "faq")          await dbSetFaqs(faqs);
-      else                             await dbSetComingSoon(comingSoon);
+      else if (tab === "coming")       await dbSetComingSoon(comingSoon);
+      else                             await dbSetTerms(terms);
       setSuccess(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "שגיאה בשמירה");
@@ -207,7 +209,7 @@ export function HomepageEditor() {
       <Feedback success={success} error={error} onClose={clearFeedback} />
 
       <TabBar
-        tabs={[{ id: "hero", label: "הירו" }, { id: "testimonials", label: "המלצות" }, { id: "extra", label: "סקשיינים" }, { id: "faq", label: "שאלות נפוצות" }, { id: "coming", label: "בקרוב" }]}
+        tabs={[{ id: "hero", label: "הירו" }, { id: "testimonials", label: "המלצות" }, { id: "extra", label: "סקשיינים" }, { id: "faq", label: "שאלות נפוצות" }, { id: "coming", label: "בקרוב" }, { id: "terms", label: "תקנון" }]}
         active={tab}
         onChange={(id) => { setTab(id as typeof tab); clearFeedback(); }}
       />
@@ -502,6 +504,16 @@ export function HomepageEditor() {
           >
             <Plus size={13} /> הוסף פריט
           </button>
+        </div>
+      )}
+
+      {/* ── Terms tab ── */}
+      {tab === "terms" && (
+        <div className="space-y-4">
+          <p className="text-[0.7rem] mb-2" style={{ color: "#5A3830" }}>
+            תקנון המועדון — מוצג בתחתית דף הבית (מקופל, לחיצה לפתיחה). תוכל להדביק את הניסוח המשפטי הסופי כאן.
+          </p>
+          <Textarea value={terms} onChange={setTerms} rows={18} placeholder="תקנון המועדון..." />
         </div>
       )}
 
@@ -825,6 +837,18 @@ export function NatalieEditor() {
             <div>
               <FieldLabel>YouTube URL</FieldLabel>
               <Input value={content.youtube} onChange={(v) => set("youtube", v)} dir="ltr" placeholder="https://youtube.com/@..." />
+            </div>
+            <div>
+              <FieldLabel>TikTok URL</FieldLabel>
+              <Input value={content.tiktok ?? ""} onChange={(v) => set("tiktok", v)} dir="ltr" placeholder="https://tiktok.com/@..." />
+            </div>
+            <div>
+              <FieldLabel>Facebook URL</FieldLabel>
+              <Input value={content.facebook ?? ""} onChange={(v) => set("facebook", v)} dir="ltr" placeholder="https://facebook.com/..." />
+            </div>
+            <div>
+              <FieldLabel>WhatsApp (מספר/קישור)</FieldLabel>
+              <Input value={content.whatsapp ?? ""} onChange={(v) => set("whatsapp", v)} dir="ltr" placeholder="https://wa.me/972..." />
             </div>
           </div>
         </div>
