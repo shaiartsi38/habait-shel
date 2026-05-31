@@ -64,7 +64,7 @@ export default function LoginPage() {
         <div className="px-8 py-9">
           {/* Brand */}
           <div className="text-center mb-8">
-            <p className="text-[0.55rem] tracking-[0.32em] uppercase mb-2" style={{ color: "#C4857A" }}>by Natalie Artzi</p>
+            <p className="text-[0.55rem] tracking-[0.32em] uppercase mb-2" style={{ color: "#C4857A" }}>Natalie Artsi</p>
             <h1 className="text-xl font-black" style={{ color: "#FFF8F5" }}>הבית של המאפרים</h1>
             <p className="text-xs mt-2" style={{ color: "#5A3830" }}>כניסה לחשבון</p>
           </div>

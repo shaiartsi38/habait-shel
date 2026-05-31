@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { COURSES, type CourseData } from "./courses-data";
 import { dbFetchCourses } from "./supabase/courses-db";
+import { prefetchAllContent } from "./supabase/content-db";
 
 const STORAGE_KEY = "hbm-courses-v3";
 
@@ -28,7 +29,10 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // עדכון ברקע מ-Supabase (stale-while-revalidate)
+    // Prefetch כל site_content בפנייה אחת ברקע — מאיץ את כל עמודי האדמין
+    prefetchAllContent();
+
+    // עדכון קורסים ברקע מ-Supabase (stale-while-revalidate)
     dbFetchCourses()
       .then((live) => {
         if (live.length > 0) {

@@ -18,15 +18,17 @@ export default function NataliePage() {
   return (
     <div className="min-h-screen sidebar-safe" style={{ background: "var(--black)" }}>
 
-      {/* Cinematic hero */}
-      <div className="relative overflow-hidden" style={{ minHeight: "55vh", display: "flex", alignItems: "flex-end" }}>
+      {/* Cinematic hero — התמונה תופסת את רוב הגובה, הכיתוב בתחתית בלבד */}
+      <div className="relative overflow-hidden" style={{ minHeight: "75vh" }}>
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={content.photo} alt="נטלי ארצי" className="w-full h-full object-cover object-top" style={{ filter: "brightness(0.45)" }} />
+          <img src={content.photo} alt="נטלי ארצי" className="w-full h-full object-cover object-top" style={{ filter: "brightness(0.65)" }} />
         </div>
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.6) 40%, transparent 80%)" }} />
+        {/* גרדיאנט רק בתחתית — לא מכסה את הפנים */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.75) 22%, rgba(8,6,8,0.1) 55%, transparent 100%)" }} />
 
-        <div className="relative z-10 w-full px-4 md:px-12 pb-12 pt-32">
+        {/* כיתוב — נצמד לתחתית בלבד */}
+        <div className="absolute bottom-0 right-0 left-0 px-4 md:px-12 pb-10">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <p className="text-[0.58rem] tracking-[0.3em] uppercase mb-2" style={{ color: "#C4857A" }}>המדריכה שלך</p>
             <h1
