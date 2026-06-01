@@ -18,14 +18,21 @@ export default function NataliePage() {
   return (
     <div className="min-h-screen sidebar-safe" style={{ background: "var(--black)" }}>
 
-      {/* Cinematic hero — התמונה תופסת את רוב הגובה, הכיתוב בתחתית בלבד */}
-      <div className="relative overflow-hidden" style={{ minHeight: "75vh" }}>
+      {/* Cinematic hero */}
+      <div className="relative overflow-hidden" style={{ minHeight: "85vh" }}>
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={content.photo} alt="נטלי ארצי" className="w-full h-full object-cover" style={{ filter: "brightness(0.65)", objectPosition: "center 20%" }} />
+          <img src={content.photo} alt="נטלי ארצי" className="w-full h-full object-cover object-top" style={{ filter: "brightness(0.52) contrast(1.08) saturate(0.9)" }} />
         </div>
-        {/* גרדיאנט רק בתחתית — לא מכסה את הפנים */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.75) 22%, rgba(8,6,8,0.1) 55%, transparent 100%)" }} />
+        {/* פסי letterbox קולנועיים */}
+        <div className="absolute inset-x-0 top-0 h-[7vh]" style={{ background: "#080608" }} />
+        <div className="absolute inset-x-0 bottom-0 h-[7vh]" style={{ background: "#080608" }} />
+        {/* Vignette מלמעלה */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(8,6,8,0.55) 0%, transparent 30%)" }} />
+        {/* Vignette מלמטה */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.82) 18%, rgba(8,6,8,0.15) 50%, transparent 100%)" }} />
+        {/* צלליות צד קולנועיות */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(8,6,8,0.35) 0%, transparent 30%, transparent 70%, rgba(8,6,8,0.35) 100%)" }} />
 
         {/* כיתוב — נצמד לתחתית בלבד */}
         <div className="absolute bottom-0 right-0 left-0 px-4 md:px-12 pb-10">
