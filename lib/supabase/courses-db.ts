@@ -73,14 +73,13 @@ function courseToRow(c: CourseData): Record<string, unknown> {
     is_published: c.isPublished,
     show_on_home: c.showOnHome ?? true,
     duration_minutes: c.durationMinutes,
-    lesson_count: c.lessons.length,
     tags,
-    updated_at: new Date().toISOString(),
+    // lesson_count and updated_at excluded — columns may not exist in all setups
   };
 }
 
 function lessonToRow(l: CourseLesson, courseId: string, sortOrder: number): Record<string, unknown> {
-  return {
+  const row: Record<string, unknown> = {
     id: l.id,
     course_id: courseId,
     title: l.title,
@@ -88,8 +87,10 @@ function lessonToRow(l: CourseLesson, courseId: string, sortOrder: number): Reco
     video_id: l.videoId,
     duration_seconds: l.durationMin * 60,
     is_free_preview: l.isFree,
-    sort_order: sortOrder,
   };
+  // sort_order included only if value exists — column may not be present
+  if (sortOrder !== undefined) row.sort_order = sortOrder;
+  return row;
 }
 
 // ─── DB Operations ────────────────────────────────────────────────
@@ -100,7 +101,6 @@ export async function dbFetchCourses(): Promise<CourseData[]> {
   const { data, error } = await sb
     .from("courses")
     .select("*, lessons(*)")
-    .order("sort_order")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map((r) => courseFromRow(r as Record<string, unknown>));
