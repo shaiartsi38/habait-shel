@@ -48,23 +48,15 @@ export default function DashboardPage() {
           <p className="text-4xl mb-4">🎬</p>
           <h2 className="text-lg font-black mb-2" style={{ color: "#FFF8F5" }}>טרם התחלת קורס</h2>
           <p className="text-sm mb-5" style={{ color: "#5A3830" }}>בחרי קורס ותתחילי ללמוד כבר עכשיו</p>
-          <Link href="/courses" className="px-6 py-2.5 rounded-xl text-sm font-black"
-            style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }}>
-            לקטלוג הקורסים
-          </Link>
-        </div>
-
-        {/* Subscription management */}
-        <div className="rounded-2xl p-5" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[0.6rem] tracking-wider uppercase mb-1" style={{ color: "#C4857A" }}>ניהול מנוי</p>
-              <p className="text-sm font-bold" style={{ color: "#FFF8F5" }}>מנוי פעיל</p>
-            </div>
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            <Link href="/courses" className="px-6 py-2.5 rounded-xl text-sm font-black"
+              style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }}>
+              לקטלוג הקורסים
+            </Link>
             <button
               onClick={() => setShowCancel(true)}
-              className="text-[0.65rem] font-semibold px-3 py-1.5 rounded-lg transition-opacity hover:opacity-70"
-              style={{ color: "#5A3830", border: "1px solid rgba(90,56,48,0.2)" }}
+              className="px-6 py-2.5 rounded-xl text-sm font-black transition-opacity hover:opacity-70"
+              style={{ color: "#8B6355", border: "1px solid rgba(139,99,85,0.25)", background: "transparent" }}
             >
               ביטול מנוי
             </button>
