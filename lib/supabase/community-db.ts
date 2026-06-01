@@ -106,7 +106,7 @@ export async function dbUploadAttachment(file: File): Promise<{
 
   const { data, error } = await sb.storage
     .from("course-media")
-    .upload(path, file, { upsert: false });
+    .upload(path, file, { upsert: true });
   if (error) throw error;
 
   const { data: { publicUrl } } = sb.storage.from("course-media").getPublicUrl(data.path);

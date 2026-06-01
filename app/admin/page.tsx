@@ -157,7 +157,9 @@ export default function AdminPage() {
 
   const saveEdit = async (updated: CourseData) => {
     setOpError(null);
-    const slug = updated.slug || updated.title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const rawSlug = updated.slug || updated.title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    // Fallback: if Hebrew title produces empty slug, use the course id
+    const slug = rawSlug.trim() || updated.id;
     const duration = updated.duration || `${updated.durationMinutes} דקות`;
     const final = { ...updated, slug, duration };
     try {
@@ -478,6 +480,7 @@ function CourseEditForm({
 }) {
   const [form, setForm] = useState<CourseData>({ ...course, lessons: course.lessons.map((l) => ({ ...l })) });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileRef  = useRef<HTMLInputElement>(null);
@@ -524,10 +527,16 @@ function CourseEditForm({
   };
 
   const handleSave = async () => {
-    if (!form.title.trim()) return;
+    if (!form.title.trim()) { setSaveError("חובה למלא כותרת לקורס"); return; }
     setSaving(true);
-    await onSave(form);
-    setSaving(false);
+    setSaveError(null);
+    try {
+      await onSave(form);
+    } catch (e) {
+      setSaveError(errMsg(e) || "שגיאה בשמירה");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -726,9 +735,16 @@ function CourseEditForm({
 
       {/* Save bar */}
       <div
-        className="sticky bottom-0 px-6 py-4 flex gap-3 justify-end"
+        className="sticky bottom-0 px-6 py-4 flex flex-col gap-3"
         style={{ background: "#0f0b0e", borderTop: "1px solid rgba(196,133,122,0.08)" }}
       >
+        {saveError && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-[0.7rem]"
+            style={{ background: "rgba(196,50,50,0.08)", color: "#e05555", border: "1px solid rgba(196,50,50,0.2)" }}>
+            <AlertCircle size={12} /> {saveError}
+          </div>
+        )}
+        <div className="flex gap-3 justify-end">
         <button
           onClick={onClose}
           className="px-5 py-2.5 rounded-xl text-[0.8rem] font-semibold hover:bg-white/5 transition-colors"
@@ -745,6 +761,7 @@ function CourseEditForm({
           {saving && <Loader2 size={12} className="animate-spin" />}
           {isNew ? "צרי קורס" : "שמרי שינויים"}
         </button>
+        </div>
       </div>
     </div>
   );

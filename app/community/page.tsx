@@ -204,44 +204,64 @@ function PostBubble({ post, replies, userId, isAdmin, onReply, onDelete, onPin }
       {/* Admin announcement style */}
       {post.is_admin_post ? (
         <div
-          className="rounded-2xl p-4 mb-2"
+          className="rounded-2xl p-6 mb-4"
           style={{
-            background: "linear-gradient(135deg, rgba(196,133,122,0.08), rgba(196,133,122,0.04))",
-            border: "1px solid rgba(196,133,122,0.2)",
+            background: "linear-gradient(135deg, rgba(196,133,122,0.13), rgba(196,133,122,0.06))",
+            border: "1.5px solid rgba(196,133,122,0.35)",
+            boxShadow: "0 4px 24px rgba(196,133,122,0.1)",
           }}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <Megaphone size={13} style={{ color: "#C4857A" }} />
-            <span className="text-[0.6rem] font-black tracking-wider uppercase" style={{ color: "#C4857A" }}>הודעת מנהלת</span>
-            {post.is_pinned && <Pin size={11} style={{ color: "#C4857A" }} />}
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(196,133,122,0.15)", border: "1px solid rgba(196,133,122,0.3)" }}>
+              <Megaphone size={15} style={{ color: "#C4857A" }} />
+            </div>
+            <div>
+              <span className="text-[0.65rem] font-black tracking-widest uppercase block" style={{ color: "#C4857A" }}>הודעת מנהלת</span>
+              <span className="text-[0.55rem]" style={{ color: "#3A2020" }}>{timeAgo(post.created_at)}</span>
+            </div>
+            {post.is_pinned && (
+              <div className="mr-auto flex items-center gap-1 text-[0.58rem] font-semibold" style={{ color: "#C4857A" }}>
+                <Pin size={11} /> נעוץ
+              </div>
+            )}
           </div>
-          <p className="text-sm leading-relaxed" style={{ color: "#FFF8F5" }}>{post.content}</p>
+          <p className="text-base leading-relaxed font-medium" style={{ color: "#FFF8F5" }}>{post.content}</p>
           {isAdmin && (
-            <div className="flex gap-3 mt-3">
-              <button onClick={() => onPin(post.id, post.is_pinned)} className="text-[0.58rem] hover:opacity-70 transition-opacity" style={{ color: "rgba(196,133,122,0.5)" }}>
-                {post.is_pinned ? "בטל נעיצה" : "נעוץ"}
+            <div className="flex gap-4 mt-4 pt-3" style={{ borderTop: "1px solid rgba(196,133,122,0.12)" }}>
+              <button onClick={() => onPin(post.id, post.is_pinned)} className="text-[0.65rem] font-semibold hover:opacity-70 transition-opacity flex items-center gap-1" style={{ color: "#C4857A" }}>
+                <Pin size={11} /> {post.is_pinned ? "בטל נעיצה" : "נעוץ"}
               </button>
-              <button onClick={() => onDelete(post.id)} className="text-[0.58rem] hover:opacity-70 transition-opacity" style={{ color: "rgba(196,50,50,0.5)" }}>
+              <button onClick={() => onDelete(post.id)} className="text-[0.65rem] font-semibold hover:opacity-70 transition-opacity" style={{ color: "rgba(196,50,50,0.6)" }}>
                 מחק
               </button>
             </div>
           )}
         </div>
       ) : (
-        /* Regular post */
-        <div className="flex gap-3 py-2.5 group">
-          <Avatar name={post.author_name ?? ""} photo={post.author_photo} initials={post.author_initials} />
+        /* Regular post — pinned gets highlighted */
+        <div
+          className={`flex gap-3 py-3 px-3 rounded-2xl group transition-colors ${post.is_pinned ? "mb-2" : ""}`}
+          style={post.is_pinned ? {
+            background: "rgba(196,133,122,0.05)",
+            border: "1px solid rgba(196,133,122,0.15)",
+          } : {}}
+        >
+          <Avatar name={post.author_name ?? ""} photo={post.author_photo} initials={post.author_initials} size={post.is_pinned ? 40 : 36} />
           <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-              <span className="text-[0.7rem] font-black" style={{ color: post.is_pinned ? "#C4857A" : "#FFF8F5" }}>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className={`font-black ${post.is_pinned ? "text-sm" : "text-[0.7rem]"}`} style={{ color: post.is_pinned ? "#C4857A" : "#FFF8F5" }}>
                 {post.author_name}
               </span>
-              {post.is_pinned && <Pin size={10} style={{ color: "#C4857A" }} />}
+              {post.is_pinned && (
+                <span className="flex items-center gap-1 text-[0.58rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}>
+                  <Pin size={9} /> נעוץ
+                </span>
+              )}
               <span className="text-[0.58rem]" style={{ color: "#3A2020" }}>{timeAgo(post.created_at)}</span>
             </div>
 
             {/* Content */}
-            <p className="text-[0.82rem] leading-relaxed break-words" style={{ color: "rgba(255,248,245,0.85)" }}>
+            <p className={`leading-relaxed break-words ${post.is_pinned ? "text-sm" : "text-[0.82rem]"}`} style={{ color: "rgba(255,248,245,0.85)" }}>
               {post.content}
             </p>
 
