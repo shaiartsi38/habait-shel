@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CreditCard, Home, LayoutDashboard, Play, Settings, Sparkles, Users, PanelRightClose, PanelRightOpen, LogIn, LogOut } from "lucide-react";
+import { CreditCard, Home, LayoutDashboard, Play, Settings, Sparkles, Users, PanelRightClose, PanelRightOpen, LogIn, LogOut, UserCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV = [
@@ -14,6 +14,7 @@ const NAV = [
   { href: "/community",     label: "קהילה",      icon: Users },
   { href: "/subscription",  label: "מנוי",       icon: CreditCard },
   { href: "/natalie",       label: "נטלי ארצי",  icon: Sparkles },
+  { href: "/profile",       label: "הפרופיל שלי", icon: UserCircle },
 ] as const;
 
 export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
