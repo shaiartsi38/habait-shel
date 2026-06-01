@@ -89,7 +89,6 @@ function lessonToRow(l: CourseLesson, courseId: string, sortOrder: number): Reco
     duration_seconds: l.durationMin * 60,
     is_free_preview: l.isFree,
     sort_order: sortOrder,
-    attachments: [],
   };
 }
 

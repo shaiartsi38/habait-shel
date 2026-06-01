@@ -402,10 +402,10 @@ function CoursesSection({
               style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.07)" }}
             >
               {/* Thumbnail */}
-              <div className="relative w-16 h-20 md:w-20 md:h-[106px] rounded-xl overflow-hidden shrink-0" style={{ background: "#0f0b0e" }}>
+              <div className="relative w-24 h-32 md:w-28 md:h-[148px] rounded-xl overflow-hidden shrink-0" style={{ background: "#0f0b0e" }}>
                 {course.image && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
+                  <img src={course.image} alt={course.title} className="w-full h-full object-cover" style={{ filter: "brightness(1.05)" }} />
                 )}
               </div>
 

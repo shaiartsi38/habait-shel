@@ -36,7 +36,7 @@ export async function dbUpdateProfile(updates: Partial<Omit<UserProfile, "id" | 
 
   const { error } = await sb
     .from("profiles")
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update(updates)
     .eq("id", user.id);
 
   if (error) throw error;
