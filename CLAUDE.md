@@ -153,9 +153,49 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 
 ---
 
+## פרופיל אישי (`/profile`)
+
+- שדות ב-`profiles`: `first_name`, `last_name`, `years_experience`, `bio`, `photo_url`
+- עריכה + העלאת תמונה לStorage (`course-media/avatars/{user_id}.ext`)
+- `lib/supabase/profile-db.ts`: `dbGetMyProfile`, `dbUpdateProfile`, `dbUploadAvatar`, `dbGetProfileById`
+- **SQL שחייב לרוץ בSupabase:**
+  ```sql
+  ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS first_name text,
+  ADD COLUMN IF NOT EXISTS last_name text,
+  ADD COLUMN IF NOT EXISTS years_experience integer,
+  ADD COLUMN IF NOT EXISTS bio text,
+  ADD COLUMN IF NOT EXISTS photo_url text;
+  ```
+
+---
+
+## קהילה (`/community`)
+
+- טבלת `community_posts` (Supabase Realtime)
+- תצוגה: avatar + שם + זמן + תוכן + attachment
+- כתיבה + העלאת קובץ (`community-media/`)
+- Reply / thread (`parent_id`)
+- אדמין: pin + הודעות מנוהל (`is_admin_post`)
+- הרשאות: מנויים בלבד (role = 'user' | 'admin')
+- `lib/supabase/community-db.ts`: CRUD + Realtime
+
+---
+
+## וידאו — החלטות ארכיטקטורה
+
+- **Vimeo** — כל הסרטונים הפרמיום יעברו לVimeo (HLS + quality + fullscreen אוטומטי)
+- **המשך צפייה** — לוגיקה צד שרת (טבלת `user_progress`) — לא Vimeo
+- שלב 4 (נגן) יתכווץ לבניית המשך צפייה בלבד לאחר מעבר לVimeo
+
+---
+
 ## סטטוס פתוח
 
+- [ ] SQL migration לפרופיל (ראה למעלה)
 - [ ] Cardcom webhook — יצירת משתמש + רישום רכישה + Resend מייל
 - [ ] RLS per-course (`course_purchases` table)
+- [ ] המשך צפייה (`user_progress` table)
+- [ ] Security: RLS לוידאו לפי tier, signed URLs, rate limiting, headers
 - [ ] Zod לולידציה
 - [ ] SSR לדפים ציבוריים
