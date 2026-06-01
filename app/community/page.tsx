@@ -12,6 +12,16 @@ import {
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
+function safeUrl(url: string | null): string {
+  if (!url) return "#";
+  try {
+    const p = new URL(url);
+    return p.protocol === "https:" || p.protocol === "http:" ? p.toString() : "#";
+  } catch {
+    return "#";
+  }
+}
+
 function timeAgo(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
   if (diff < 60) return "עכשיו";
@@ -240,12 +250,12 @@ function PostBubble({ post, replies, userId, isAdmin, onReply, onDelete, onPin }
               <div className="mt-2">
                 {post.attachment_type === "image" ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={post.attachment_url} alt={post.attachment_name ?? "תמונה"}
+                  <img src={safeUrl(post.attachment_url)} alt={post.attachment_name ?? "תמונה"}
                     className="max-w-[220px] rounded-xl object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => window.open(post.attachment_url!, "_blank")}
+                    onClick={() => { const u = safeUrl(post.attachment_url); if (u !== "#") window.open(u, "_blank"); }}
                   />
                 ) : (
-                  <a href={post.attachment_url} target="_blank" rel="noopener noreferrer"
+                  <a href={safeUrl(post.attachment_url)} target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold hover:opacity-80 transition-opacity"
                     style={{ background: "rgba(196,133,122,0.08)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.15)" }}>
                     <FileText size={11} /> {post.attachment_name ?? "קובץ"}
@@ -290,8 +300,8 @@ function PostBubble({ post, replies, userId, isAdmin, onReply, onDelete, onPin }
                 </p>
                 {reply.attachment_url && reply.attachment_type === "image" && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={reply.attachment_url} alt="" className="mt-1.5 max-w-[160px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => window.open(reply.attachment_url!, "_blank")} />
+                  <img src={safeUrl(reply.attachment_url)} alt="" className="mt-1.5 max-w-[160px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => { const u = safeUrl(reply.attachment_url); if (u !== "#") window.open(u, "_blank"); }} />
                 )}
                 {(reply.user_id === null || isAdmin) && (
                   <button onClick={() => onDelete(reply.id)} className="text-[0.54rem] mt-0.5 opacity-0 group-hover:opacity-60 hover:opacity-100 transition-opacity" style={{ color: "#e05555" }}>

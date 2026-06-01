@@ -100,8 +100,9 @@ export async function dbUploadAttachment(file: File): Promise<{
   const { data: { user } } = await sb.auth.getUser();
   if (!user) throw new Error("לא מחוברת");
 
-  const ext = file.name.split(".").pop() ?? "bin";
-  const path = `community/${user.id}/${Date.now()}.${ext}`;
+  const rawExt = file.name.split(".").pop() ?? "bin";
+  const ext = /^[a-z0-9]{1,8}$/i.test(rawExt) ? rawExt.toLowerCase() : "bin";
+  const path = `community/${user.id}/${crypto.randomUUID()}.${ext}`;
 
   const { data, error } = await sb.storage
     .from("course-media")
