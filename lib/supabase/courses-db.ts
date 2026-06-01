@@ -61,36 +61,33 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
 function courseToRow(c: CourseData): Record<string, unknown> {
   const tags = [...c.tags, `cat:${c.category}`, `diff:${c.difficulty}`, ...(c.isNew ? ["new:true"] : [])];
   const meta = { shortDesc: c.shortDesc, fullDesc: c.fullDesc, instructor: c.instructor };
+  // Only fields confirmed to exist in the courses table schema
   return {
     slug: c.slug,
     title: c.title,
-    subtitle: c.subtitle,
+    subtitle: c.subtitle ?? "",
     description: JSON.stringify(meta),
-    thumbnail_url: c.image,
+    thumbnail_url: c.image ?? "",
     trailer_video_id: c.videoId ?? null,
     trailer_provider: c.videoProvider ?? "youtube",
     required_tier: c.tier,
-    is_published: c.isPublished,
-    show_on_home: c.showOnHome ?? true,
-    duration_minutes: c.durationMinutes,
+    is_published: Boolean(c.isPublished),
+    duration_minutes: Number(c.durationMinutes) || 0,
     tags,
-    // lesson_count and updated_at excluded — columns may not exist in all setups
   };
 }
 
 function lessonToRow(l: CourseLesson, courseId: string, sortOrder: number): Record<string, unknown> {
-  const row: Record<string, unknown> = {
+  return {
     id: l.id,
     course_id: courseId,
-    title: l.title,
-    video_provider: l.videoProvider,
-    video_id: l.videoId,
-    duration_seconds: l.durationMin * 60,
-    is_free_preview: l.isFree,
+    title: l.title ?? "",
+    video_provider: l.videoProvider ?? "youtube",
+    video_id: l.videoId ?? "",
+    duration_seconds: Number(l.durationMin) * 60 || 0,
+    is_free_preview: Boolean(l.isFree),
+    sort_order: sortOrder,
   };
-  // sort_order included only if value exists — column may not be present
-  if (sortOrder !== undefined) row.sort_order = sortOrder;
-  return row;
 }
 
 // ─── DB Operations ────────────────────────────────────────────────
@@ -98,12 +95,31 @@ function lessonToRow(l: CourseLesson, courseId: string, sortOrder: number): Reco
 export async function dbFetchCourses(): Promise<CourseData[]> {
   if (!hasSupabase()) return COURSES;
   const sb = createClient();
-  const { data, error } = await sb
+
+  // Two separate queries — avoids FK join naming issues
+  const { data: coursesData, error: coursesErr } = await sb
     .from("courses")
-    .select("*, lessons(*)")
+    .select("*")
     .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((r) => courseFromRow(r as Record<string, unknown>));
+  if (coursesErr) throw coursesErr;
+  if (!coursesData || coursesData.length === 0) return [];
+
+  const courseIds = coursesData.map((c) => (c as Record<string, unknown>).id as string);
+  const { data: lessonsData } = await sb
+    .from("lessons")
+    .select("*")
+    .in("course_id", courseIds);
+
+  const byId: Record<string, unknown[]> = {};
+  for (const lesson of lessonsData ?? []) {
+    const cid = (lesson as Record<string, unknown>).course_id as string;
+    if (!byId[cid]) byId[cid] = [];
+    byId[cid].push(lesson);
+  }
+
+  return coursesData.map((row) =>
+    courseFromRow({ ...(row as Record<string, unknown>), lessons: byId[(row as Record<string, unknown>).id as string] ?? [] })
+  );
 }
 
 export async function dbFetchCourseBySlug(slug: string): Promise<CourseData | null> {
@@ -111,11 +127,17 @@ export async function dbFetchCourseBySlug(slug: string): Promise<CourseData | nu
   const sb = createClient();
   const { data, error } = await sb
     .from("courses")
-    .select("*, lessons(*)")
+    .select("*")
     .eq("slug", slug)
     .single();
   if (error || !data) return null;
-  return courseFromRow(data as Record<string, unknown>);
+
+  const { data: lessonsData } = await sb
+    .from("lessons")
+    .select("*")
+    .eq("course_id", (data as Record<string, unknown>).id);
+
+  return courseFromRow({ ...(data as Record<string, unknown>), lessons: lessonsData ?? [] });
 }
 
 export async function dbUpsertCourse(course: CourseData): Promise<CourseData> {
