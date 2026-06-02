@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { notFound } from "next/navigation";
 import { motion } from "framer-motion";
 import { Play, Lock, Clock } from "lucide-react";
 import Link from "next/link";
 import { COURSES, type VideoProvider } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
+import { createClient } from "@/lib/supabase/client";
 
 const DIFF_LABEL = { beginner: "מתחילות", intermediate: "בינוני", advanced: "מתקדם" } as const;
 const TIER_LABEL = { basic: "Basic", pro: "Pro", elite: "Elite" } as const;
@@ -15,12 +16,31 @@ const TIER_LABEL = { basic: "Basic", pro: "Pro", elite: "Elite" } as const;
 export default function CoursePage({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const { courses } = useCourses();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sb = createClient();
+    sb.auth.getUser().then(({ data }) => {
+      if (data.user) setIsLoggedIn(true);
+    });
+    sb.from("profiles").select("role").then(({ data }) => {
+      if (data?.[0]?.role === "admin") setIsAdmin(true);
+    });
+  }, []);
 
   // Try context first (live admin changes), fall back to static
   const course = courses.find((c) => c.slug === slug) ?? COURSES.find((c) => c.slug === slug);
   if (!course) notFound();
 
   const firstLesson = course.lessons[0];
+  const activeLesson = activeLessonId ? course.lessons.find((l) => l.id === activeLessonId) : null;
+
+  const displayVideoId = activeLesson?.videoId ?? course.videoId ?? firstLesson?.videoId ?? "";
+  const displayProvider = activeLesson?.videoProvider
+    ?? (course.videoId ? (course.videoProvider ?? "youtube") : (firstLesson?.videoProvider ?? "youtube"));
+  const displayTitle = activeLesson?.title ?? course.title;
 
   return (
     <div className="min-h-screen sidebar-safe" style={{ background: "var(--black)", color: "var(--white)" }}>
@@ -30,7 +50,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       {/* ── Main content ── */}
       <div className="px-4 md:px-10 py-10 max-w-4xl">
         {/* Video player */}
-        {(course.videoId || firstLesson?.videoId) && (
+        {displayVideoId && (
           <motion.div
             className="mb-10"
             initial={{ opacity: 0, y: 16 }}
@@ -38,10 +58,11 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
             transition={{ duration: 0.45, delay: 0.1 }}
           >
             <VideoPlayer
-              videoId={course.videoId ?? firstLesson?.videoId ?? ""}
-              provider={course.videoId ? (course.videoProvider ?? "youtube") : (firstLesson?.videoProvider ?? "youtube")}
+              key={activeLessonId ?? "trailer"}
+              videoId={displayVideoId}
+              provider={displayProvider}
               poster={course.image}
-              title={course.title}
+              title={displayTitle}
             />
           </motion.div>
         )}
@@ -92,7 +113,15 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               </h2>
               <div className="space-y-2">
                 {course.lessons.map((lesson, i) => (
-                  <LessonRow key={lesson.id} lesson={lesson} index={i} tier={course.tier} />
+                  <LessonRow
+                    key={lesson.id}
+                    lesson={lesson}
+                    index={i}
+                    tier={course.tier}
+                    isAccessible={lesson.isFree || isLoggedIn || isAdmin}
+                    isActive={lesson.id === activeLessonId}
+                    onSelect={() => setActiveLessonId(lesson.id)}
+                  />
                 ))}
               </div>
             </motion.div>
@@ -293,28 +322,34 @@ function VideoPlayer({ videoId, provider = "youtube", poster, title }: {
 function LessonRow({
   lesson,
   index,
-  tier,
+  isAccessible,
+  isActive,
+  onSelect,
 }: {
   lesson: (typeof COURSES)[0]["lessons"][0];
   index: number;
   tier: string;
+  isAccessible: boolean;
+  isActive: boolean;
+  onSelect: () => void;
 }) {
-  const locked = !lesson.isFree;
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors"
+      onClick={isAccessible ? onSelect : undefined}
+      className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
       style={{
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(196,133,122,0.07)",
-        opacity: locked ? 0.65 : 1,
+        background: isActive ? "rgba(196,133,122,0.1)" : "rgba(255,255,255,0.02)",
+        border: `1px solid ${isActive ? "rgba(196,133,122,0.3)" : "rgba(196,133,122,0.07)"}`,
+        opacity: isAccessible ? 1 : 0.55,
+        cursor: isAccessible ? "pointer" : "default",
       }}
     >
-      {/* Number / Check */}
+      {/* Number */}
       <div
         className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[0.58rem] font-black"
         style={{
-          background: lesson.isFree ? "rgba(196,133,122,0.15)" : "rgba(255,255,255,0.04)",
-          color: lesson.isFree ? "#C4857A" : "rgba(255,248,245,0.3)",
+          background: isActive ? "rgba(196,133,122,0.25)" : lesson.isFree ? "rgba(196,133,122,0.15)" : "rgba(255,255,255,0.04)",
+          color: isActive || lesson.isFree ? "#C4857A" : "rgba(255,248,245,0.3)",
         }}
       >
         {index + 1}
@@ -322,7 +357,7 @@ function LessonRow({
 
       {/* Title */}
       <div className="flex-1 min-w-0">
-        <p className="text-[0.8rem] font-medium truncate" style={{ color: locked ? "rgba(255,248,245,0.45)" : "#FFF8F5" }}>
+        <p className="text-[0.8rem] font-medium truncate" style={{ color: isAccessible ? "#FFF8F5" : "rgba(255,248,245,0.45)" }}>
           {lesson.title || `שיעור ${index + 1}`}
         </p>
         {lesson.durationMin > 0 && (
@@ -332,14 +367,14 @@ function LessonRow({
         )}
       </div>
 
-      {/* Lock / free badge */}
+      {/* Badge */}
       {lesson.isFree ? (
         <span className="text-[0.5rem] font-bold px-2 py-[2px] rounded-full" style={{ background: "rgba(74,155,111,0.12)", color: "#4A9B6F", border: "1px solid rgba(74,155,111,0.25)" }}>
           חינמי
         </span>
-      ) : (
+      ) : !isAccessible ? (
         <Lock size={12} style={{ color: "rgba(255,248,245,0.25)" }} />
-      )}
+      ) : null}
     </div>
   );
 }

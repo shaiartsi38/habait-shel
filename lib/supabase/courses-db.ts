@@ -61,7 +61,6 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
 function courseToRow(c: CourseData): Record<string, unknown> {
   const tags = [...c.tags, `cat:${c.category}`, `diff:${c.difficulty}`, ...(c.isNew ? ["new:true"] : [])];
   const meta = { shortDesc: c.shortDesc, fullDesc: c.fullDesc, instructor: c.instructor };
-  // Only fields confirmed to exist in the courses table schema
   return {
     slug: c.slug,
     title: c.title,
@@ -72,8 +71,11 @@ function courseToRow(c: CourseData): Record<string, unknown> {
     trailer_provider: c.videoProvider ?? "youtube",
     required_tier: c.tier,
     is_published: Boolean(c.isPublished),
+    show_on_home: c.showOnHome ?? true,
     duration_minutes: Number(c.durationMinutes) || 0,
+    lesson_count: c.lessons.length,
     tags,
+    updated_at: new Date().toISOString(),
   };
 }
 

@@ -364,8 +364,9 @@ function MessageInput({ replyTo, isAdmin, onCancelReply, onSent }: {
     try {
       const result = await dbUploadAttachment(file);
       setAttachment(result);
-    } catch {
-      alert("שגיאה בהעלאת הקובץ");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : (e as { message?: string })?.message ?? JSON.stringify(e);
+      alert(`שגיאה בהעלאת הקובץ: ${msg}`);
     } finally {
       setUploading(false);
     }
