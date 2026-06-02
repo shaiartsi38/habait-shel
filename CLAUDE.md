@@ -45,7 +45,7 @@ git add <files> && git commit -m "..." && GIT_SSH_COMMAND="ssh -i ~/.ssh/github_
 ```
 app/(marketing)/page.tsx              ← דף הבית
 app/admin/page.tsx                    ← CMS מלא
-app/courses/[slug]/page.tsx           ← דף קורס + נגן + ניווט שיעורים
+app/courses/[slug]/page.tsx           ← דף קורס + נגן + ניווט שיעורים + המשך צפייה
 app/checkout/[slug]/page.tsx          ← דף רכישה בודדת (₪489, placeholder לCardcom)
 app/dashboard/page.tsx                ← דשבורד משתמש + מערכת ביטול מנוי
 app/natalie/page.tsx                  ← עמוד נטלי (תמונה, ביו, רשתות חברתיות)
@@ -57,6 +57,7 @@ lib/supabase/courses-db.ts            ← CRUD קורסים + שיעורים + u
 lib/supabase/content-db.ts            ← CRUD תוכן דף הבית (site_content)
 lib/supabase/community-db.ts          ← CRUD + upload + Realtime לקהילה
 lib/supabase/profile-db.ts            ← CRUD פרופיל אישי
+lib/supabase/progress-db.ts           ← שמירת/טעינת המשך צפייה (user_progress)
 lib/courses-context.tsx               ← stale-while-revalidate: localStorage → Supabase ברקע
 middleware.ts                         ← הגנת routes לפי role
 ```
@@ -72,6 +73,8 @@ middleware.ts                         ← הגנת routes לפי role
 **`lessons`:** `id` (text) · `course_id` (text, FK) · `title` · `video_id` · `video_provider` · `duration_seconds` · `is_free_preview` · `sort_order`
 
 **`community_posts`:** `id` · `user_id` · `content` · `parent_id` · `is_pinned` · `is_admin_post` · `attachment_url` · `attachment_type` · `attachment_name` · `created_at`
+
+**`user_progress`:** `id` (uuid) · `user_id` (FK auth.users) · `lesson_id` (text) · `course_id` (text) · `progress_seconds` (int) · `completed` (bool) · `updated_at` — UNIQUE(user_id, lesson_id)
 
 **Storage bucket:** `course-media` → `thumbnails/` + `videos/` + `avatars/` + `community/`
 
@@ -226,6 +229,23 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS subscription_tier text
   CHECK (subscription_tier IN ('basic','pro','elite') OR subscription_tier IS NULL);
+
+-- user_progress (שלב 3ג)
+CREATE TABLE IF NOT EXISTS user_progress (
+  id               uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id          uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  lesson_id        text NOT NULL,
+  course_id        text NOT NULL,
+  progress_seconds integer NOT NULL DEFAULT 0,
+  completed        boolean NOT NULL DEFAULT false,
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, lesson_id)
+);
+ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users manage own progress" ON user_progress
+  FOR ALL TO authenticated
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
 ```
 
 ---
@@ -247,11 +267,13 @@ ALTER TABLE profiles
 - לא ניתן לשתף / להוריד
 - יש להוסיף פונקציה `dbGetSignedVideoUrl(path)` ולעדכן `/api/lesson-video`
 
-**3ג ⬜ המשך צפייה**
-- שמירת מיקום נוכחי ב-`user_progress` table + טעינה בכניסה חוזרת לשיעור
-- שדות: `user_id, lesson_id, progress_seconds, completed, updated_at`
+**3ג ✅ המשך צפייה (הושלם)**
+- `user_progress` table עם RLS — כל משתמש רואה רק את ההתקדמות שלו
+- YouTube IFrame API: שומר כל 10 שניות בניגון, ובהשהייה/סיום
+- כפתור Play מציג "המשך מ-MM:SS" כשיש נקודת המשך שמורה
+- פס צבעוני בתחתית כל שיעור ברשימה מציג % צפייה
 
-### ⬜ שלב 4 — שיפורי נגן וידאו (לסרטוני direct, עד המעבר לVimeo)
+### ~~שלב 4~~ — לא רלוונטי (כל הסרטונים YouTube/Vimeo — יש להם נגן מובנה)
 - Progress bar גרירה
 - בקרת עוצמת קול + mute
 - מסך מלא (כפתור fullscreen מובנה)
