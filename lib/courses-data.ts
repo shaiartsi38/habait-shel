@@ -35,6 +35,7 @@ export interface CourseData {
   isPublished: boolean;
   isNew: boolean;
   showOnHome?: boolean;
+  sortOrder?: number;
   instructor: CourseInstructor;
   lessons: CourseLesson[];
   tags: string[];

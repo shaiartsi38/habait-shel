@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { notFound } from "next/navigation";
 import { motion } from "framer-motion";
-import { Play, Lock, Clock, ChevronRight, ChevronLeft } from "lucide-react";
+import { Play, Lock, Clock, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import Link from "next/link";
 import { COURSES, type VideoProvider } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
@@ -29,6 +29,9 @@ function ensureYouTubeAPI(): Promise<void> {
 
 const DIFF_LABEL = { beginner: "מתחילות", intermediate: "בינוני", advanced: "מתקדם" } as const;
 const TIER_LABEL = { basic: "Basic", pro: "Pro", elite: "Elite" } as const;
+const TIER_RANK: Record<string, number> = { basic: 1, pro: 2, elite: 3 };
+const tierCovers = (userTier: string | null, required: string) =>
+  (TIER_RANK[userTier ?? ""] ?? 0) >= (TIER_RANK[required] ?? 0);
 
 // ─── Page ────────────────────────────────────────────────────────
 export default function CoursePage({ params }: { params: { slug: string } }) {
@@ -36,6 +39,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const { courses } = useCourses();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin]       = useState(false);
+  const [userTier, setUserTier]     = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [lessonVideo, setLessonVideo]       = useState<{ videoId: string; videoProvider: string } | null>(null);
   const [videoFetching, setVideoFetching]   = useState(false);
@@ -48,8 +52,9 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     sb.auth.getUser().then(({ data }) => {
       if (data.user) setIsLoggedIn(true);
     });
-    sb.from("profiles").select("role").then(({ data }) => {
+    sb.from("profiles").select("role, subscription_tier").then(({ data }) => {
       if (data?.[0]?.role === "admin") setIsAdmin(true);
+      setUserTier(data?.[0]?.subscription_tier ?? null);
     });
   }, []);
 
@@ -305,29 +310,50 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={course.instructor.photoUrl} alt={course.instructor.name} className="w-full h-full object-cover" />
                 </div>
-                <p className="text-[0.55rem] tracking-[0.28em] uppercase mb-1.5" style={{ color: "#C4857A" }}>המדריכה</p>
+                <p className="text-[0.55rem] tracking-[0.28em] uppercase mb-1.5" style={{ color: "#C4857A" }}>המנטורית שלך</p>
                 <h3 className="text-base font-black mb-2" style={{ color: "#FFF8F5" }}>{course.instructor.name}</h3>
                 {course.instructor.bio && (
                   <p className="text-[0.68rem] leading-relaxed" style={{ color: "#5A3830" }}>{course.instructor.bio}</p>
                 )}
               </div>
 
-              {/* CTA */}
+              {/* CTA — לפי מצב auth + tier */}
               <div className="px-5 pb-5">
-                <Link
-                  href="/subscription"
-                  className="block w-full py-3 rounded-xl text-center text-[0.82rem] font-black transition-all hover:opacity-90"
-                  style={{
-                    background: "linear-gradient(135deg,#C4857A,#D4998E)",
-                    color: "#080608",
-                    boxShadow: "0 4px 18px rgba(196,133,122,0.3)",
-                  }}
-                >
-                  הצטרפי עכשיו
-                </Link>
-                <p className="text-center text-[0.55rem] mt-2" style={{ color: "#3A2020" }}>
-                  גישה מלאה עם מנוי {TIER_LABEL[course.tier]}
-                </p>
+                {!isLoggedIn ? (
+                  <>
+                    <Link
+                      href="/subscription"
+                      className="block w-full py-3 rounded-xl text-center text-[0.82rem] font-black transition-all hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608", boxShadow: "0 4px 18px rgba(196,133,122,0.3)" }}
+                    >
+                      הצטרפי עכשיו
+                    </Link>
+                    <p className="text-center text-[0.55rem] mt-2" style={{ color: "#3A2020" }}>
+                      גישה מלאה עם מנוי {TIER_LABEL[course.tier]}
+                    </p>
+                  </>
+                ) : isAdmin || tierCovers(userTier, course.tier) ? (
+                  <div
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl"
+                    style={{ background: "rgba(74,155,111,0.1)", border: "1px solid rgba(74,155,111,0.22)" }}
+                  >
+                    <Check size={14} style={{ color: "#4A9B6F" }} />
+                    <span className="text-[0.78rem] font-bold" style={{ color: "#4A9B6F" }}>גישה מלאה</span>
+                  </div>
+                ) : (
+                  <>
+                    <Link
+                      href="/subscription"
+                      className="block w-full py-3 rounded-xl text-center text-[0.82rem] font-black transition-all hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608", boxShadow: "0 4px 18px rgba(196,133,122,0.3)" }}
+                    >
+                      שדרגי מנוי ↑
+                    </Link>
+                    <p className="text-center text-[0.55rem] mt-2" style={{ color: "#3A2020" }}>
+                      נדרש מנוי {TIER_LABEL[course.tier]}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

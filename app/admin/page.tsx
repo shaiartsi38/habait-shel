@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   Plus, Edit2, Eye, EyeOff, Trash2, X,
-  GripVertical, Upload, Check, ChevronDown,
+  GripVertical, Upload, Check, ChevronDown, ChevronUp, Save,
   Users, BarChart3, Settings, Video, Loader2,
   RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles, Download,
 } from "lucide-react";
@@ -22,6 +22,7 @@ import {
   dbUploadImage,
   dbUploadVideo,
   dbSeedDefaultCourses,
+  dbUpdateCourseOrder,
 } from "@/lib/supabase/courses-db";
 import type { VideoProvider } from "@/lib/courses-data";
 
@@ -367,11 +368,45 @@ function CoursesSection({
   const [delConfirm, setDelConfirm] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [ordered, setOrdered] = useState<CourseData[]>(courses);
+  const [orderChanged, setOrderChanged] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const dragIdx = useRef<number | null>(null);
+
+  useEffect(() => { setOrdered(courses); setOrderChanged(false); }, [courses]);
 
   const handleToggle = async (id: string) => {
     setToggling(id);
     await onTogglePublish(id);
     setToggling(null);
+  };
+
+  const move = (from: number, to: number) => {
+    if (to < 0 || to >= ordered.length) return;
+    const next = [...ordered];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    setOrdered(next);
+    setOrderChanged(true);
+  };
+
+  const handleDragStart = (idx: number) => { dragIdx.current = idx; };
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (dragIdx.current === null || dragIdx.current === idx) return;
+    move(dragIdx.current, idx);
+    dragIdx.current = idx;
+  };
+  const handleDragEnd = () => { dragIdx.current = null; };
+
+  const saveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      await dbUpdateCourseOrder(ordered.map((c, i) => ({ id: c.id, sortOrder: i })));
+      setOrderChanged(false);
+    } finally {
+      setSavingOrder(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -408,24 +443,53 @@ function CoursesSection({
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>קורסים</h2>
-        <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>
-          {courses.length} קורסים · {courses.filter((c) => c.isPublished).length} פורסמו
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>קורסים</h2>
+          <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>
+            {courses.length} קורסים · {courses.filter((c) => c.isPublished).length} פורסמו · גרור את ⠿ לסידור
+          </p>
+        </div>
+        {orderChanged && (
+          <button
+            onClick={saveOrder}
+            disabled={savingOrder}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[0.75rem] font-bold shrink-0 transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+            style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608", boxShadow: "0 3px 12px rgba(196,133,122,0.35)" }}
+          >
+            {savingOrder ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+            {savingOrder ? "שומר..." : "שמור סדר"}
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col gap-3">
-        {courses.map((course) => {
+        {ordered.map((course, idx) => {
           const st = STATUS_CONFIG[getCourseStatus(course)];
           const isDelConfirm = delConfirm === course.id;
 
           return (
             <div
               key={course.id}
+              draggable
+              onDragStart={() => handleDragStart(idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDragEnd={handleDragEnd}
               className="flex items-center gap-4 rounded-2xl p-4"
-              style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.07)" }}
+              style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.07)", cursor: "grab" }}
             >
+              {/* Drag handle + order arrows */}
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <GripVertical size={16} style={{ color: "rgba(196,133,122,0.35)", cursor: "grab" }} />
+                <button onClick={() => move(idx, idx - 1)} disabled={idx === 0} className="p-0.5 rounded hover:opacity-80 disabled:opacity-20">
+                  <ChevronUp size={14} style={{ color: "#C4857A" }} />
+                </button>
+                <span className="text-[0.48rem] font-bold" style={{ color: "#3A2020" }}>{idx + 1}</span>
+                <button onClick={() => move(idx, idx + 1)} disabled={idx === ordered.length - 1} className="p-0.5 rounded hover:opacity-80 disabled:opacity-20">
+                  <ChevronDown size={14} style={{ color: "#C4857A" }} />
+                </button>
+              </div>
+
               {/* Thumbnail */}
               <div className="relative w-24 h-32 md:w-28 md:h-[148px] rounded-xl overflow-hidden shrink-0" style={{ background: "#0f0b0e" }}>
                 {course.image && (

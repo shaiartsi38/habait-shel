@@ -3,8 +3,9 @@
 import { useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
+import { Heart, ShoppingBag } from "lucide-react";
 import type { CourseData } from "@/lib/courses-data";
+import { useFavorites } from "@/lib/favorites-context";
 
 const COURSE_PRICE = 489;
 
@@ -40,6 +41,8 @@ export function CourseCard({ course }: CourseCardProps) {
   const [showVideo, setShowVideo] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tc = TIER_COLOR[course.tier];
+  const { favorites, isLoggedIn, toggle } = useFavorites();
+  const isFav = favorites.has(course.id);
 
   const handleMouseEnter = useCallback(() => {
     if (!course.videoId) return;
@@ -98,6 +101,22 @@ export function CourseCard({ course }: CourseCardProps) {
               "linear-gradient(to top, rgba(8,6,8,0.97) 0%, rgba(8,6,8,0.6) 40%, rgba(8,6,8,0.12) 72%, transparent 100%)",
           }}
         />
+
+        {/* Favorite heart — top left */}
+        {isLoggedIn && (
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(course.id); }}
+            className="absolute top-2.5 left-2.5 z-30 p-1.5 rounded-full transition-transform active:scale-90"
+            style={{ background: "rgba(8,6,8,0.55)", backdropFilter: "blur(8px)" }}
+            aria-label={isFav ? "הסר ממועדפים" : "הוסף למועדפים"}
+          >
+            <Heart
+              size={14}
+              fill={isFav ? "#C4857A" : "none"}
+              style={{ color: isFav ? "#C4857A" : "rgba(255,248,245,0.5)", transition: "color 0.18s, fill 0.18s" }}
+            />
+          </button>
+        )}
 
         {/* New badge — top right (RTL: right = document start) */}
         {course.isNew && (

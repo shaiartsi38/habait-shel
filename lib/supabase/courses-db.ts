@@ -52,6 +52,7 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
     isPublished: Boolean(row.is_published),
     isNew,
     showOnHome: row.show_on_home !== false,
+    sortOrder: Number(row.sort_order ?? 0),
     instructor: (meta.instructor as CourseData["instructor"]) ?? { name: "נטלי ארצי", bio: "", photoUrl: "" },
     lessons,
     tags: cleanTags,
@@ -72,6 +73,7 @@ function courseToRow(c: CourseData): Record<string, unknown> {
     required_tier: c.tier,
     is_published: Boolean(c.isPublished),
     show_on_home: c.showOnHome ?? true,
+    sort_order: c.sortOrder ?? 0,
     duration_minutes: Number(c.durationMinutes) || 0,
     lesson_count: c.lessons.length,
     tags,
@@ -102,6 +104,7 @@ export async function dbFetchCourses(): Promise<CourseData[]> {
   const { data: coursesData, error: coursesErr } = await sb
     .from("courses")
     .select("*")
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
   if (coursesErr) throw coursesErr;
   if (!coursesData || coursesData.length === 0) return [];
@@ -190,6 +193,16 @@ export async function dbUploadVideo(file: File): Promise<string> {
   if (error) throw error;
   const { data: { publicUrl } } = sb.storage.from("course-media").getPublicUrl(data.path);
   return publicUrl;
+}
+
+export async function dbUpdateCourseOrder(updates: { id: string; sortOrder: number }[]): Promise<void> {
+  if (!hasSupabase()) return;
+  const sb = createClient();
+  await Promise.all(
+    updates.map(({ id, sortOrder }) =>
+      sb.from("courses").update({ sort_order: sortOrder }).eq("id", id)
+    )
+  );
 }
 
 export async function dbUploadImage(file: File): Promise<string> {

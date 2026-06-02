@@ -4,17 +4,18 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CreditCard, Home, LayoutDashboard, Play, Settings, Sparkles, Users, PanelRightClose, PanelRightOpen, LogIn, LogOut, UserCircle } from "lucide-react";
+import { CreditCard, Heart, Home, LayoutDashboard, Play, Settings, Sparkles, Users, PanelRightClose, PanelRightOpen, LogIn, LogOut, UserCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV = [
-  { href: "/",              label: "בית",       icon: Home },
-  { href: "/courses",       label: "קורסים",     icon: Play },
-  { href: "/dashboard",     label: "דשבורד",      icon: LayoutDashboard },
-  { href: "/community",     label: "קהילה",      icon: Users },
-  { href: "/subscription",  label: "מנוי",       icon: CreditCard },
-  { href: "/natalie",       label: "נטלי ארצי",  icon: Sparkles },
-  { href: "/profile",       label: "הפרופיל שלי", icon: UserCircle },
+  { href: "/",              label: "בית",         icon: Home },
+  { href: "/courses",       label: "קורסים",       icon: Play },
+  { href: "/favorites",     label: "מועדפים",      icon: Heart },
+  { href: "/dashboard",     label: "דשבורד",        icon: LayoutDashboard },
+  { href: "/community",     label: "קהילה",        icon: Users },
+  { href: "/subscription",  label: "מנוי",         icon: CreditCard },
+  { href: "/natalie",       label: "נטלי ארצי",    icon: Sparkles },
+  { href: "/profile",       label: "הפרופיל שלי",  icon: UserCircle },
 ] as const;
 
 export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
