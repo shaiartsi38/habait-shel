@@ -9,7 +9,7 @@ import {
   Plus, Edit2, Eye, EyeOff, Trash2, X,
   GripVertical, Upload, Check, ChevronDown,
   Users, BarChart3, Settings, Video, Loader2,
-  RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles,
+  RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles, Download,
 } from "lucide-react";
 import { HomepageEditor, SubscriptionEditor, NatalieEditor } from "@/components/admin/ContentEditors";
 import { CATEGORIES, type CourseData, type CourseLesson } from "@/lib/courses-data";
@@ -991,7 +991,37 @@ function ActionBtn({ onClick, title, children, style, disabled }: { onClick: () 
 
 // ─── Users Section ────────────────────────────────────────────────
 
-type ProfileRow = { id: string; role: string; created_at: string; email?: string };
+type ProfileRow = {
+  id: string; role: string; created_at: string;
+  email?: string; first_name?: string; last_name?: string;
+  subscription_tier?: string | null;
+};
+
+function exportUsersCSV(users: ProfileRow[]) {
+  const TIER_LABEL: Record<string, string> = { basic: "Basic", pro: "Pro", elite: "Elite" };
+  const headers = ["שם פרטי", "שם משפחה", "אימייל", "תפקיד", "מנוי", "תאריך הצטרפות"];
+  const rows = users.map((u) => [
+    u.first_name ?? "",
+    u.last_name ?? "",
+    u.email ?? "",
+    u.role,
+    u.subscription_tier ? (TIER_LABEL[u.subscription_tier] ?? u.subscription_tier) : "אין",
+    new Date(u.created_at).toLocaleDateString("he-IL"),
+  ]);
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  // BOM להצגה תקינה של עברית ב-Excel
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `משתמשות_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 function UsersSection() {
   const [users, setUsers]       = useState<ProfileRow[]>([]);
@@ -1005,7 +1035,7 @@ function UsersSection() {
         const sb = createClient();
         const { data, error: err } = await sb
           .from("profiles")
-          .select("id, role, created_at, email")
+          .select("id, role, created_at, email, first_name, last_name, subscription_tier")
           .order("created_at", { ascending: false });
         if (err) throw err;
         setUsers((data ?? []) as ProfileRow[]);
@@ -1041,9 +1071,24 @@ function UsersSection() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>משתמשות</h2>
-        <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>{users.length} משתמשות רשומות</p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>משתמשות</h2>
+          <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>{users.length} משתמשות רשומות</p>
+        </div>
+        <button
+          onClick={() => exportUsersCSV(users)}
+          disabled={users.length === 0}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.72rem] font-bold transition-all hover:opacity-90 active:scale-95 disabled:opacity-30"
+          style={{
+            background: "rgba(196,133,122,0.1)",
+            border: "1px solid rgba(196,133,122,0.25)",
+            color: "#C4857A",
+          }}
+        >
+          <Download size={13} />
+          ייצוא לאקסל
+        </button>
       </div>
 
       {error && (
@@ -1060,8 +1105,14 @@ function UsersSection() {
               {u.role === "admin" ? "A" : "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[0.75rem] font-semibold truncate" style={{ color: "#FFF8F5" }}>{u.email ?? `${u.id.slice(0, 8)}...`}</p>
-              <p className="text-[0.58rem]" style={{ color: "#5A3830" }}>{new Date(u.created_at).toLocaleDateString("he-IL")}</p>
+              <p className="text-[0.75rem] font-semibold truncate" style={{ color: "#FFF8F5" }}>
+                {[u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || `${u.id.slice(0, 8)}...`}
+              </p>
+              <p className="text-[0.58rem] truncate" style={{ color: "#5A3830" }}>
+                {u.email && (u.first_name || u.last_name) ? u.email + " · " : ""}
+                {new Date(u.created_at).toLocaleDateString("he-IL")}
+                {u.subscription_tier ? ` · ${u.subscription_tier}` : ""}
+              </p>
             </div>
             <StatusPill
               color={u.role === "admin" ? "#C4857A" : "rgba(255,248,245,0.35)"}

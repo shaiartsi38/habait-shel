@@ -280,11 +280,15 @@ CREATE POLICY "users manage own progress" ON user_progress
 - מובייל: כפתור Play גדול, touch-friendly
 - איכות: 360/720/1080 (רק לdirect)
 
-### ⬜ שלב 5 — אבטחה נוספת (לאחר השקה)
-- Security headers ב-`next.config.js`
-- Rate limiting על API routes
-- CORS על bucket course-media
-- הגבלת sessions (מניעת שיתוף סיסמה)
+### 🔄 שלב 5 — אבטחה נוספת
+
+**✅ Security headers** — `next.config.js`: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS, CSP (YouTube/Vimeo/Supabase מורשים)
+
+**✅ Rate limiting** — `lib/rate-limit.ts`: in-memory, 30 req/min per IP על `/api/lesson-video`, 429 על חריגה. לסקייל גדול → Upstash Redis.
+
+**✅ CORS** — להגדיר ידנית ב-Supabase Dashboard: Storage → Settings → CORS → הוסף `https://natalieartsi.com` + URL ה-Vercel.
+
+**⬜ הגבלת sessions** — מניעת שיתוף סיסמה (עתידי)
 
 ### ⬜ שלב 6 — עתידי (לא נוגעים כרגע)
 - Cardcom webhook + יצירת משתמשים אוטומטית + `subscription_tier`
