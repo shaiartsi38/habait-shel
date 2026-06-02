@@ -175,11 +175,11 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
         <MobileTab href="/courses" label="קורסים" icon={Play} active={isActive("/courses")} />
         {userEmail ? (
           <>
-            <MobileTab href="/dashboard" label="דשבורד" icon={LayoutDashboard} active={isActive("/dashboard")} />
             {isAdmin
               ? <MobileTab href="/admin" label="ניהול" icon={Settings} active={isActive("/admin")} />
-              : <MobileTab href="/community" label="קהילה" icon={Users} active={isActive("/community")} />
+              : <MobileTab href="/dashboard" label="דשבורד" icon={LayoutDashboard} active={isActive("/dashboard")} />
             }
+            <MobileTab href="/community" label="קהילה" icon={Users} active={isActive("/community")} />
             <button
               onClick={handleLogout}
               className="flex flex-col items-center gap-0.5 px-2 min-w-[52px]"
