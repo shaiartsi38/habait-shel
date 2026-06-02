@@ -17,8 +17,11 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const { courses } = useCourses();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin]       = useState(false);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+  const [lessonVideo, setLessonVideo]       = useState<{ videoId: string; videoProvider: string } | null>(null);
+  const [videoFetching, setVideoFetching]   = useState(false);
+  const [videoAccessDenied, setVideoAccessDenied] = useState(false);
 
   useEffect(() => {
     const sb = createClient();
@@ -34,22 +37,49 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const course = courses.find((c) => c.slug === slug) ?? COURSES.find((c) => c.slug === slug);
   if (!course) notFound();
 
-  const firstLesson = course.lessons[0];
-  const activeLesson = activeLessonId ? course.lessons.find((l) => l.id === activeLessonId) : null;
-
-  const displayVideoId = activeLesson?.videoId || course.videoId || firstLesson?.videoId || "";
-  const displayProvider = activeLesson?.videoProvider
-    || (course.videoId ? (course.videoProvider ?? "youtube") : (firstLesson?.videoProvider ?? "youtube"));
-  const displayTitle = activeLesson?.title || course.title;
-
-  const activeLessonIndex = activeLessonId
-    ? course.lessons.findIndex((l) => l.id === activeLessonId)
-    : -1;
+  const firstLesson    = course.lessons[0];
+  const activeLesson   = activeLessonId ? course.lessons.find((l) => l.id === activeLessonId) : null;
+  const activeLessonIndex = activeLessonId ? course.lessons.findIndex((l) => l.id === activeLessonId) : -1;
   const prevLesson = activeLessonIndex > 0 ? course.lessons[activeLessonIndex - 1] : null;
-  const nextLesson =
-    activeLessonIndex >= 0 && activeLessonIndex < course.lessons.length - 1
-      ? course.lessons[activeLessonIndex + 1]
-      : null;
+  const nextLesson = activeLessonIndex >= 0 && activeLessonIndex < course.lessons.length - 1
+    ? course.lessons[activeLessonIndex + 1]
+    : null;
+
+  // כשמשתנה שיעור פעיל — שיעורים חינמיים מהContext, שאר דרך API
+  useEffect(() => {
+    if (!activeLessonId || !activeLesson) return;
+    setVideoAccessDenied(false);
+
+    if (activeLesson.isFree) {
+      // חינמי — ישיר מהcontext, ללא בקשת רשת
+      setLessonVideo({ videoId: activeLesson.videoId, videoProvider: activeLesson.videoProvider ?? "youtube" });
+      return;
+    }
+
+    setLessonVideo(null);
+    setVideoFetching(true);
+    const ctrl = new AbortController();
+
+    fetch(`/api/lesson-video?lessonId=${activeLessonId}`, { signal: ctrl.signal })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) { setVideoAccessDenied(true); return; }
+        setLessonVideo({ videoId: data.videoId, videoProvider: data.videoProvider ?? "youtube" });
+      })
+      .catch(() => {})
+      .finally(() => setVideoFetching(false));
+
+    return () => ctrl.abort();
+  }, [activeLessonId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const displayVideoId = activeLessonId
+    ? (lessonVideo?.videoId || "")
+    : (course.videoId || firstLesson?.videoId || "");
+  const displayProvider = (activeLessonId
+    ? lessonVideo?.videoProvider
+    : (course.videoId ? (course.videoProvider ?? "youtube") : (firstLesson?.videoProvider ?? "youtube"))
+  ) as import("@/lib/courses-data").VideoProvider ?? "youtube";
+  const displayTitle = activeLesson?.title || course.title;
 
   return (
     <div className="min-h-screen sidebar-safe" style={{ background: "var(--black)", color: "var(--white)" }}>
@@ -58,14 +88,42 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
 
       {/* ── Main content ── */}
       <div className="px-4 md:px-10 py-10 max-w-4xl">
-        {/* Video player */}
-        {displayVideoId && (
-          <motion.div
-            className={activeLessonId ? "mb-3" : "mb-10"}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.1 }}
-          >
+        {/* Video player area */}
+        <motion.div
+          className={activeLessonId ? "mb-3" : "mb-10"}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.1 }}
+        >
+          {videoFetching ? (
+            <div
+              className="relative w-full rounded-2xl flex items-center justify-center"
+              style={{ aspectRatio: "16/9", background: "#0f0b0e", boxShadow: "0 12px 40px rgba(0,0,0,0.55)" }}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(196,133,122,0.4)", borderTopColor: "#C4857A" }} />
+                <span className="text-[0.65rem]" style={{ color: "rgba(196,133,122,0.6)" }}>טוען שיעור...</span>
+              </div>
+            </div>
+          ) : videoAccessDenied ? (
+            <div
+              className="relative w-full rounded-2xl flex items-center justify-center"
+              style={{ aspectRatio: "16/9", background: "#0f0b0e", boxShadow: "0 12px 40px rgba(0,0,0,0.55)" }}
+            >
+              <div className="flex flex-col items-center gap-3 text-center px-8">
+                <Lock size={28} style={{ color: "rgba(196,133,122,0.5)" }} />
+                <p className="text-sm font-bold" style={{ color: "#FFF8F5" }}>אין גישה לשיעור זה</p>
+                <p className="text-[0.65rem]" style={{ color: "#5A3830" }}>השיעור דורש מנוי מתאים</p>
+                <a
+                  href="/subscription"
+                  className="mt-1 px-5 py-2 rounded-xl text-[0.72rem] font-black transition-opacity hover:opacity-90"
+                  style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }}
+                >
+                  שדרגי מנוי
+                </a>
+              </div>
+            </div>
+          ) : displayVideoId ? (
             <VideoPlayer
               key={activeLessonId ?? "trailer"}
               videoId={displayVideoId}
@@ -74,8 +132,8 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               title={displayTitle}
               autoStart={!!activeLessonId}
             />
-          </motion.div>
-        )}
+          ) : null}
+        </motion.div>
 
         {/* Lesson navigation */}
         {activeLessonId && (
