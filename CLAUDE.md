@@ -136,6 +136,32 @@ middleware.ts                         ← הגנת routes לפי role
 | `thumbnails public read` | SELECT | public |
 | `avatars public read` | SELECT | public |
 | `videos authenticated read` | SELECT | authenticated (אם הוחל) |
+| `course-media: admin upload` | INSERT | admin בלבד (role = 'admin') |
+| `course-media: admin update` | UPDATE | admin בלבד |
+| `course-media: public read` | SELECT | public |
+
+**SQL להרצה בSupabase SQL Editor (אם עדיין לא הורץ — נדרש לעלות תמונות בהגדרות אדמין):**
+```sql
+DROP POLICY IF EXISTS "course-media: admin upload" ON storage.objects;
+CREATE POLICY "course-media: admin upload"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (
+  bucket_id = 'course-media'
+  AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
+);
+
+DROP POLICY IF EXISTS "course-media: admin update" ON storage.objects;
+CREATE POLICY "course-media: admin update"
+ON storage.objects FOR UPDATE TO authenticated
+USING (
+  bucket_id = 'course-media'
+  AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
+);
+
+DROP POLICY IF EXISTS "course-media: public read" ON storage.objects;
+CREATE POLICY "course-media: public read"
+ON storage.objects FOR SELECT USING (bucket_id = 'course-media');
+```
 
 ---
 
@@ -307,15 +333,42 @@ CREATE POLICY "users manage own progress" ON user_progress
 - [ ] **Resend — מייל ברוכה הבאה** — תבנית HTML עם שם + סיסמה זמנית. *ממתין ל-Cardcom webhook.*
 
 **🟡 חשוב — ✅ הושלם:**
-- ✅ כפתור "שלחי ב-WhatsApp" בדשבורד עם deep link + טקסט הזמנה
+- ✅ כפתור "שלחי ב-WhatsApp" בדשבורד — deep link + טקסט הזמנה — דומיין: `https://www.natalieartsi.com`
 - ✅ Empty states — קורסים (skeleton + אין תוצאות + אין קורסים כלל)
 - ✅ Loading skeletons — shimmer cards בדף הקורסים, `loading` state ב-CoursesContext
 - ✅ RTL scrollbars — rose branded, WebKit + Firefox
+- ✅ תיקוני מובייל — ראה סעיף מובייל למטה
 
 **🟢 פחות דחוף:**
 - [ ] Meta Pixel + Google Analytics
 - [ ] Error boundaries
 - [ ] הגבלת sessions
+
+---
+
+## מובייל — מצב נוכחי ✅
+
+### Sidebar (`components/layout/Sidebar.tsx`)
+
+**desktop:** sidebar צף מימין, collapsible. כניסה/יציאה + "שדרג מנוי" בתחתית.
+
+**mobile bottom nav — לוגיקה לפי מצב auth:**
+
+| מצב | פריטים |
+|-----|--------|
+| לא מחובר | בית · קורסים · מנוי · **כניסה** (ורדרד) |
+| מחובר (user) | בית · קורסים · דשבורד · קהילה · **יציאה** |
+| אדמין | בית · קורסים · **ניהול** · קהילה · יציאה |
+
+- קהילה **תמיד** מוצגת למחוברים (כולל אדמין)
+- אדמין רואה "ניהול" במקום "דשבורד"
+- Auth state נטען async מ-Supabase — יכול להיות delay קצר בהצגה
+
+### דף הבית — תיקוני מובייל
+
+- **Hero title:** `text-5xl` במובייל (היה `text-4xl`) + overlay כהה יותר (62%, היה 42%) + `text-shadow`
+- **גריד קורסים:** גריד שטוח `grid-cols-2` אחד למובייל (`md:hidden`) — ללא "יתומים". דסקטופ שומר מבנה row1/row2/rest עם מחיצת נטלי (`hidden md:grid`).
+- **תמונות — fallback:** `onError` handlers על תמונת נטלי ובקארדים "בקרוב" — מציג placeholder ורדרד בעת כישלון טעינה. שורש הבעיה: `i.imghippo.com` לא אמין — **לטפל: להעלות את תמונת נטלי לSupabase Storage** ולעדכן `NATALIE_PROFILE` בשורה 18 של `app/(marketing)/page.tsx`.
 
 ### ⬜ שלב 6 — עתידי (לא נוגעים כרגע)
 - Cardcom webhook + יצירת משתמשים אוטומטית + `subscription_tier`
