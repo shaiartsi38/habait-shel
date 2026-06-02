@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 
 const TIER_RANK: Record<string, number> = { basic: 1, pro: 2, elite: 3 };
 
@@ -9,6 +10,13 @@ function tierCovers(userTier: string | null, requiredTier: string): boolean {
 }
 
 export async function GET(req: NextRequest) {
+  // 30 בקשות לדקה per IP
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const { allowed } = rateLimit(`lesson-video:${ip}`, 30, 60_000);
+  if (!allowed) {
+    return Response.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const lessonId = req.nextUrl.searchParams.get("lessonId");
   if (!lessonId) {
     return Response.json({ error: "Missing lessonId" }, { status: 400 });
