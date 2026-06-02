@@ -260,8 +260,28 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* Mobile tabs — horizontal scroll */}
+      <div className="md:hidden flex overflow-x-auto gap-1 px-4 py-3 sticky top-[57px] z-20"
+        style={{ background: "rgba(8,6,8,0.95)", borderBottom: "1px solid rgba(196,133,122,0.08)", scrollbarWidth: "none" }}>
+        {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setSection(id)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[0.72rem] font-semibold shrink-0 transition-colors"
+            style={{
+              color: section === id ? "#FFF8F5" : "#5A3830",
+              background: section === id ? "rgba(196,133,122,0.12)" : "transparent",
+              border: `1px solid ${section === id ? "rgba(196,133,122,0.25)" : "transparent"}`,
+            }}
+          >
+            <Icon size={13} style={{ color: section === id ? "#C4857A" : "currentColor" }} />
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex">
-        {/* Left nav */}
+        {/* Left nav — desktop only */}
         <aside
           className="hidden md:flex flex-col gap-0.5 w-44 shrink-0 pt-8 px-3 sticky top-16 self-start h-[calc(100vh-4rem)] overflow-y-auto"
           style={{ borderLeft: "1px solid rgba(196,133,122,0.06)" }}
