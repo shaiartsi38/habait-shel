@@ -128,7 +128,7 @@ function HeroSection({ hero }: { hero: HeroContent }) {
       )}
 
       {/* Overlay — קל יותר במובייל */}
-      <div className="md:hidden absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.42)" }} />
+      <div className="md:hidden absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.62)" }} />
       <div className="hidden md:block absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.72)" }} />
       {/* Bottom vignette */}
       <div
@@ -152,7 +152,8 @@ function HeroSection({ hero }: { hero: HeroContent }) {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className="font-black leading-[0.9] tracking-tight text-4xl md:text-7xl"
+            className="font-black leading-[0.9] tracking-tight text-5xl md:text-7xl"
+            style={{ textShadow: "0 2px 24px rgba(0,0,0,0.7)" }}
           >
             <span style={{ color: "#FFF8F5" }}>{hero.title1}</span>
             <br />
@@ -276,9 +277,28 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
         <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
       </motion.div>
 
-      {/* Row 1 */}
+      {/* Mobile: flat 2-col grid — prevents orphan cards */}
+      {visible.length > 0 && (
+        <div className="md:hidden grid grid-cols-2 gap-0 mb-4">
+          {visible.map((course, i) => (
+            <motion.div
+              key={course.id}
+              initial={{ opacity: 0, y: 25 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.45, ease: "easeOut", delay: (i % 4) * 0.07 }}
+            >
+              <BreathingCard>
+                <CourseCard course={course} />
+              </BreathingCard>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Row 1 — desktop only */}
       {row1.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-0 md:gap-2 mb-0 md:mb-2">
+        <div className="hidden md:grid md:grid-cols-5 gap-2 mb-2">
           {row1.map((course, i) => (
             <motion.div
               key={course.id}
@@ -332,9 +352,9 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
         </Link>
       </motion.div>
 
-      {/* Row 2 */}
+      {/* Row 2 — desktop only */}
       {row2.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-0 md:gap-2 mb-0 md:mb-2">
+        <div className="hidden md:grid md:grid-cols-5 gap-2 mb-2">
           {row2.map((course, i) => (
             <motion.div
               key={course.id}
@@ -382,9 +402,9 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
         </div>
       )}
 
-      {/* Extra rows */}
+      {/* Extra rows — desktop only */}
       {rest.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-0 md:gap-2 mb-0 md:mb-8">
+        <div className="hidden md:grid md:grid-cols-5 gap-2 mb-8">
           {rest.map((course, i) => (
             <motion.div
               key={course.id}
@@ -464,6 +484,7 @@ function ComingSoonSection({ items }: { items: ComingSoonItem[] }) {
 }
 
 function ComingSoonCard({ item, index }: { item: ComingSoonItem; index: number }) {
+  const [imgError, setImgError] = useState(false);
   return (
     <motion.div
       className="relative rounded-xl overflow-hidden cursor-default flex-shrink-0 group"
@@ -474,9 +495,13 @@ function ComingSoonCard({ item, index }: { item: ComingSoonItem; index: number }
       whileHover={{ y: -6, scale: 1.03, transition: { type: "spring", stiffness: 380, damping: 28 } }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: index * 0.1 }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-all duration-500 group-hover:opacity-70 group-hover:brightness-90"
-        style={{ opacity: 0.5 }} />
+      {imgError ? (
+        <div className="w-full h-full" style={{ background: "linear-gradient(135deg, rgba(196,133,122,0.06), rgba(8,6,8,0.98))" }} />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-all duration-500 group-hover:opacity-70 group-hover:brightness-90"
+          style={{ opacity: 0.5 }} onError={() => setImgError(true)} />
+      )}
       <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,6,8,0.98) 0%, rgba(8,6,8,0.4) 55%, transparent 100%)" }} />
 
       {/* Badge */}
@@ -578,6 +603,7 @@ function TestimonialsSection({ testimonials }: { testimonials: Testimonial[] }) 
 
 // ─── Natalie Section ──────────────────────────────────────────────
 function NatalieSection() {
+  const [imgError, setImgError] = useState(false);
   return (
     <section
       className="py-20 px-5 sidebar-safe md:px-12 text-right"
@@ -610,8 +636,19 @@ function NatalieSection() {
             className="relative aspect-[4/5] rounded-2xl overflow-hidden"
             style={{ boxShadow: "0 12px 48px rgba(0,0,0,0.5)", border: "1px solid rgba(196,133,122,0.08)" }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={NATALIE_PROFILE} alt="נטלי ארצי" className="w-full h-full object-cover object-top" />
+            {imgError ? (
+              <div className="w-full h-full flex items-center justify-center"
+                style={{ background: "linear-gradient(135deg, rgba(196,133,122,0.08) 0%, rgba(8,6,8,0.95) 100%)" }}>
+                <div className="text-center">
+                  <p className="font-black" style={{ fontSize: 72, color: "#C4857A" }}>נ</p>
+                  <p className="text-sm font-bold mt-1" style={{ color: "rgba(255,248,245,0.35)" }}>נטלי ארצי</p>
+                </div>
+              </div>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={NATALIE_PROFILE} alt="נטלי ארצי" className="w-full h-full object-cover object-top"
+                onError={() => setImgError(true)} />
+            )}
             <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none" style={{ background: "linear-gradient(225deg,rgba(196,133,122,0.14) 0%,transparent 65%)" }} />
           </div>
         </motion.div>

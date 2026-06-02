@@ -77,7 +77,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <a
-          href={`https://wa.me/?text=${encodeURIComponent("היי! גיליתי פלטפורמה מדהימה לקורסי איפור מקצועיים עם נטלי ארצי 🎨✨\nהצטרפי לקהילה: https://natalieartzi.com")}`}
+          href={`https://wa.me/?text=${encodeURIComponent("היי! גיליתי פלטפורמה מדהימה לקורסי איפור מקצועיים עם נטלי ארצי 🎨✨\nהצטרפי לקהילה: https://www.natalieartsi.com")}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[0.78rem] font-black shrink-0 transition-opacity hover:opacity-90 active:scale-95"

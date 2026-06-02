@@ -171,9 +171,41 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
           paddingTop: "0.625rem",
         }}
       >
-        {NAV.slice(0, 5).map((item) => (
-          <MobileTab key={item.href} href={item.href} label={item.label} icon={item.icon} active={isActive(item.href)} />
-        ))}
+        <MobileTab href="/" label="בית" icon={Home} active={isActive("/")} />
+        <MobileTab href="/courses" label="קורסים" icon={Play} active={isActive("/courses")} />
+        {userEmail ? (
+          <>
+            <MobileTab href="/dashboard" label="דשבורד" icon={LayoutDashboard} active={isActive("/dashboard")} />
+            {isAdmin
+              ? <MobileTab href="/admin" label="ניהול" icon={Settings} active={isActive("/admin")} />
+              : <MobileTab href="/community" label="קהילה" icon={Users} active={isActive("/community")} />
+            }
+            <button
+              onClick={handleLogout}
+              className="flex flex-col items-center gap-0.5 px-2 min-w-[52px]"
+              style={{ minHeight: 44, justifyContent: "center" }}
+            >
+              <div className="p-2 rounded-xl">
+                <LogOut size={22} style={{ color: "#8B6355" }} />
+              </div>
+              <span className="text-[0.56rem] font-medium" style={{ color: "#8B6355" }}>יציאה</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <MobileTab href="/subscription" label="מנוי" icon={CreditCard} active={isActive("/subscription")} />
+            <Link
+              href="/login"
+              className="flex flex-col items-center gap-0.5 px-2 min-w-[52px]"
+              style={{ minHeight: 44, justifyContent: "center" }}
+            >
+              <div className="p-2 rounded-xl">
+                <LogIn size={22} style={{ color: "#C4857A" }} />
+              </div>
+              <span className="text-[0.56rem] font-medium" style={{ color: "#C4857A" }}>כניסה</span>
+            </Link>
+          </>
+        )}
       </motion.nav>
     </>
   );
