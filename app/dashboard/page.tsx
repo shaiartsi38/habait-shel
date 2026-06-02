@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { BookOpen, Trophy, Flame, Clock, X, ChevronRight, AlertCircle, CheckCircle } from "lucide-react";
+import { BookOpen, Trophy, Flame, Clock, X, ChevronRight, AlertCircle, CheckCircle, Share2 } from "lucide-react";
 import {
   type CancellationFlow, DEFAULT_CANCELLATION_FLOW,
   dbGetCancellationFlow,
@@ -62,6 +62,30 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+      </motion.div>
+
+      {/* WhatsApp share */}
+      <motion.div
+        className="rounded-2xl p-6 flex items-center justify-between gap-4"
+        style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+      >
+        <div>
+          <p className="text-sm font-black mb-1" style={{ color: "#FFF8F5" }}>שתפי עם חברה</p>
+          <p className="text-[0.65rem]" style={{ color: "#5A3830" }}>
+            כל חברה שמצטרפת — עוד מאפרת שצומחת איתך
+          </p>
+        </div>
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent("היי! גיליתי פלטפורמה מדהימה לקורסי איפור מקצועיים עם נטלי ארצי 🎨✨\nהצטרפי לקהילה: https://natalieartzi.com")}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[0.78rem] font-black shrink-0 transition-opacity hover:opacity-90 active:scale-95"
+          style={{ background: "rgba(37,211,102,0.12)", color: "#25D366", border: "1px solid rgba(37,211,102,0.25)" }}
+        >
+          <Share2 size={14} />
+          שלחי ב-WhatsApp
+        </a>
       </motion.div>
 
       {/* Cancellation modal */}

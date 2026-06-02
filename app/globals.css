@@ -52,12 +52,25 @@
     color: var(--white);
   }
 
-  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #1e1318; border-radius: 99px; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(196,133,122,0.2);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(196,133,122,0.38);
+  }
+  /* Firefox */
+  * { scrollbar-width: thin; scrollbar-color: rgba(196,133,122,0.2) transparent; }
 }
 
 /* ─── Keyframe Animations ─────────────────────────────────── */
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 
 @keyframes rosePulse {
   0%, 100% {

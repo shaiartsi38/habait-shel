@@ -9,6 +9,7 @@ const STORAGE_KEY = "hbm-courses-v3";
 
 interface CoursesContextValue {
   courses: CourseData[];
+  loading: boolean;
   setCourses: (courses: CourseData[]) => void;
   resetToDefaults: () => void;
 }
@@ -16,6 +17,7 @@ interface CoursesContextValue {
 const CoursesContext = createContext<CoursesContextValue | null>(null);
 
 export function CoursesProvider({ children }: { children: ReactNode }) {
+  const [loading, setLoading] = useState(true);
   const [courses, setCoursesState] = useState<CourseData[]>(() => {
     // טעינה מיידית מ-localStorage — ללא השהייה
     try {
@@ -40,7 +42,8 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(live)); } catch { /* ignore */ }
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const setCourses = (next: CourseData[]) => {
@@ -51,7 +54,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   const resetToDefaults = () => setCourses(COURSES);
 
   return (
-    <CoursesContext.Provider value={{ courses, setCourses, resetToDefaults }}>
+    <CoursesContext.Provider value={{ courses, loading, setCourses, resetToDefaults }}>
       {children}
     </CoursesContext.Provider>
   );
