@@ -323,8 +323,13 @@ CREATE POLICY "users manage own progress" ON user_progress
 - **Favicon + Apple Icon** — `app/icon.tsx` + `app/apple-icon.tsx` דינמיים (ImageResponse), אות "נ" על רקע כהה.
 - **PWA Manifest** — `app/manifest.ts` — RTL, theme #C4857A, standalone.
 - **Mobile touch targets** — מינימום 44px לפי Apple HIG, viewport meta עם theme-color.
-- **Admin mobile nav** — נוסף horizontal scroll tabs לאדמין (sidebar היה `hidden md:flex` — הגדרות לא הייתה נגישה במובייל).
+- **Admin mobile nav** — horizontal scroll tabs לאדמין במובייל.
 - **Admin CSV export** — `exportUsersCSV()` עם first_name, last_name, email, role, subscription_tier.
+- **סידור קורסים** — `sort_order` על טבלת courses. אדמין: drag-and-drop + חיצי ↑↓ + כפתור "שמור סדר". `dbFetchCourses` מסודר לפי sort_order ASC. `dbUpdateCourseOrder()` שומר batch לDB.
+- **מועדפים** — `user_favorites` table (RLS). `lib/supabase/favorites-db.ts` + `lib/favorites-context.tsx` (FavoritesProvider, useFavorites). לב ♡ על כל כרטיס קורס — ורוד כשמסומן, אופטימיסטי. דף `/favorites`. "מועדפים" בתפריט sidebar.
+- **"המנטורית שלך"** — הוחלף "המדריכה" בכל דפי הקורסים (שורה 308 ב-`app/courses/[slug]/page.tsx`).
+- **CTA חכם בדף קורס** — לא מחובר: "הצטרפי עכשיו". מחובר+גישה/אדמין: ✓ "גישה מלאה" (ירוק). מחובר+tier נמוך: "שדרגי מנוי ↑". `userTier` נטען מ-`profiles.subscription_tier`.
+- **תמונות נעלמות — תיקון** — `NatalieSection` מושכת תמונה מ-`dbGetNatalie()` (לא hardcoded). `DEFAULT_NATALIE.photo` ריק — Admin חייב להעלות מה-panel. `ComingSoonCard` מטפל ב-empty string + onError (**`src=""`** לא מפעיל onError בChrome — תמיד בדוק `!item.image || imgError`).
 
 ### ⬜ MVP — נשאר לעשות (לפי עדיפות)
 

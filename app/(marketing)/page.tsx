@@ -495,8 +495,8 @@ function ComingSoonCard({ item, index }: { item: ComingSoonItem; index: number }
       whileHover={{ y: -6, scale: 1.03, transition: { type: "spring", stiffness: 380, damping: 28 } }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: index * 0.1 }}
     >
-      {imgError ? (
-        <div className="w-full h-full" style={{ background: "linear-gradient(135deg, rgba(196,133,122,0.06), rgba(8,6,8,0.98))" }} />
+      {!item.image || imgError ? (
+        <div className="w-full h-full" style={{ background: "linear-gradient(160deg, rgba(196,133,122,0.09) 0%, rgba(8,6,8,0.96) 100%)" }} />
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-all duration-500 group-hover:opacity-70 group-hover:brightness-90"
