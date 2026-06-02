@@ -297,6 +297,7 @@ CREATE POLICY "users manage own progress" ON user_progress
 - **Favicon + Apple Icon** — `app/icon.tsx` + `app/apple-icon.tsx` דינמיים (ImageResponse), אות "נ" על רקע כהה.
 - **PWA Manifest** — `app/manifest.ts` — RTL, theme #C4857A, standalone.
 - **Mobile touch targets** — מינימום 44px לפי Apple HIG, viewport meta עם theme-color.
+- **Admin mobile nav** — נוסף horizontal scroll tabs לאדמין (sidebar היה `hidden md:flex` — הגדרות לא הייתה נגישה במובייל).
 - **Admin CSV export** — `exportUsersCSV()` עם first_name, last_name, email, role, subscription_tier.
 
 ### ⬜ MVP — נשאר לעשות (לפי עדיפות)
@@ -305,11 +306,11 @@ CREATE POLICY "users manage own progress" ON user_progress
 - [ ] **Cardcom webhook** — `app/api/webhooks/cardcom/route.ts`: אמת HMAC, צור משתמש ב-Supabase Auth, עדכן subscription_tier, שלח מייל Resend. *ממתין לcredentials מCardcom.*
 - [ ] **Resend — מייל ברוכה הבאה** — תבנית HTML עם שם + סיסמה זמנית. *ממתין ל-Cardcom webhook.*
 
-**🟡 חשוב:**
-- [ ] כפתור "שתפי עם חברה" → WhatsApp deep link
-- [ ] Empty states — לפני שיש קורסים/הודעות
-- [ ] Loading skeletons במקום מסך ריק
-- [ ] RTL custom scroll bars (Webkit)
+**🟡 חשוב — ✅ הושלם:**
+- ✅ כפתור "שלחי ב-WhatsApp" בדשבורד עם deep link + טקסט הזמנה
+- ✅ Empty states — קורסים (skeleton + אין תוצאות + אין קורסים כלל)
+- ✅ Loading skeletons — shimmer cards בדף הקורסים, `loading` state ב-CoursesContext
+- ✅ RTL scrollbars — rose branded, WebKit + Firefox
 
 **🟢 פחות דחוף:**
 - [ ] Meta Pixel + Google Analytics
