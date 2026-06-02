@@ -246,6 +246,7 @@ export const dbGetFaqs          = () => getContent<FaqItem[]>("faqs", DEFAULT_FA
 export const dbGetComingSoon    = () => getContent<ComingSoonItem[]>("coming_soon", DEFAULT_COMING_SOON);
 export const dbGetTerms            = () => getContent<string>("terms", DEFAULT_TERMS);
 export const dbGetCancellationFlow = () => getContent<CancellationFlow>("cancellation_flow", DEFAULT_CANCELLATION_FLOW);
+export const dbGetOgImage          = () => getContent<string>("og_image", "");
 
 export const dbSetHero          = (v: HeroContent)       => setContent("hero", v);
 export const dbSetTestimonials  = (v: Testimonial[])     => setContent("testimonials", v);
@@ -255,4 +256,5 @@ export const dbSetNatalie       = (v: NatalieContent)    => setContent("natalie"
 export const dbSetFaqs          = (v: FaqItem[])         => setContent("faqs", v);
 export const dbSetComingSoon    = (v: ComingSoonItem[])  => setContent("coming_soon", v);
 export const dbSetTerms            = (v: string)             => setContent("terms", v);
+export const dbSetOgImage          = (v: string)             => setContent("og_image", v);
 export const dbSetCancellationFlow = (v: CancellationFlow)   => setContent("cancellation_flow", v);

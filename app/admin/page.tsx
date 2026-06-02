@@ -12,6 +12,7 @@ import {
   RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles, Download,
 } from "lucide-react";
 import { HomepageEditor, SubscriptionEditor, NatalieEditor } from "@/components/admin/ContentEditors";
+import { dbGetOgImage, dbSetOgImage } from "@/lib/supabase/content-db";
 import { CATEGORIES, type CourseData, type CourseLesson } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import {
@@ -297,6 +298,8 @@ export default function AdminPage() {
             <UsersSection />
           ) : section === "analytics" ? (
             <AnalyticsSection />
+          ) : section === "settings" ? (
+            <SettingsSection />
           ) : (
             <ComingSoon label={NAV_ITEMS.find((n) => n.id === section)?.label ?? ""} />
           )}
@@ -1192,6 +1195,124 @@ function AnalyticsSection() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Settings Section ─────────────────────────────────────────────
+
+function SettingsSection() {
+  const [ogImage, setOgImage]     = useState("");
+  const [saving, setSaving]       = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [saved, setSaved]         = useState(false);
+  const [error, setError]         = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    dbGetOgImage().then(setOgImage).catch(() => {});
+  }, []);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setUploading(true);
+    try {
+      const url = await dbUploadImage(file);
+      setOgImage(url);
+    } catch (err) {
+      setError(errMsg(err) || "שגיאה בהעלאה");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await dbSetOgImage(ogImage);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(errMsg(err) || "שגיאה בשמירה");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="max-w-xl">
+      <div className="mb-8">
+        <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>הגדרות אתר</h2>
+        <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>SEO ושיתוף ברשתות חברתיות</p>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-[0.72rem] mb-4"
+          style={{ background: "rgba(196,50,50,0.08)", color: "#e05555", border: "1px solid rgba(196,50,50,0.2)" }}>
+          <AlertCircle size={13} /><span>{error}</span>
+          <button onClick={() => setError(null)} className="mr-auto"><X size={12} /></button>
+        </div>
+      )}
+
+      {/* OG Image */}
+      <div className="rounded-2xl p-5" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.1)" }}>
+        <p className="text-[0.7rem] font-black mb-1" style={{ color: "#FFF8F5" }}>תמונת שיתוף (og:image)</p>
+        <p className="text-[0.6rem] mb-4" style={{ color: "#5A3830" }}>
+          התמונה שמופיעה כשמשתפים את האתר ב-WhatsApp, Instagram, Facebook.
+          מידה מומלצת: 1200×630px.
+        </p>
+
+        {/* Preview */}
+        <div
+          className="relative w-full rounded-xl overflow-hidden mb-4 flex items-center justify-center"
+          style={{ aspectRatio: "1200/630", background: "#0f0b0e", border: "1px solid rgba(196,133,122,0.08)" }}
+        >
+          {ogImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={ogImage} alt="og preview" className="w-full h-full object-cover" />
+          ) : (
+            <p className="text-[0.62rem]" style={{ color: "#3A2020" }}>אין תמונה — ברירת מחדל: תמונת נטלי</p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <input ref={fileRef} type="file" className="hidden" accept="image/*" onChange={handleUpload} />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.7rem] font-semibold transition-all hover:opacity-90 disabled:opacity-40"
+            style={{ background: "rgba(196,133,122,0.1)", border: "1px solid rgba(196,133,122,0.2)", color: "#C4857A" }}
+          >
+            {uploading
+              ? <Loader2 size={13} className="animate-spin" />
+              : <Upload size={13} />}
+            {uploading ? "מעלה..." : "העלאת תמונה"}
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !ogImage}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.7rem] font-semibold transition-all hover:opacity-90 disabled:opacity-40"
+            style={{ background: saving || !ogImage ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg,#C4857A,#D4998E)", color: saving || !ogImage ? "#5A3830" : "#080608" }}
+          >
+            {saving ? <Loader2 size={13} className="animate-spin" /> : saved ? <Check size={13} /> : null}
+            {saved ? "נשמר!" : saving ? "שומר..." : "שמור"}
+          </button>
+          {ogImage && (
+            <button
+              onClick={() => setOgImage("")}
+              className="px-3 py-2 rounded-xl text-[0.7rem] transition-all hover:opacity-70"
+              style={{ color: "#5A3830" }}
+              title="נקה ושמור ברירת מחדל"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
