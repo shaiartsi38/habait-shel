@@ -135,7 +135,7 @@ export const DEFAULT_PLANS: SubPlan[] = [
 ];
 
 export const DEFAULT_NATALIE: NatalieContent = {
-  photo: "https://i.imghippo.com/files/ZNe4792NOg.jpeg",
+  photo: "",
   instagram: "https://instagram.com",
   youtube: "https://youtube.com",
   tiktok: "",
@@ -182,11 +182,9 @@ export const DEFAULT_TERMS = `תקנון המועדון — הבית של המא
 הניסוח המשפטי המלא יתעדכן בקרוב.`;
 
 export const DEFAULT_COMING_SOON: ComingSoonItem[] = [
-  { id: "s1", image: "https://i.imghippo.com/files/buo9489kbs.jpeg", title: "קולקציית ערב — Fall 2030", subtitle: "עם נטלי ארצי", category: "עיניים", description: "" },
-  { id: "s2", image: "https://i.imghippo.com/files/dKr6384dN.jpeg", title: "Bridal Masterclass Vol. 2", subtitle: "עם נטלי ארצי", category: "כלות", description: "" },
-  { id: "s3", image: "https://i.imghippo.com/files/buo9489kbs.jpeg", title: "Contouring Pro Series", subtitle: "עם נטלי ארצי", category: "Contouring", description: "" },
-  { id: "s4", image: "https://i.imghippo.com/files/dKr6384dN.jpeg", title: "Editorial Winter Collection", subtitle: "עם נטלי ארצי", category: "Editorial", description: "" },
-  { id: "s5", image: "https://i.imghippo.com/files/buo9489kbs.jpeg", title: "Smoky Eye Masterclass", subtitle: "עם נטלי ארצי", category: "עיניים", description: "" },
+  { id: "s1", image: "", title: "קולקציית ערב — Fall 2030", subtitle: "עם נטלי ארצי", category: "עיניים", description: "" },
+  { id: "s2", image: "", title: "Bridal Masterclass Vol. 2", subtitle: "עם נטלי ארצי", category: "כלות", description: "" },
+  { id: "s3", image: "", title: "Contouring Pro Series", subtitle: "עם נטלי ארצי", category: "Contouring", description: "" },
 ];
 
 export const DEFAULT_EXTRA_SECTIONS: ExtraSection[] = [];

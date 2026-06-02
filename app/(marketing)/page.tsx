@@ -9,13 +9,11 @@ import { useCourses } from "@/lib/courses-context";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { CategoryFilter } from "@/components/courses/CategoryFilter";
 import {
-  type HeroContent, type Testimonial, type SubPlan, type ExtraSection, type FaqItem, type ComingSoonItem,
-  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS, DEFAULT_FAQS, DEFAULT_COMING_SOON, DEFAULT_TERMS,
-  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections, dbGetFaqs, dbGetComingSoon, dbGetTerms,
+  type HeroContent, type Testimonial, type SubPlan, type ExtraSection, type FaqItem, type ComingSoonItem, type NatalieContent,
+  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS, DEFAULT_FAQS, DEFAULT_COMING_SOON, DEFAULT_TERMS, DEFAULT_NATALIE,
+  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections, dbGetFaqs, dbGetComingSoon, dbGetTerms, dbGetNatalie,
 } from "@/lib/supabase/content-db";
 
-// ─── Assets ─────────────────────────────────────────────────────
-const NATALIE_PROFILE = "https://i.imghippo.com/files/ZNe4792NOg.jpeg";
 
 // ─── Animation preset — תנועה ברורה ומורגשת ──────────────────────
 const FI = {
@@ -38,6 +36,7 @@ export default function HomePage() {
   const [faqs, setFaqs]                   = useState<FaqItem[]>(DEFAULT_FAQS);
   const [comingSoon, setComingSoon]       = useState<ComingSoonItem[]>(DEFAULT_COMING_SOON);
   const [terms, setTerms]               = useState<string>(DEFAULT_TERMS);
+  const [natalie, setNatalie]             = useState<NatalieContent>(DEFAULT_NATALIE);
 
   useEffect(() => {
     dbGetHero().then(setHero).catch(() => {});
@@ -47,6 +46,7 @@ export default function HomePage() {
     dbGetFaqs().then(setFaqs).catch(() => {});
     dbGetComingSoon().then(setComingSoon).catch(() => {});
     dbGetTerms().then(setTerms).catch(() => {});
+    dbGetNatalie().then(setNatalie).catch(() => {});
   }, []);
 
   return (
@@ -55,7 +55,7 @@ export default function HomePage() {
       <HeroSection hero={hero} />
       <CoursesSection comingSoon={comingSoon} />
       <TestimonialsSection testimonials={testimonials} />
-      <NatalieSection />
+      <NatalieSection natalie={natalie} />
       <ExtraContentSections sections={extraSections} />
       <SubscriptionSection plans={plans} terms={terms} />
       <FaqSection faqs={faqs} />
@@ -602,8 +602,9 @@ function TestimonialsSection({ testimonials }: { testimonials: Testimonial[] }) 
 }
 
 // ─── Natalie Section ──────────────────────────────────────────────
-function NatalieSection() {
+function NatalieSection({ natalie }: { natalie: NatalieContent }) {
   const [imgError, setImgError] = useState(false);
+  useEffect(() => { setImgError(false); }, [natalie.photo]);
   return (
     <section
       className="py-20 px-5 sidebar-safe md:px-12 text-right"
@@ -646,7 +647,7 @@ function NatalieSection() {
               </div>
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={NATALIE_PROFILE} alt="נטלי ארצי" className="w-full h-full object-cover object-top"
+              <img src={natalie.photo} alt="נטלי ארצי" className="w-full h-full object-cover object-top"
                 onError={() => setImgError(true)} />
             )}
             <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none" style={{ background: "linear-gradient(225deg,rgba(196,133,122,0.14) 0%,transparent 65%)" }} />
