@@ -290,6 +290,32 @@ CREATE POLICY "users manage own progress" ON user_progress
 
 **⬜ הגבלת sessions** — מניעת שיתוף סיסמה (עתידי)
 
+### ✅ MVP — פריטים שהושלמו
+- **og:image דינמי** — `app/(marketing)/layout.tsx` server component, מושך מ-`site_content.og_image`. אדמין → הגדרות → upload + preview.
+- **ייצוא CSV** — אדמין → משתמשות → "ייצוא לאקסל", עם BOM לעברית ב-Excel.
+- **דף 404** — `app/not-found.tsx` מותאם מותג עם CTA.
+- **Favicon + Apple Icon** — `app/icon.tsx` + `app/apple-icon.tsx` דינמיים (ImageResponse), אות "נ" על רקע כהה.
+- **PWA Manifest** — `app/manifest.ts` — RTL, theme #C4857A, standalone.
+- **Mobile touch targets** — מינימום 44px לפי Apple HIG, viewport meta עם theme-color.
+- **Admin CSV export** — `exportUsersCSV()` עם first_name, last_name, email, role, subscription_tier.
+
+### ⬜ MVP — נשאר לעשות (לפי עדיפות)
+
+**🔴 קריטי:**
+- [ ] **Cardcom webhook** — `app/api/webhooks/cardcom/route.ts`: אמת HMAC, צור משתמש ב-Supabase Auth, עדכן subscription_tier, שלח מייל Resend. *ממתין לcredentials מCardcom.*
+- [ ] **Resend — מייל ברוכה הבאה** — תבנית HTML עם שם + סיסמה זמנית. *ממתין ל-Cardcom webhook.*
+
+**🟡 חשוב:**
+- [ ] כפתור "שתפי עם חברה" → WhatsApp deep link
+- [ ] Empty states — לפני שיש קורסים/הודעות
+- [ ] Loading skeletons במקום מסך ריק
+- [ ] RTL custom scroll bars (Webkit)
+
+**🟢 פחות דחוף:**
+- [ ] Meta Pixel + Google Analytics
+- [ ] Error boundaries
+- [ ] הגבלת sessions
+
 ### ⬜ שלב 6 — עתידי (לא נוגעים כרגע)
 - Cardcom webhook + יצירת משתמשים אוטומטית + `subscription_tier`
 - Widevine DRM
