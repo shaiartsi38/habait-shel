@@ -22,17 +22,26 @@ export default function NataliePage() {
       <div className="relative overflow-hidden" style={{ minHeight: "85vh" }}>
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={content.photo} alt="נטלי ארצי" className="w-full h-full object-cover object-top" style={{ filter: "brightness(0.52) contrast(1.08) saturate(0.9)" }} />
+          <img
+            src={content.photo}
+            alt="נטלי ארצי"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: "50% 18%", filter: "brightness(0.44) contrast(1.18) saturate(0.82)" }}
+          />
         </div>
         {/* פסי letterbox קולנועיים */}
-        <div className="absolute inset-x-0 top-0 h-[7vh]" style={{ background: "#080608" }} />
-        <div className="absolute inset-x-0 bottom-0 h-[7vh]" style={{ background: "#080608" }} />
-        {/* Vignette מלמעלה */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(8,6,8,0.55) 0%, transparent 30%)" }} />
+        <div className="absolute inset-x-0 top-0 h-[6vh]" style={{ background: "#080608" }} />
+        <div className="absolute inset-x-0 bottom-0 h-[6vh]" style={{ background: "#080608" }} />
+        {/* grain overlay — מסתיר איכות נמוכה */}
+        <div className="absolute inset-0" style={{ background: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")", opacity: 0.35, mixBlendMode: "overlay" }} />
+        {/* Vignette מלמעלה — חזק יותר */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(8,6,8,0.7) 0%, rgba(8,6,8,0.1) 35%, transparent 55%)" }} />
         {/* Vignette מלמטה */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.82) 18%, rgba(8,6,8,0.15) 50%, transparent 100%)" }} />
-        {/* צלליות צד קולנועיות */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(8,6,8,0.35) 0%, transparent 30%, transparent 70%, rgba(8,6,8,0.35) 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.88) 20%, rgba(8,6,8,0.2) 50%, transparent 100%)" }} />
+        {/* צלליות צד קולנועיות — רחבות יותר */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(8,6,8,0.55) 0%, transparent 35%, transparent 65%, rgba(8,6,8,0.55) 100%)" }} />
+        {/* overlay חם עדין — מוסיף עומק ומסתיר פיקסלים */}
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 30%, rgba(196,133,122,0.06) 0%, transparent 65%)" }} />
 
         {/* כיתוב — נצמד לתחתית בלבד */}
         <div className="absolute bottom-0 right-0 left-0 px-4 md:px-12 pb-10">
