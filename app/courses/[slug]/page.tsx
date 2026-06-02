@@ -37,10 +37,10 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const firstLesson = course.lessons[0];
   const activeLesson = activeLessonId ? course.lessons.find((l) => l.id === activeLessonId) : null;
 
-  const displayVideoId = activeLesson?.videoId ?? course.videoId ?? firstLesson?.videoId ?? "";
+  const displayVideoId = activeLesson?.videoId || course.videoId || firstLesson?.videoId || "";
   const displayProvider = activeLesson?.videoProvider
-    ?? (course.videoId ? (course.videoProvider ?? "youtube") : (firstLesson?.videoProvider ?? "youtube"));
-  const displayTitle = activeLesson?.title ?? course.title;
+    || (course.videoId ? (course.videoProvider ?? "youtube") : (firstLesson?.videoProvider ?? "youtube"));
+  const displayTitle = activeLesson?.title || course.title;
 
   return (
     <div className="min-h-screen sidebar-safe" style={{ background: "var(--black)", color: "var(--white)" }}>
@@ -63,6 +63,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               provider={displayProvider}
               poster={course.image}
               title={displayTitle}
+              autoStart={!!activeLessonId}
             />
           </motion.div>
         )}
@@ -256,10 +257,10 @@ function CinematicHeader({ course }: { course: (typeof COURSES)[number] }) {
 }
 
 // ─── Video Player ─────────────────────────────────────────────────
-function VideoPlayer({ videoId, provider = "youtube", poster, title }: {
-  videoId: string; provider?: VideoProvider; poster: string; title: string;
+function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart = false }: {
+  videoId: string; provider?: VideoProvider; poster: string; title: string; autoStart?: boolean;
 }) {
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(autoStart);
 
   const embedContent = (() => {
     if (provider === "direct") {
@@ -310,7 +311,7 @@ function VideoPlayer({ videoId, provider = "youtube", poster, title }: {
             >
               <Play size={26} fill="#080608" style={{ color: "#080608", marginRight: "-2px" }} />
             </motion.div>
-            <span className="text-sm font-semibold" style={{ color: "rgba(255,248,245,0.7)" }}>צפי בטיזר</span>
+            <span className="text-sm font-semibold" style={{ color: "rgba(255,248,245,0.7)" }}>{autoStart ? "צפה בשיעור" : "צפי בטיזר"}</span>
           </motion.button>
         </>
       )}
