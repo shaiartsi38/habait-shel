@@ -29,7 +29,7 @@
 | **SSH key** | `~/.ssh/github_habait` — push ישיר ללא tokens |
 
 ```bash
-git add <files> && git commit -m "..." && git push origin main
+git add <files> && git commit -m "..." && GIT_SSH_COMMAND="ssh -i ~/.ssh/github_habait" git push origin main
 ```
 
 ---
@@ -43,28 +43,37 @@ git add <files> && git commit -m "..." && git push origin main
 ## ארכיטקטורה — קבצים מרכזיים
 
 ```
-app/(marketing)/page.tsx         ← דף הבית
-app/admin/page.tsx               ← CMS מלא
-app/courses/[slug]/page.tsx      ← דף קורס
-app/checkout/[slug]/page.tsx     ← דף רכישה בודדת (₪489, placeholder לCardcom)
-app/dashboard/page.tsx           ← דשבורד משתמש + מערכת ביטול מנוי
-app/natalie/page.tsx             ← עמוד נטלי (תמונה, ביו, רשתות חברתיות)
-components/admin/ContentEditors.tsx  ← HomepageEditor, SubscriptionEditor, NatalieEditor
-lib/supabase/courses-db.ts       ← CRUD קורסים + שיעורים + upload
-lib/supabase/content-db.ts       ← CRUD תוכן דף הבית (site_content)
-lib/courses-context.tsx          ← stale-while-revalidate: localStorage → Supabase ברקע
-middleware.ts                    ← הגנת routes לפי role
+app/(marketing)/page.tsx              ← דף הבית
+app/admin/page.tsx                    ← CMS מלא
+app/courses/[slug]/page.tsx           ← דף קורס + נגן + ניווט שיעורים
+app/checkout/[slug]/page.tsx          ← דף רכישה בודדת (₪489, placeholder לCardcom)
+app/dashboard/page.tsx                ← דשבורד משתמש + מערכת ביטול מנוי
+app/natalie/page.tsx                  ← עמוד נטלי (תמונה, ביו, רשתות חברתיות)
+app/profile/page.tsx                  ← פרופיל אישי + העלאת תמונה
+app/community/page.tsx                ← קהילה (Realtime, צ'אט, קבצים)
+app/api/lesson-video/route.ts         ← API מאובטח: מחזיר video_id לפי tier בלבד
+components/admin/ContentEditors.tsx   ← HomepageEditor, SubscriptionEditor, NatalieEditor
+lib/supabase/courses-db.ts            ← CRUD קורסים + שיעורים + upload
+lib/supabase/content-db.ts            ← CRUD תוכן דף הבית (site_content)
+lib/supabase/community-db.ts          ← CRUD + upload + Realtime לקהילה
+lib/supabase/profile-db.ts            ← CRUD פרופיל אישי
+lib/courses-context.tsx               ← stale-while-revalidate: localStorage → Supabase ברקע
+middleware.ts                         ← הגנת routes לפי role
 ```
 
 ---
 
 ## Supabase — Schema
 
-**`profiles`:** `id` (uuid) · `role` ("user"/"admin") · `email`
-**`courses`:** `id` (**text**, לא uuid!) · `slug` · `title` · `subtitle` · `thumbnail_url` · `trailer_video_id` · `trailer_provider` · `required_tier` · `is_published` · `tags` (text[]) · `description` (JSON: shortDesc, fullDesc, instructor)
+**`profiles`:** `id` (uuid) · `role` ("user"/"admin") · `email` · `first_name` · `last_name` · `years_experience` · `bio` · `photo_url` · `subscription_tier` ("basic"/"pro"/"elite"/null)
+
+**`courses`:** `id` (**text**, לא uuid!) · `slug` · `title` · `subtitle` · `thumbnail_url` · `trailer_video_id` · `trailer_provider` · `required_tier` · `is_published` · `tags` (text[]) · `description` (JSON: shortDesc, fullDesc, instructor) · `show_on_home` · `duration_minutes` · `lesson_count` · `updated_at`
+
 **`lessons`:** `id` (text) · `course_id` (text, FK) · `title` · `video_id` · `video_provider` · `duration_seconds` · `is_free_preview` · `sort_order`
 
-**Storage bucket:** `course-media` → `thumbnails/` + `videos/`
+**`community_posts`:** `id` · `user_id` · `content` · `parent_id` · `is_pinned` · `is_admin_post` · `attachment_url` · `attachment_type` · `attachment_name` · `created_at`
+
+**Storage bucket:** `course-media` → `thumbnails/` + `videos/` + `avatars/` + `community/`
 
 ---
 
@@ -114,6 +123,16 @@ middleware.ts                    ← הגנת routes לפי role
 - **אסור** `EXISTS (SELECT 1 FROM profiles ...)` בתוך policy על `profiles` — recursion.
 - פונקציה `get_my_role() SECURITY DEFINER` — בכל policy של admin.
 - **אסור להרדקוד אימייל** — תמיד `role = 'admin'` בלבד.
+- **API route מאובטח** `/api/lesson-video` — כל גישה לוידאו עוברת דרכו ונבדקת בשרת.
+
+### Storage RLS — policies קיימות ב-course-media:
+| Policy | פעולה | מי |
+|--------|--------|-----|
+| `community media upload` | INSERT | authenticated |
+| `community media read` | SELECT | public |
+| `thumbnails public read` | SELECT | public |
+| `avatars public read` | SELECT | public |
+| `videos authenticated read` | SELECT | authenticated (אם הוחל) |
 
 ---
 
@@ -123,6 +142,7 @@ middleware.ts                    ← הגנת routes לפי role
 - **Forgot/Reset:** `/forgot-password` → מייל → `/reset-password`
 - **Signup:** Cardcom webhook בלבד. `/signup` מפנה ל-`/login`.
 - **Role** נקרא מ-JWT claim (`user_role`) — גיבוי: קריאת DB.
+- **subscription_tier** נשמר ב-profiles — יוגדר ע"י Cardcom webhook בעתיד.
 
 ---
 
@@ -132,6 +152,21 @@ middleware.ts                    ← הגנת routes לפי role
 type VideoProvider = "youtube" | "vimeo" | "direct"
 ```
 `parseVideoUrl(url)` — מחלץ ID ומזהה ספק מכל URL (Shorts, youtu.be, vimeo.com, ישיר).
+
+### גישה לוידאו — לוגיקת tier:
+| tier משתמש | גישה לקורסי basic | גישה לקורסי pro | גישה לקורסי elite |
+|------------|-------------------|-----------------|-------------------|
+| null (אין מנוי) | ✗ | ✗ | ✗ |
+| basic | ✓ | ✗ | ✗ |
+| pro | ✓ | ✓ | ✗ |
+| elite | ✓ | ✓ | ✓ |
+| admin | ✓ | ✓ | ✓ |
+| כל משתמש | שיעורי `is_free_preview` בלבד | | |
+
+### ניווט שיעורים ב-CoursePage:
+- לחיצה על שיעור → שיעור חינמי: video_id מהcontext מיידית. שיעור נעול: קריאה ל-`/api/lesson-video`.
+- כפתורי "שיעור קודם / שיעור הבא" מתחת לנגן — עובדים גם בזמן ניגון.
+- אם tier לא מספיק → מסך "אין גישה" + כפתור שדרוג.
 
 ---
 
@@ -150,15 +185,17 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 3. שגיאות Supabase הן plain objects — `errMsg(e)`, לא `e instanceof Error`.
 4. `animate` + `whileInView` מתנגשים ב-Framer Motion — תמיד `whileHover` לאנימציות hover.
 5. יצירת `profiles` אוטומטית בעת Signup עדיין לא יציבה — **בעיה פתוחה**.
+6. `??` לא מתמודד עם string ריק — להשתמש ב-`||` כשיש fallback על strings.
+7. Storage RLS חייב policies מפורשות לכל נתיב — bucket פרטי = 403 ללא policy.
 
 ---
 
-## פרופיל אישי (`/profile`)
+## פרופיל אישי (`/profile`) ✅ הושלם
 
 - שדות ב-`profiles`: `first_name`, `last_name`, `years_experience`, `bio`, `photo_url`
 - עריכה + העלאת תמונה לStorage (`course-media/avatars/{user_id}.ext`)
 - `lib/supabase/profile-db.ts`: `dbGetMyProfile`, `dbUpdateProfile`, `dbUploadAvatar`, `dbGetProfileById`
-- **SQL שחייב לרוץ בSupabase:**
+- **SQL שחייב לרוץ בSupabase (אם עדיין לא):**
   ```sql
   ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS first_name text,
@@ -170,11 +207,11 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 
 ---
 
-## קהילה (`/community`)
+## קהילה (`/community`) ✅ הושלם
 
 - טבלת `community_posts` (Supabase Realtime)
 - תצוגה: avatar + שם + זמן + תוכן + attachment
-- כתיבה + העלאת קובץ (`community-media/`)
+- כתיבה + העלאת קובץ/תמונה (`community-media/`)
 - Reply / thread (`parent_id`)
 - אדמין: pin + הודעות מנוהל (`is_admin_post`)
 - הרשאות: מנויים בלבד (role = 'user' | 'admin')
@@ -182,20 +219,54 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 
 ---
 
-## וידאו — החלטות ארכיטקטורה
+## מצב פתוח — SQL migrations שחייבים לרוץ
 
-- **Vimeo** — כל הסרטונים הפרמיום יעברו לVimeo (HLS + quality + fullscreen אוטומטי)
-- **המשך צפייה** — לוגיקה צד שרת (טבלת `user_progress`) — לא Vimeo
-- שלב 4 (נגן) יתכווץ לבניית המשך צפייה בלבד לאחר מעבר לVimeo
+```sql
+-- subscription_tier (שלב 3א)
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS subscription_tier text
+  CHECK (subscription_tier IN ('basic','pro','elite') OR subscription_tier IS NULL);
+```
 
 ---
 
-## סטטוס פתוח
+## מפת עבודה — סטטוס
 
-- [ ] SQL migration לפרופיל (ראה למעלה)
-- [ ] Cardcom webhook — יצירת משתמש + רישום רכישה + Resend מייל
-- [ ] RLS per-course (`course_purchases` table)
-- [ ] המשך צפייה (`user_progress` table)
-- [ ] Security: RLS לוידאו לפי tier, signed URLs, rate limiting, headers
-- [ ] Zod לולידציה
-- [ ] SSR לדפים ציבוריים
+### ✅ שלב 1 — פרופיל אישי (הושלם)
+### ✅ שלב 2 — קהילה (הושלם)
+
+### 🔄 שלב 3 — אבטחה קריטית
+
+**3א ✅ RLS לפי tier על וידאו (הושלם)**
+- `/api/lesson-video` — API route שבודק auth + tier בשרת לפני החזרת video_id
+- לוגיקת TIER_RANK: basic=1, pro=2, elite=3
+- CoursePage מבקש video_id מה-API בלבד (לא מהcontext) לשיעורים נעולים
+
+**3ב ⬜ Signed URLs לסרטוני direct**
+- Supabase Storage יספק URLs שפוקעים אחרי שעה
+- לא ניתן לשתף / להוריד
+- יש להוסיף פונקציה `dbGetSignedVideoUrl(path)` ולעדכן `/api/lesson-video`
+
+**3ג ⬜ המשך צפייה**
+- שמירת מיקום נוכחי ב-`user_progress` table + טעינה בכניסה חוזרת לשיעור
+- שדות: `user_id, lesson_id, progress_seconds, completed, updated_at`
+
+### ⬜ שלב 4 — שיפורי נגן וידאו (לסרטוני direct, עד המעבר לVimeo)
+- Progress bar גרירה
+- בקרת עוצמת קול + mute
+- מסך מלא (כפתור fullscreen מובנה)
+- מובייל: כפתור Play גדול, touch-friendly
+- איכות: 360/720/1080 (רק לdirect)
+
+### ⬜ שלב 5 — אבטחה נוספת (לאחר השקה)
+- Security headers ב-`next.config.js`
+- Rate limiting על API routes
+- CORS על bucket course-media
+- הגבלת sessions (מניעת שיתוף סיסמה)
+
+### ⬜ שלב 6 — עתידי (לא נוגעים כרגע)
+- Cardcom webhook + יצירת משתמשים אוטומטית + `subscription_tier`
+- Widevine DRM
+- IP limiting
+- מערכת מייל יומי
+- RLS per-course (`course_purchases` table)
