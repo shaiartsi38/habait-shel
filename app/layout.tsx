@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import ShellLayout from "@/components/layout/ShellLayout";
@@ -6,6 +6,13 @@ import ShellLayout from "@/components/layout/ShellLayout";
 export const metadata: Metadata = {
   title: "הבית של המאפרים | Natalie Artzi",
   description: "פלטפורמת המאסטרקלאס המובילה לאמני איפור מקצועיים",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#080608",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

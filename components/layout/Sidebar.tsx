@@ -223,9 +223,13 @@ function NavItem({ href, label, icon: Icon, active }: { href: string; label: str
 // ── Mobile tab item ───────────────────────────────────────────────
 function MobileTab({ href, label, icon: Icon, active }: { href: string; label: string; icon: React.ElementType; active: boolean }) {
   return (
-    <Link href={href} className="flex flex-col items-center gap-0.5 px-3 py-1 min-w-[52px]">
-      <motion.div className="p-1.5 rounded-xl" animate={{ background: active ? "rgba(196,133,122,0.12)" : "rgba(0,0,0,0)" }}>
-        <Icon size={20} style={{ color: active ? "#C4857A" : "#3A1818", transition: "color 0.18s" }} />
+    <Link
+      href={href}
+      className="flex flex-col items-center gap-0.5 px-2 min-w-[52px]"
+      style={{ minHeight: 44, justifyContent: "center" }}
+    >
+      <motion.div className="p-2 rounded-xl" animate={{ background: active ? "rgba(196,133,122,0.12)" : "rgba(0,0,0,0)" }}>
+        <Icon size={22} style={{ color: active ? "#C4857A" : "#3A1818", transition: "color 0.18s" }} />
       </motion.div>
       <span className="text-[0.56rem] font-medium" style={{ color: active ? "#C4857A" : "#3A1818" }}>
         {label}
