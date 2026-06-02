@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { notFound } from "next/navigation";
 import { motion } from "framer-motion";
 import { Play, Lock, Clock, ChevronRight, ChevronLeft } from "lucide-react";
@@ -8,6 +8,24 @@ import Link from "next/link";
 import { COURSES, type VideoProvider } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import { createClient } from "@/lib/supabase/client";
+import { dbGetProgress, dbGetCourseProgress, dbSaveProgress } from "@/lib/supabase/progress-db";
+
+// ─── YouTube IFrame API loader ────────────────────────────────────
+declare global { interface Window { YT: any; onYouTubeIframeAPIReady?: () => void } }
+let _ytPromise: Promise<void> | null = null;
+function ensureYouTubeAPI(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (_ytPromise) return _ytPromise;
+  if (window.YT?.Player) return (_ytPromise = Promise.resolve());
+  _ytPromise = new Promise<void>((resolve) => {
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { resolve(); prev?.(); };
+    const s = document.createElement("script");
+    s.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(s);
+  });
+  return _ytPromise;
+}
 
 const DIFF_LABEL = { beginner: "מתחילות", intermediate: "בינוני", advanced: "מתקדם" } as const;
 const TIER_LABEL = { basic: "Basic", pro: "Pro", elite: "Elite" } as const;
@@ -22,6 +40,8 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const [lessonVideo, setLessonVideo]       = useState<{ videoId: string; videoProvider: string } | null>(null);
   const [videoFetching, setVideoFetching]   = useState(false);
   const [videoAccessDenied, setVideoAccessDenied] = useState(false);
+  const [startAt, setStartAt]               = useState(0);
+  const [courseProgress, setCourseProgress] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const sb = createClient();
@@ -45,13 +65,24 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     ? course.lessons[activeLessonIndex + 1]
     : null;
 
+  // טעינת התקדמות לכל הקורס (לאינדיקטורים ברשימה)
+  useEffect(() => {
+    if (!isLoggedIn || !course) return;
+    dbGetCourseProgress(course.id).then(setCourseProgress).catch(() => {});
+  }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // כשמשתנה שיעור פעיל — שיעורים חינמיים מהContext, שאר דרך API
   useEffect(() => {
     if (!activeLessonId || !activeLesson) return;
     setVideoAccessDenied(false);
+    setStartAt(0);
+
+    // טעינת נקודת המשך שמורה
+    if (isLoggedIn) {
+      dbGetProgress(activeLessonId).then(setStartAt).catch(() => {});
+    }
 
     if (activeLesson.isFree) {
-      // חינמי — ישיר מהcontext, ללא בקשת רשת
       setLessonVideo({ videoId: activeLesson.videoId, videoProvider: activeLesson.videoProvider ?? "youtube" });
       return;
     }
@@ -71,6 +102,20 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
 
     return () => ctrl.abort();
   }, [activeLessonId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // שמירת התקדמות — stable callback
+  const activeLessonIdRef = useRef(activeLessonId);
+  activeLessonIdRef.current = activeLessonId;
+  const courseIdRef = useRef(course.id);
+  courseIdRef.current = course.id;
+
+  const handleProgress = useCallback((seconds: number) => {
+    const lid = activeLessonIdRef.current;
+    const cid = courseIdRef.current;
+    if (!lid) return;
+    dbSaveProgress(lid, cid, seconds).catch(() => {});
+    setCourseProgress((prev) => ({ ...prev, [lid]: seconds }));
+  }, []);
 
   const displayVideoId = activeLessonId
     ? (lessonVideo?.videoId || "")
@@ -131,6 +176,8 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               poster={course.image}
               title={displayTitle}
               autoStart={!!activeLessonId}
+              startAt={startAt}
+              onProgress={activeLessonId ? handleProgress : undefined}
             />
           ) : null}
         </motion.div>
@@ -231,6 +278,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
                     tier={course.tier}
                     isAccessible={lesson.isFree || isLoggedIn || isAdmin}
                     isActive={lesson.id === activeLessonId}
+                    progressSeconds={courseProgress[lesson.id] ?? 0}
                     onSelect={() => setActiveLessonId(lesson.id)}
                   />
                 ))}
@@ -366,35 +414,81 @@ function CinematicHeader({ course }: { course: (typeof COURSES)[number] }) {
   );
 }
 
+// ─── YouTube embed with IFrame API (progress tracking) ───────────
+function YouTubeEmbed({ videoId, startAt, onProgress }: {
+  videoId: string; startAt: number; onProgress?: (s: number) => void;
+}) {
+  const divRef  = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<any>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // seek if startAt changes after player is already created (race condition)
+  useEffect(() => {
+    if (startAt > 0 && playerRef.current?.seekTo) {
+      playerRef.current.seekTo(startAt, true);
+    }
+  }, [startAt]);
+
+  useEffect(() => {
+    let mounted = true;
+    ensureYouTubeAPI().then(() => {
+      if (!mounted || !divRef.current) return;
+      playerRef.current = new window.YT.Player(divRef.current, {
+        videoId,
+        playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, start: Math.floor(startAt) },
+        events: {
+          onStateChange(e: { data: number }) {
+            if (e.data === 1) { // PLAYING
+              intervalRef.current = setInterval(() => {
+                const t = playerRef.current?.getCurrentTime?.() ?? 0;
+                if (t > 0) onProgress?.(Math.floor(t));
+              }, 10_000);
+            } else {
+              if (intervalRef.current) clearInterval(intervalRef.current);
+              if (e.data === 2 || e.data === 0) { // PAUSED or ENDED
+                const t = playerRef.current?.getCurrentTime?.() ?? 0;
+                if (t > 0) onProgress?.(Math.floor(t));
+              }
+            }
+          },
+        },
+      });
+    });
+    return () => {
+      mounted = false;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      playerRef.current?.destroy?.();
+    };
+  }, [videoId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return <div ref={divRef} className="absolute inset-0 w-full h-full" />;
+}
+
 // ─── Video Player ─────────────────────────────────────────────────
-function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart = false }: {
-  videoId: string; provider?: VideoProvider; poster: string; title: string; autoStart?: boolean;
+function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart = false, startAt = 0, onProgress }: {
+  videoId: string; provider?: VideoProvider; poster: string; title: string;
+  autoStart?: boolean; startAt?: number; onProgress?: (s: number) => void;
 }) {
   const [playing, setPlaying] = useState(autoStart);
 
   const embedContent = (() => {
     if (provider === "direct") {
       return (
-        <video
-          src={videoId}
-          className="absolute inset-0 w-full h-full"
-          controls
-          autoPlay
+        <video src={videoId} className="absolute inset-0 w-full h-full" controls autoPlay
           style={{ objectFit: "cover" }}
+          onTimeUpdate={(e) => onProgress?.(Math.floor(e.currentTarget.currentTime))}
         />
       );
     }
-    const src = provider === "vimeo"
-      ? `https://player.vimeo.com/video/${videoId}?autoplay=1`
-      : `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0`;
-    return (
-      <iframe
-        src={src}
-        className="absolute inset-0 w-full h-full"
-        allow="autoplay; fullscreen; encrypted-media"
-        style={{ border: "none" }}
-      />
-    );
+    if (provider === "vimeo") {
+      const src = `https://player.vimeo.com/video/${videoId}?autoplay=1${startAt > 0 ? `#t=${startAt}s` : ""}`;
+      return (
+        <iframe src={src} className="absolute inset-0 w-full h-full"
+          allow="autoplay; fullscreen; encrypted-media" style={{ border: "none" }} />
+      );
+    }
+    // YouTube — with IFrame API for progress tracking
+    return <YouTubeEmbed videoId={videoId} startAt={startAt} onProgress={onProgress} />;
   })();
 
   return (
@@ -415,13 +509,14 @@ function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart =
             <motion.div
               className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center"
               style={{ background: "rgba(196,133,122,0.9)", boxShadow: "0 0 0 8px rgba(196,133,122,0.18), 0 8px 32px rgba(196,133,122,0.4)" }}
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             >
               <Play size={26} fill="#080608" style={{ color: "#080608", marginRight: "-2px" }} />
             </motion.div>
-            <span className="text-sm font-semibold" style={{ color: "rgba(255,248,245,0.7)" }}>{autoStart ? "צפה בשיעור" : "צפי בטיזר"}</span>
+            <span className="text-sm font-semibold" style={{ color: "rgba(255,248,245,0.7)" }}>
+              {autoStart ? (startAt > 0 ? `המשך מ-${Math.floor(startAt / 60)}:${String(startAt % 60).padStart(2, "0")}` : "צפה בשיעור") : "צפי בטיזר"}
+            </span>
           </motion.button>
         </>
       )}
@@ -435,6 +530,7 @@ function LessonRow({
   index,
   isAccessible,
   isActive,
+  progressSeconds,
   onSelect,
 }: {
   lesson: (typeof COURSES)[0]["lessons"][0];
@@ -442,12 +538,13 @@ function LessonRow({
   tier: string;
   isAccessible: boolean;
   isActive: boolean;
+  progressSeconds: number;
   onSelect: () => void;
 }) {
   return (
     <div
       onClick={isAccessible ? onSelect : undefined}
-      className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
+      className="relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
       style={{
         background: isActive ? "rgba(196,133,122,0.1)" : "rgba(255,255,255,0.02)",
         border: `1px solid ${isActive ? "rgba(196,133,122,0.3)" : "rgba(196,133,122,0.07)"}`,
@@ -478,7 +575,7 @@ function LessonRow({
         )}
       </div>
 
-      {/* Badge */}
+      {/* Badge / progress */}
       {lesson.isFree ? (
         <span className="text-[0.5rem] font-bold px-2 py-[2px] rounded-full" style={{ background: "rgba(74,155,111,0.12)", color: "#4A9B6F", border: "1px solid rgba(74,155,111,0.25)" }}>
           חינמי
@@ -486,6 +583,19 @@ function LessonRow({
       ) : !isAccessible ? (
         <Lock size={12} style={{ color: "rgba(255,248,245,0.25)" }} />
       ) : null}
+
+      {/* Progress bar — shown when there's saved progress */}
+      {progressSeconds > 0 && lesson.durationMin > 0 && (
+        <div className="absolute bottom-0 right-0 left-0 h-[2px] rounded-b-xl overflow-hidden">
+          <div
+            className="h-full"
+            style={{
+              width: `${Math.min((progressSeconds / (lesson.durationMin * 60)) * 100, 100)}%`,
+              background: "linear-gradient(90deg, #C4857A, #D4998E)",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
