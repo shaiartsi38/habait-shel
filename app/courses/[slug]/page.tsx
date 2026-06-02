@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { notFound } from "next/navigation";
 import { motion } from "framer-motion";
-import { Play, Lock, Clock } from "lucide-react";
+import { Play, Lock, Clock, ChevronRight, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { COURSES, type VideoProvider } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
@@ -42,6 +42,15 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     || (course.videoId ? (course.videoProvider ?? "youtube") : (firstLesson?.videoProvider ?? "youtube"));
   const displayTitle = activeLesson?.title || course.title;
 
+  const activeLessonIndex = activeLessonId
+    ? course.lessons.findIndex((l) => l.id === activeLessonId)
+    : -1;
+  const prevLesson = activeLessonIndex > 0 ? course.lessons[activeLessonIndex - 1] : null;
+  const nextLesson =
+    activeLessonIndex >= 0 && activeLessonIndex < course.lessons.length - 1
+      ? course.lessons[activeLessonIndex + 1]
+      : null;
+
   return (
     <div className="min-h-screen sidebar-safe" style={{ background: "var(--black)", color: "var(--white)" }}>
       {/* ── Cinematic header ── */}
@@ -52,7 +61,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
         {/* Video player */}
         {displayVideoId && (
           <motion.div
-            className="mb-10"
+            className={activeLessonId ? "mb-3" : "mb-10"}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.1 }}
@@ -66,6 +75,49 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               autoStart={!!activeLessonId}
             />
           </motion.div>
+        )}
+
+        {/* Lesson navigation */}
+        {activeLessonId && (
+          <div className="flex gap-2 mb-8">
+            {/* שיעור הבא — prominent, left side in RTL */}
+            <button
+              onClick={() => nextLesson && setActiveLessonId(nextLesson.id)}
+              disabled={!nextLesson}
+              className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl transition-all disabled:opacity-25 group"
+              style={{
+                background: nextLesson ? "#140e12" : "rgba(255,255,255,0.02)",
+                border: `1px solid ${nextLesson ? "rgba(196,133,122,0.28)" : "rgba(196,133,122,0.08)"}`,
+              }}
+            >
+              <ChevronRight size={15} style={{ color: nextLesson ? "#C4857A" : "rgba(255,248,245,0.2)" }} />
+              <div className="text-right">
+                <p className="text-[0.52rem] tracking-wider mb-0.5" style={{ color: "rgba(196,133,122,0.55)" }}>שיעור הבא</p>
+                <p className="text-[0.72rem] font-semibold" style={{ color: nextLesson ? "#FFF8F5" : "rgba(255,248,245,0.25)" }}>
+                  {nextLesson ? (nextLesson.title || `שיעור ${activeLessonIndex + 2}`) : "סוף הקורס"}
+                </p>
+              </div>
+            </button>
+
+            {/* שיעור קודם — subtle, right side in RTL */}
+            <button
+              onClick={() => prevLesson && setActiveLessonId(prevLesson.id)}
+              disabled={!prevLesson}
+              className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl transition-all disabled:opacity-25"
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(196,133,122,0.08)",
+              }}
+            >
+              <div className="text-right">
+                <p className="text-[0.52rem] tracking-wider mb-0.5" style={{ color: "rgba(255,248,245,0.25)" }}>שיעור קודם</p>
+                <p className="text-[0.72rem] font-semibold" style={{ color: prevLesson ? "rgba(255,248,245,0.6)" : "rgba(255,248,245,0.2)" }}>
+                  {prevLesson ? (prevLesson.title || `שיעור ${activeLessonIndex}`) : "תחילת הקורס"}
+                </p>
+              </div>
+              <ChevronLeft size={15} style={{ color: "rgba(255,248,245,0.2)" }} />
+            </button>
+          </div>
         )}
 
         <div className="grid md:grid-cols-[1fr_300px] gap-10">
