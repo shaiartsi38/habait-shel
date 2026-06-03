@@ -569,8 +569,10 @@ function CourseEditForm({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileRef  = useRef<HTMLInputElement>(null);
+  const thumbRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
   const set = <K extends keyof CourseData>(key: K, val: CourseData[K]) =>
@@ -585,30 +587,33 @@ function CourseEditForm({
   const addLesson    = () => setForm((p) => ({ ...p, lessons: [...p.lessons, emptyLesson()] }));
   const removeLesson = (idx: number) => setForm((p) => ({ ...p, lessons: p.lessons.filter((_, i) => i !== idx) }));
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "image" | "photo") => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "image" | "videoThumb" | "photo") => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
     if (file.size > 8 * 1024 * 1024) { alert("הקובץ גדול מדי — מקסימום 8MB"); return; }
     e.target.value = "";
 
     if (target === "image") setUploadingImg(true);
+    else if (target === "videoThumb") setUploadingThumb(true);
     else setUploadingPhoto(true);
 
     try {
       const url = await dbUploadImage(file);
       if (target === "image") set("image", url);
+      else if (target === "videoThumb") set("videoThumbnailUrl", url);
       else setInstructor("photoUrl", url);
     } catch {
-      // Fall back to base64 preview if Supabase upload fails (no env keys yet)
       const reader = new FileReader();
       reader.onload = (ev) => {
         const b64 = ev.target?.result as string;
         if (target === "image") set("image", b64);
+        else if (target === "videoThumb") set("videoThumbnailUrl", b64);
         else setInstructor("photoUrl", b64);
       };
       reader.readAsDataURL(file);
     } finally {
       if (target === "image") setUploadingImg(false);
+      else if (target === "videoThumb") setUploadingThumb(false);
       else setUploadingPhoto(false);
     }
   };
@@ -697,6 +702,51 @@ function CourseEditForm({
             placeholder="https://www.youtube.com/watch?v=... או ID ישיר"
             dir="ltr"
           />
+
+          <FieldLabel className="mt-4">תמונת פרסומת לנגן (לפני לחיצת Play)</FieldLabel>
+          <p className="text-[0.58rem] mb-2" style={{ color: "#3A2020" }}>
+            אם לא הועלתה — יוצג כיסוי הקורס. מומלץ: 16:9, 1280×720px
+          </p>
+          <div className="flex items-center gap-3">
+            {form.videoThumbnailUrl ? (
+              <div className="relative w-24 h-14 rounded-lg overflow-hidden shrink-0" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.12)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={form.videoThumbnailUrl} alt="thumbnail" className="w-full h-full object-cover object-top" />
+                <button
+                  type="button"
+                  onClick={() => set("videoThumbnailUrl", undefined)}
+                  className="absolute top-0.5 left-0.5 rounded-full p-0.5"
+                  style={{ background: "rgba(8,6,8,0.75)" }}
+                >
+                  <X size={10} style={{ color: "#e05555" }} />
+                </button>
+              </div>
+            ) : (
+              <div className="w-24 h-14 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#140e12", border: "1px dashed rgba(196,133,122,0.2)" }}>
+                <span className="text-[0.48rem]" style={{ color: "#3A2020" }}>16:9</span>
+              </div>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <input ref={thumbRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "videoThumb")} />
+              <button
+                type="button"
+                onClick={() => thumbRef.current?.click()}
+                disabled={uploadingThumb}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold hover:opacity-80 disabled:opacity-40"
+                style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.18)" }}
+              >
+                {uploadingThumb ? <Loader2 size={10} className="animate-spin" /> : <Upload size={10} />} העלי תמונה
+              </button>
+            </div>
+          </div>
+          <div className="mt-2">
+            <Input
+              value={form.videoThumbnailUrl ?? ""}
+              onChange={(v) => set("videoThumbnailUrl", v || undefined)}
+              placeholder="או הדביקי URL של תמונה 16:9"
+              dir="ltr"
+            />
+          </div>
           {form.videoId && (
             <p className="mt-1 text-[0.55rem]" style={{ color: "#5A3830" }}>
               זוהה: {form.videoProvider === "youtube" ? "YouTube" : form.videoProvider === "vimeo" ? "Vimeo" : "קובץ ישיר"} · ID: {form.videoId}

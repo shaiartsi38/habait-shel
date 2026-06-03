@@ -24,7 +24,7 @@ function lessonFromRow(row: Record<string, unknown>): CourseLesson {
 }
 
 function courseFromRow(row: Record<string, unknown>): CourseData {
-  const meta = parseMeta(row.description as string | null);
+  const meta = parseMeta(row.description as string | null) as Record<string, unknown>;
   const tags = (row.tags as string[]) ?? [];
   const category = tags.find((t) => t.startsWith("cat:"))?.slice(4) ?? "";
   const difficulty = (tags.find((t) => t.startsWith("diff:"))?.slice(5) ?? "beginner") as CourseData["difficulty"];
@@ -53,6 +53,7 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
     isNew,
     showOnHome: row.show_on_home !== false,
     sortOrder: Number(row.sort_order ?? 0),
+    videoThumbnailUrl: (meta.videoThumbnailUrl as string | undefined) || undefined,
     instructor: (meta.instructor as CourseData["instructor"]) ?? { name: "נטלי ארצי", bio: "", photoUrl: "" },
     lessons,
     tags: cleanTags,
@@ -61,7 +62,7 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
 
 function courseToRow(c: CourseData): Record<string, unknown> {
   const tags = [...c.tags, `cat:${c.category}`, `diff:${c.difficulty}`, ...(c.isNew ? ["new:true"] : [])];
-  const meta = { shortDesc: c.shortDesc, fullDesc: c.fullDesc, instructor: c.instructor };
+  const meta = { shortDesc: c.shortDesc, fullDesc: c.fullDesc, instructor: c.instructor, videoThumbnailUrl: c.videoThumbnailUrl ?? "" };
   return {
     slug: c.slug,
     title: c.title,

@@ -178,7 +178,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               key={activeLessonId ?? "trailer"}
               videoId={displayVideoId}
               provider={displayProvider}
-              poster={course.image}
+              poster={course.videoThumbnailUrl || course.image}
               title={displayTitle}
               autoStart={!!activeLessonId}
               startAt={startAt}
@@ -370,7 +370,7 @@ function CinematicHeader({ course }: { course: (typeof COURSES)[number] }) {
       {/* Background image */}
       <div className="absolute inset-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={course.image} alt={course.title} className="w-full h-full object-cover object-center" style={{ filter: "brightness(0.55)" }} />
+        <img src={course.image} alt={course.title} className="w-full h-full object-cover object-top" style={{ filter: "brightness(0.55)" }} />
       </div>
 
       {/* Cinematic gradients */}
@@ -525,7 +525,7 @@ function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart =
       {playing ? embedContent : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={poster} alt={title} className="absolute inset-0 w-full h-full object-cover" style={{ filter: "brightness(0.6)" }} />
+          <img src={poster} alt={title} className="absolute inset-0 w-full h-full object-cover object-top" style={{ filter: "brightness(0.6)" }} />
           <div className="absolute inset-0" style={{ background: "rgba(8,6,8,0.4)" }} />
           <motion.button
             onClick={() => setPlaying(true)}

@@ -36,6 +36,7 @@ export interface CourseData {
   isNew: boolean;
   showOnHome?: boolean;
   sortOrder?: number;
+  videoThumbnailUrl?: string;
   instructor: CourseInstructor;
   lessons: CourseLesson[];
   tags: string[];
