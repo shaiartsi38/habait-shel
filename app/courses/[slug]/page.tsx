@@ -367,10 +367,22 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
 function CinematicHeader({ course }: { course: (typeof COURSES)[number] }) {
   return (
     <div className="relative w-full overflow-hidden" style={{ minHeight: "60vh", display: "flex", alignItems: "flex-end" }}>
-      {/* Background image */}
-      <div className="absolute inset-0">
+      {/* Blurred background fill */}
+      <div className="absolute inset-0 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={course.image} alt={course.title} className="w-full h-full object-cover object-center" style={{ filter: "brightness(0.55)" }} />
+        <img
+          src={course.image} alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ filter: "blur(40px) brightness(0.22) saturate(0.5)", transform: "scale(1.1)" }}
+        />
+      </div>
+      {/* Portrait image — full, contained, centered, no crop */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={course.image} alt={course.title}
+          style={{ height: "100%", width: "auto", objectFit: "contain", filter: "brightness(0.72)" }}
+        />
       </div>
 
       {/* Cinematic gradients */}
