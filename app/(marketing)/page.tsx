@@ -108,13 +108,14 @@ function HeroSection({ hero }: { hero: HeroContent }) {
       {/* תמונת רקע — תמיד מוצגת */}
       <motion.div
         className="absolute inset-0"
-        style={{ y: bgY, scale: 1.14, transformOrigin: "center top" }}
+        style={{ y: bgY, scale: 1.05, transformOrigin: "center top" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={bgSrc}
           alt="Hero"
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover"
+          style={{ objectPosition: "50% 25%" }}
           loading="eager"
         />
       </motion.div>
