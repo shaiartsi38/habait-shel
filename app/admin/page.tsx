@@ -907,32 +907,47 @@ function CourseEditForm({
                     <X size={11} style={{ color: "#5A3830" }} />
                   </button>
                 </div>
-                {/* YouTube thumbnail picker if course has trailer */}
-                {form.videoId && form.videoProvider === "youtube" && (
-                  <div>
-                    <p className="text-[0.52rem] mb-1.5 uppercase tracking-wider" style={{ color: "#5A3830" }}>בחרי תמונה מהטיזר</p>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {[
-                        `https://img.youtube.com/vi/${form.videoId}/hqdefault.jpg`,
-                        `https://img.youtube.com/vi/${form.videoId}/1.jpg`,
-                        `https://img.youtube.com/vi/${form.videoId}/2.jpg`,
-                        `https://img.youtube.com/vi/${form.videoId}/3.jpg`,
-                      ].map((url) => (
-                        <button key={url} type="button" onClick={() => setHighlight(idx, "imageUrl", url)}
-                          className="relative rounded-lg overflow-hidden transition-all"
-                          style={{ width: 72, height: 54, border: `2px solid ${h.imageUrl === url ? "#C4857A" : "rgba(196,133,122,0.15)"}`, flexShrink: 0 }}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={url} alt="" className="w-full h-full object-cover" />
-                          {h.imageUrl === url && (
-                            <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(196,133,122,0.3)" }}>
-                              <Check size={12} style={{ color: "#080608" }} />
+                {/* YouTube thumbnail picker — trailer + first 4 lessons */}
+                {(() => {
+                  const ytSources = [
+                    ...(form.videoId && form.videoProvider === "youtube"
+                      ? [{ label: "טיזר", videoId: form.videoId }]
+                      : []),
+                    ...form.lessons
+                      .filter((l) => l.videoProvider === "youtube" && l.videoId)
+                      .slice(0, 4)
+                      .map((l, li) => ({ label: l.title ? l.title.slice(0, 10) : `ש׳ ${li + 1}`, videoId: l.videoId })),
+                  ];
+                  if (ytSources.length === 0) return null;
+                  return (
+                    <div>
+                      <p className="text-[0.52rem] mb-1.5 uppercase tracking-wider" style={{ color: "#5A3830" }}>בחרי מסרטוני הקורס</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {ytSources.map((src) => {
+                          const url = `https://img.youtube.com/vi/${src.videoId}/hqdefault.jpg`;
+                          return (
+                            <div key={src.videoId} className="flex flex-col items-center gap-0.5">
+                              <button type="button" onClick={() => setHighlight(idx, "imageUrl", url)}
+                                className="relative rounded-lg overflow-hidden transition-all"
+                                style={{ width: 72, height: 54, border: `2px solid ${h.imageUrl === url ? "#C4857A" : "rgba(196,133,122,0.15)"}`, flexShrink: 0 }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={url} alt="" className="w-full h-full object-cover" />
+                                {h.imageUrl === url && (
+                                  <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(196,133,122,0.3)" }}>
+                                    <Check size={12} style={{ color: "#080608" }} />
+                                  </div>
+                                )}
+                              </button>
+                              <span className="text-[0.45rem]" style={{ color: "#5A3830", maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {src.label}
+                              </span>
                             </div>
-                          )}
-                        </button>
-                      ))}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
                 {/* Custom upload / URL */}
                 <div className="flex gap-2 items-center">
                   <input

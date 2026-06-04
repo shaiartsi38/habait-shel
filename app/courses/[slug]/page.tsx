@@ -162,6 +162,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
           {activeLessonId ? `▶ ${displayTitle}` : "▶ צפי בטריילר"}
         </p>
 
+        <div className="md:max-w-2xl">
         <motion.div
           className={activeLessonId ? "mb-3" : "mb-4"}
           initial={{ opacity: 0, y: 16 }}
@@ -204,6 +205,8 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
             />
           ) : null}
         </motion.div>
+
+        </div> {/* md:max-w-2xl */}
 
         {/* Lesson prev/next navigation — always visible */}
         {course.lessons.length > 0 && (
@@ -392,7 +395,7 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
 
         {/* Title */}
         <motion.h1
-          className="font-black leading-[1.05] mb-3"
+          className="font-black leading-[1.05] mb-3 text-center"
           style={{ fontSize: "clamp(1.9rem, 2.8vw, 3rem)" }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -409,7 +412,7 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
         </motion.h1>
 
         {course.subtitle && (
-          <p className="text-lg font-light mb-3" style={{ color: "rgba(255,248,245,0.55)" }}>
+          <p className="text-lg font-light mb-3 text-center" style={{ color: "rgba(255,248,245,0.55)" }}>
             {course.subtitle}
           </p>
         )}
@@ -466,7 +469,7 @@ function SkillsSection({ course }: { course: CourseData }) {
   return (
     <div className="px-4 md:px-16 py-10">
       <h2 className="text-lg font-black mb-5" style={{ color: "#FFF8F5" }}>מה תגלי בקורס זה</h2>
-      <div className={`grid gap-3 ${cards.length <= 2 ? "grid-cols-2" : cards.length === 3 ? "grid-cols-3" : "grid-cols-2 md:grid-cols-4"}`}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {cards.map((card, i) => (
           <div key={card.id} className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "4/3" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
