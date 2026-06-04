@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { HomepageEditor, SubscriptionEditor, NatalieEditor } from "@/components/admin/ContentEditors";
 import { dbGetOgImage, dbSetOgImage } from "@/lib/supabase/content-db";
-import { CATEGORIES, type CourseData, type CourseLesson } from "@/lib/courses-data";
+import { CATEGORIES, type CourseData, type CourseLesson, type CourseHighlight } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import {
   dbFetchCourses,
@@ -571,9 +571,11 @@ function CourseEditForm({
   const [uploadingImg, setUploadingImg] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingHighlightIdx, setUploadingHighlightIdx] = useState<number | null>(null);
   const fileRef  = useRef<HTMLInputElement>(null);
   const thumbRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
+  const highlightFileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const set = <K extends keyof CourseData>(key: K, val: CourseData[K]) =>
     setForm((p) => ({ ...p, [key]: val }));
@@ -586,6 +588,44 @@ function CourseEditForm({
 
   const addLesson    = () => setForm((p) => ({ ...p, lessons: [...p.lessons, emptyLesson()] }));
   const removeLesson = (idx: number) => setForm((p) => ({ ...p, lessons: p.lessons.filter((_, i) => i !== idx) }));
+
+  const addHighlight = () => setForm((p) => ({
+    ...p,
+    highlights: [...(p.highlights ?? []), { id: Date.now().toString(), text: "", imageUrl: "" }],
+  }));
+  const removeHighlight = (idx: number) => setForm((p) => ({
+    ...p,
+    highlights: (p.highlights ?? []).filter((_, i) => i !== idx),
+  }));
+  const setHighlight = (idx: number, key: keyof CourseHighlight, val: string) =>
+    setForm((p) => {
+      const hs = [...(p.highlights ?? [])];
+      hs[idx] = { ...hs[idx], [key]: val };
+      return { ...p, highlights: hs };
+    });
+
+  const setLessonThumbnail = (lessonId: string, url: string) =>
+    setForm((p) => ({
+      ...p,
+      lessonThumbnails: { ...(p.lessonThumbnails ?? {}), [lessonId]: url },
+    }));
+
+  const handleHighlightImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    e.target.value = "";
+    setUploadingHighlightIdx(idx);
+    try {
+      const url = await dbUploadImage(file);
+      setHighlight(idx, "imageUrl", url);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (ev) => setHighlight(idx, "imageUrl", ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingHighlightIdx(null);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "image" | "videoThumb" | "photo") => {
     const file = e.target.files?.[0];
@@ -846,6 +886,98 @@ function CourseEditForm({
           <Textarea value={form.instructor.bio} onChange={(v) => setInstructor("bio", v)} rows={3} placeholder="ספרי קצת על המדריכה..." />
         </FormSection>
 
+        {/* ── מה תגלי ── */}
+        <FormSection title={`מה תגלי בקורס (${(form.highlights ?? []).length} כרטיסים)`} icon="✨">
+          <p className="text-[0.58rem] mb-4" style={{ color: "#5A3830" }}>
+            אם לא הוגדרו כרטיסים — יוצגו 4 השיעורים הראשונים אוטומטית.
+          </p>
+          <div className="space-y-3">
+            {(form.highlights ?? []).map((h, idx) => (
+              <div key={h.id} className="rounded-xl p-3 space-y-2" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-[0.6rem] font-bold tabular-nums w-5 shrink-0" style={{ color: "#C4857A" }}>{idx + 1}</span>
+                  <input
+                    className="flex-1 bg-transparent text-[0.78rem] font-medium outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.25)] transition-colors"
+                    style={{ color: "#FFF8F5" }}
+                    value={h.text}
+                    onChange={(e) => setHighlight(idx, "text", e.target.value)}
+                    placeholder="מה תגלה הלומדת בנקודה זו..."
+                  />
+                  <button onClick={() => removeHighlight(idx)} className="p-1 rounded-lg hover:bg-white/5">
+                    <X size={11} style={{ color: "#5A3830" }} />
+                  </button>
+                </div>
+                {/* YouTube thumbnail picker — trailer + first 4 lessons */}
+                {(() => {
+                  const ytSources = [
+                    ...(form.videoId && form.videoProvider === "youtube"
+                      ? [{ label: "טיזר", videoId: form.videoId }]
+                      : []),
+                    ...form.lessons
+                      .filter((l) => l.videoProvider === "youtube" && l.videoId)
+                      .slice(0, 4)
+                      .map((l, li) => ({ label: l.title ? l.title.slice(0, 10) : `ש׳ ${li + 1}`, videoId: l.videoId })),
+                  ];
+                  if (ytSources.length === 0) return null;
+                  return (
+                    <div>
+                      <p className="text-[0.52rem] mb-1.5 uppercase tracking-wider" style={{ color: "#5A3830" }}>בחרי מסרטוני הקורס</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {ytSources.map((src) => {
+                          const url = `https://img.youtube.com/vi/${src.videoId}/hqdefault.jpg`;
+                          return (
+                            <div key={src.videoId} className="flex flex-col items-center gap-0.5">
+                              <button type="button" onClick={() => setHighlight(idx, "imageUrl", url)}
+                                className="relative rounded-lg overflow-hidden transition-all"
+                                style={{ width: 72, height: 54, border: `2px solid ${h.imageUrl === url ? "#C4857A" : "rgba(196,133,122,0.15)"}`, flexShrink: 0 }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={url} alt="" className="w-full h-full object-cover" />
+                                {h.imageUrl === url && (
+                                  <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(196,133,122,0.3)" }}>
+                                    <Check size={12} style={{ color: "#080608" }} />
+                                  </div>
+                                )}
+                              </button>
+                              <span className="text-[0.45rem]" style={{ color: "#5A3830", maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {src.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* Custom upload / URL */}
+                <div className="flex gap-2 items-center">
+                  <input
+                    className="flex-1 bg-transparent text-[0.62rem] outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.2)] transition-colors"
+                    style={{ color: "rgba(255,248,245,0.4)", direction: "ltr" }}
+                    value={h.imageUrl}
+                    onChange={(e) => setHighlight(idx, "imageUrl", e.target.value)}
+                    placeholder="או הדביקי URL של תמונה"
+                    dir="ltr"
+                  />
+                  <input ref={(el) => { highlightFileRefs.current[idx] = el; }} type="file" accept="image/*" className="hidden"
+                    onChange={(e) => handleHighlightImageUpload(e, idx)} />
+                  <button type="button" onClick={() => highlightFileRefs.current[idx]?.click()}
+                    disabled={uploadingHighlightIdx === idx}
+                    className="p-1.5 rounded-lg hover:bg-white/5 disabled:opacity-40 shrink-0">
+                    {uploadingHighlightIdx === idx
+                      ? <Loader2 size={11} className="animate-spin" style={{ color: "#C4857A" }} />
+                      : <Upload size={11} style={{ color: "#8B6355" }} />}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button onClick={addHighlight}
+            className="mt-3 w-full py-2.5 rounded-xl text-[0.75rem] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-70"
+            style={{ border: "1px dashed rgba(196,133,122,0.25)", color: "#C4857A", background: "rgba(196,133,122,0.05)" }}>
+            <Plus size={13} /> הוסיפי כרטיס
+          </button>
+        </FormSection>
+
         {/* ── שיעורים ── */}
         <FormSection title={`שיעורים (${form.lessons.length})`} icon="🎞️">
           <div className="space-y-3">
@@ -857,6 +989,8 @@ function CourseEditForm({
                 total={form.lessons.length}
                 onChange={(key, val) => setLesson(idx, key, val)}
                 onRemove={() => removeLesson(idx)}
+                thumbnailUrl={form.lessonThumbnails?.[lesson.id]}
+                onThumbnailChange={(url) => setLessonThumbnail(lesson.id, url)}
               />
             ))}
           </div>
@@ -907,16 +1041,21 @@ function CourseEditForm({
 // ─── Lesson row ───────────────────────────────────────────────────
 
 function LessonRow({
-  lesson, index, total, onChange, onRemove,
+  lesson, index, total, onChange, onRemove, thumbnailUrl, onThumbnailChange,
 }: {
   lesson: CourseLesson;
   index: number;
   total: number;
   onChange: (key: keyof CourseLesson, val: CourseLesson[keyof CourseLesson]) => void;
   onRemove: () => void;
+  thumbnailUrl?: string;
+  onThumbnailChange: (url: string) => void;
 }) {
   const videoRef = useRef<HTMLInputElement>(null);
+  const thumbFileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [showThumbPicker, setShowThumbPicker] = useState(false);
 
   const handleVideoUrl = (raw: string) => {
     const parsed = parseVideoUrl(raw);
@@ -945,6 +1084,32 @@ function LessonRow({
   };
 
   const providerLabel = lesson.videoProvider === "vimeo" ? "Vimeo" : lesson.videoProvider === "direct" ? "קובץ" : "YouTube";
+
+  const handleThumbFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    e.target.value = "";
+    setUploadingThumb(true);
+    try {
+      const url = await dbUploadImage(file);
+      onThumbnailChange(url);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (ev) => onThumbnailChange(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingThumb(false);
+    }
+  };
+
+  const ytThumbs = lesson.videoProvider === "youtube" && lesson.videoId
+    ? [
+        `https://img.youtube.com/vi/${lesson.videoId}/hqdefault.jpg`,
+        `https://img.youtube.com/vi/${lesson.videoId}/1.jpg`,
+        `https://img.youtube.com/vi/${lesson.videoId}/2.jpg`,
+        `https://img.youtube.com/vi/${lesson.videoId}/3.jpg`,
+      ]
+    : [];
 
   return (
     <div className="rounded-xl p-3 space-y-2" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
@@ -1004,6 +1169,61 @@ function LessonRow({
         <span className="text-[0.58rem]" style={{ color: "#5A3830" }}>דקות</span>
         <div className="flex-1" />
         <Checkbox checked={lesson.isFree} onChange={(v) => onChange("isFree", v)} label="חינמי" small />
+      </div>
+
+      {/* Thumbnail picker */}
+      <div>
+        <button type="button" onClick={() => setShowThumbPicker((p) => !p)}
+          className="text-[0.52rem] flex items-center gap-1 transition-opacity hover:opacity-70"
+          style={{ color: "rgba(196,133,122,0.55)" }}>
+          <Video size={9} />
+          {thumbnailUrl ? "שנה תמונה לשיעור" : "הוסיפי תמונה לשיעור"}
+        </button>
+
+        {showThumbPicker && (
+          <div className="mt-2 space-y-2">
+            {/* YouTube auto-thumbs */}
+            {ytThumbs.length > 0 && (
+              <div>
+                <p className="text-[0.5rem] mb-1.5 uppercase tracking-wider" style={{ color: "#5A3830" }}>מסרטון היוטיוב</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {ytThumbs.map((url) => (
+                    <button key={url} type="button" onClick={() => onThumbnailChange(url)}
+                      className="relative rounded-lg overflow-hidden transition-all"
+                      style={{ width: 64, height: 48, border: `2px solid ${thumbnailUrl === url ? "#C4857A" : "rgba(196,133,122,0.12)"}`, flexShrink: 0 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      {thumbnailUrl === url && (
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(196,133,122,0.35)" }}>
+                          <Check size={10} style={{ color: "#080608" }} />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Custom URL or upload */}
+            <div className="flex gap-2 items-center">
+              <input
+                className="flex-1 bg-transparent text-[0.6rem] outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.2)] transition-colors"
+                style={{ color: "rgba(255,248,245,0.35)", direction: "ltr" }}
+                value={thumbnailUrl ?? ""}
+                onChange={(e) => onThumbnailChange(e.target.value)}
+                placeholder="או הדביקי URL"
+                dir="ltr"
+              />
+              <input ref={thumbFileRef} type="file" accept="image/*" className="hidden" onChange={handleThumbFile} />
+              <button type="button" onClick={() => thumbFileRef.current?.click()}
+                disabled={uploadingThumb}
+                className="p-1 rounded-lg hover:bg-white/5 disabled:opacity-40 shrink-0">
+                {uploadingThumb
+                  ? <Loader2 size={10} className="animate-spin" style={{ color: "#C4857A" }} />
+                  : <Upload size={10} style={{ color: "#8B6355" }} />}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

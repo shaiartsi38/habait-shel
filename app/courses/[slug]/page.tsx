@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { motion } from "framer-motion";
 import { Play, Lock, Clock, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import Link from "next/link";
-import { COURSES, type VideoProvider } from "@/lib/courses-data";
+import { COURSES, type VideoProvider, type CourseData } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import { createClient } from "@/lib/supabase/client";
 import { dbGetProgress, dbGetCourseProgress, dbSaveProgress } from "@/lib/supabase/progress-db";
@@ -33,6 +33,8 @@ const TIER_RANK: Record<string, number> = { basic: 1, pro: 2, elite: 3 };
 const tierCovers = (userTier: string | null, required: string) =>
   (TIER_RANK[userTier ?? ""] ?? 0) >= (TIER_RANK[required] ?? 0);
 
+type AuthState = { isLoggedIn: boolean; isAdmin: boolean; userTier: string | null };
+
 // ─── Page ────────────────────────────────────────────────────────
 export default function CoursePage({ params }: { params: { slug: string } }) {
   const { slug } = params;
@@ -46,6 +48,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const [videoAccessDenied, setVideoAccessDenied] = useState(false);
   const [startAt, setStartAt]               = useState(0);
   const [courseProgress, setCourseProgress] = useState<Record<string, number>>({});
+  const playerSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const sb = createClient();
@@ -58,31 +61,35 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     });
   }, []);
 
-  // Try context first (live admin changes), fall back to static
   const course = courses.find((c) => c.slug === slug) ?? COURSES.find((c) => c.slug === slug);
   if (!course) notFound();
 
-  const firstLesson    = course.lessons[0];
-  const activeLesson   = activeLessonId ? course.lessons.find((l) => l.id === activeLessonId) : null;
+  const firstLesson       = course.lessons[0];
+  const activeLesson      = activeLessonId ? course.lessons.find((l) => l.id === activeLessonId) : null;
   const activeLessonIndex = activeLessonId ? course.lessons.findIndex((l) => l.id === activeLessonId) : -1;
   const prevLesson = activeLessonIndex > 0 ? course.lessons[activeLessonIndex - 1] : null;
-  const nextLesson = activeLessonIndex >= 0 && activeLessonIndex < course.lessons.length - 1
-    ? course.lessons[activeLessonIndex + 1]
-    : null;
+  const nextLesson =
+    activeLessonIndex >= 0 && activeLessonIndex < course.lessons.length - 1
+      ? course.lessons[activeLessonIndex + 1]
+      : null;
 
-  // טעינת התקדמות לכל הקורס (לאינדיקטורים ברשימה)
+  // nav always visible: before any selection "next" = first lesson
+  const navNext = activeLessonId ? nextLesson : (course.lessons[0] ?? null);
+  const navPrev = activeLessonId ? prevLesson : null;
+  const navNextLabel = navNext ? (navNext.title || `שיעור ${activeLessonId ? activeLessonIndex + 2 : 1}`) : "סוף הקורס";
+  const navPrevLabel = navPrev ? (navPrev.title || `שיעור ${activeLessonIndex}`) : "תחילת הקורס";
+
   useEffect(() => {
     if (!isLoggedIn || !course) return;
     dbGetCourseProgress(course.id).then(setCourseProgress).catch(() => {});
   }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // כשמשתנה שיעור פעיל — שיעורים חינמיים מהContext, שאר דרך API
   useEffect(() => {
     if (!activeLessonId || !activeLesson) return;
     setVideoAccessDenied(false);
     setStartAt(0);
+    playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
-    // טעינת נקודת המשך שמורה
     if (isLoggedIn) {
       dbGetProgress(activeLessonId).then(setStartAt).catch(() => {});
     }
@@ -108,7 +115,6 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     return () => ctrl.abort();
   }, [activeLessonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // שמירת התקדמות — stable callback
   const activeLessonIdRef = useRef(activeLessonId);
   activeLessonIdRef.current = activeLessonId;
   const courseIdRef = useRef(course.id);
@@ -128,47 +134,60 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const displayProvider = (activeLessonId
     ? lessonVideo?.videoProvider
     : (course.videoId ? (course.videoProvider ?? "youtube") : (firstLesson?.videoProvider ?? "youtube"))
-  ) as import("@/lib/courses-data").VideoProvider ?? "youtube";
+  ) as VideoProvider ?? "youtube";
   const displayTitle = activeLesson?.title || course.title;
+
+  const auth: AuthState = { isLoggedIn, isAdmin, userTier };
 
   return (
     <div className="min-h-screen sidebar-safe" style={{ background: "var(--black)", color: "var(--white)" }}>
-      {/* ── Cinematic header ── */}
-      <CinematicHeader course={course} />
 
-      {/* ── Main content ── */}
-      <div className="px-4 md:px-10 py-10 max-w-4xl">
-        {/* Video player area */}
+      {/* ── Mobile Hero (Apple TV) ── */}
+      <div className="md:hidden">
+        <CourseHeroMobile course={course} auth={auth} />
+      </div>
+
+      {/* ── Desktop Hero (MasterClass split) ── */}
+      <div className="hidden md:block">
+        <CourseHeroDesktop course={course} auth={auth} />
+      </div>
+
+      {/* ── Skills Section ── */}
+      {course.lessons.length > 0 && <SkillsSection course={course} />}
+
+      {/* ── Video Player ── */}
+      <div ref={playerSectionRef} className="px-4 md:px-16 py-8">
+        <p className="text-[0.62rem] tracking-[0.2em] uppercase font-bold mb-4"
+          style={{ color: "rgba(196,133,122,0.6)" }}>
+          {activeLessonId ? `▶ ${displayTitle}` : "▶ צפי בטריילר"}
+        </p>
+
+        <div className="md:max-w-2xl">
         <motion.div
-          className={activeLessonId ? "mb-3" : "mb-10"}
+          className={activeLessonId ? "mb-3" : "mb-4"}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.1 }}
         >
           {videoFetching ? (
-            <div
-              className="relative w-full rounded-2xl flex items-center justify-center"
-              style={{ aspectRatio: "16/9", background: "#0f0b0e", boxShadow: "0 12px 40px rgba(0,0,0,0.55)" }}
-            >
+            <div className="relative w-full rounded-2xl flex items-center justify-center"
+              style={{ aspectRatio: "16/9", background: "#0f0b0e", boxShadow: "0 12px 40px rgba(0,0,0,0.55)" }}>
               <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(196,133,122,0.4)", borderTopColor: "#C4857A" }} />
+                <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+                  style={{ borderColor: "rgba(196,133,122,0.4)", borderTopColor: "#C4857A" }} />
                 <span className="text-[0.65rem]" style={{ color: "rgba(196,133,122,0.6)" }}>טוען שיעור...</span>
               </div>
             </div>
           ) : videoAccessDenied ? (
-            <div
-              className="relative w-full rounded-2xl flex items-center justify-center"
-              style={{ aspectRatio: "16/9", background: "#0f0b0e", boxShadow: "0 12px 40px rgba(0,0,0,0.55)" }}
-            >
+            <div className="relative w-full rounded-2xl flex items-center justify-center"
+              style={{ aspectRatio: "16/9", background: "#0f0b0e", boxShadow: "0 12px 40px rgba(0,0,0,0.55)" }}>
               <div className="flex flex-col items-center gap-3 text-center px-8">
                 <Lock size={28} style={{ color: "rgba(196,133,122,0.5)" }} />
                 <p className="text-sm font-bold" style={{ color: "#FFF8F5" }}>אין גישה לשיעור זה</p>
                 <p className="text-[0.65rem]" style={{ color: "#5A3830" }}>השיעור דורש מנוי מתאים</p>
-                <a
-                  href="/subscription"
+                <a href="/subscription"
                   className="mt-1 px-5 py-2 rounded-xl text-[0.72rem] font-black transition-opacity hover:opacity-90"
-                  style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }}
-                >
+                  style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }}>
                   שדרגי מנוי
                 </a>
               </div>
@@ -183,36 +202,37 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               autoStart={!!activeLessonId}
               startAt={startAt}
               onProgress={activeLessonId ? handleProgress : undefined}
+              playLabel={!activeLessonId && (isLoggedIn || isAdmin) ? "צפי בפרק הראשון" : undefined}
             />
           ) : null}
         </motion.div>
 
-        {/* Lesson navigation */}
-        {activeLessonId && (
-          <div className="flex gap-2 mb-8">
-            {/* שיעור הבא — prominent, left side in RTL */}
+        </div> {/* md:max-w-2xl */}
+
+        {/* Lesson prev/next navigation — always visible */}
+        {course.lessons.length > 0 && (
+          <div className="flex gap-2 mt-4">
             <button
-              onClick={() => nextLesson && setActiveLessonId(nextLesson.id)}
-              disabled={!nextLesson}
-              className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl transition-all disabled:opacity-25 group"
+              onClick={() => navNext && setActiveLessonId(navNext.id)}
+              disabled={!navNext}
+              className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl transition-all disabled:opacity-25"
               style={{
-                background: nextLesson ? "#140e12" : "rgba(255,255,255,0.02)",
-                border: `1px solid ${nextLesson ? "rgba(196,133,122,0.28)" : "rgba(196,133,122,0.08)"}`,
+                background: navNext ? "#140e12" : "rgba(255,255,255,0.02)",
+                border: `1px solid ${navNext ? "rgba(196,133,122,0.28)" : "rgba(196,133,122,0.08)"}`,
               }}
             >
-              <ChevronRight size={15} style={{ color: nextLesson ? "#C4857A" : "rgba(255,248,245,0.2)" }} />
+              <ChevronRight size={15} style={{ color: navNext ? "#C4857A" : "rgba(255,248,245,0.2)" }} />
               <div className="text-right">
                 <p className="text-[0.52rem] tracking-wider mb-0.5" style={{ color: "rgba(196,133,122,0.55)" }}>שיעור הבא</p>
-                <p className="text-[0.72rem] font-semibold" style={{ color: nextLesson ? "#FFF8F5" : "rgba(255,248,245,0.25)" }}>
-                  {nextLesson ? (nextLesson.title || `שיעור ${activeLessonIndex + 2}`) : "סוף הקורס"}
+                <p className="text-[0.72rem] font-semibold" style={{ color: navNext ? "#FFF8F5" : "rgba(255,248,245,0.25)" }}>
+                  {navNextLabel}
                 </p>
               </div>
             </button>
 
-            {/* שיעור קודם — subtle, right side in RTL */}
             <button
-              onClick={() => prevLesson && setActiveLessonId(prevLesson.id)}
-              disabled={!prevLesson}
+              onClick={() => navPrev && setActiveLessonId(navPrev.id)}
+              disabled={!navPrev}
               className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl transition-all disabled:opacity-25"
               style={{
                 background: "rgba(255,255,255,0.02)",
@@ -221,246 +241,334 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
             >
               <div className="text-right">
                 <p className="text-[0.52rem] tracking-wider mb-0.5" style={{ color: "rgba(255,248,245,0.25)" }}>שיעור קודם</p>
-                <p className="text-[0.72rem] font-semibold" style={{ color: prevLesson ? "rgba(255,248,245,0.6)" : "rgba(255,248,245,0.2)" }}>
-                  {prevLesson ? (prevLesson.title || `שיעור ${activeLessonIndex}`) : "תחילת הקורס"}
+                <p className="text-[0.72rem] font-semibold" style={{ color: navPrev ? "rgba(255,248,245,0.6)" : "rgba(255,248,245,0.2)" }}>
+                  {navPrevLabel}
                 </p>
               </div>
               <ChevronLeft size={15} style={{ color: "rgba(255,248,245,0.2)" }} />
             </button>
           </div>
         )}
+      </div>
 
-        <div className="grid md:grid-cols-[1fr_300px] gap-10">
-          {/* Left col */}
+      {/* ── Lesson Plan ── */}
+      <div className="px-4 md:px-16 pb-12">
+        <div className="flex items-baseline gap-3 mb-1">
+          <h2 className="text-xl font-black" style={{ color: "#FFF8F5" }}>תוכנית הלמידה</h2>
+          <span className="text-sm" style={{ color: "rgba(255,248,245,0.35)" }}>
+            {course.lessons.length} שיעורים
+          </span>
+        </div>
+        <div className="mt-4">
+          {course.lessons.map((lesson, i) => {
+            const ytThumb = lesson.videoProvider === "youtube" && lesson.videoId
+              ? `https://img.youtube.com/vi/${lesson.videoId}/mqdefault.jpg`
+              : null;
+            const thumbSrc = course.lessonThumbnails?.[lesson.id] || ytThumb || course.image;
+            return (
+              <LessonRow
+                key={lesson.id}
+                lesson={lesson}
+                index={i}
+                isAccessible={lesson.isFree || isLoggedIn || isAdmin}
+                isActive={lesson.id === activeLessonId}
+                progressSeconds={courseProgress[lesson.id] ?? 0}
+                courseImage={thumbSrc}
+                onSelect={() => setActiveLessonId(lesson.id)}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Instructor ── */}
+      <div className="px-4 md:px-16 pb-16">
+        <InstructorSection course={course} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Mobile Hero — Apple TV style ────────────────────────────────
+function CourseHeroMobile({ course, auth }: { course: CourseData; auth: AuthState }) {
+  return (
+    <div className="relative overflow-hidden" style={{ height: "100svh" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={course.image} alt={course.title}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ objectPosition: "50% 20%" }}
+      />
+      <div className="absolute inset-0" style={{
+        background: "linear-gradient(to bottom, rgba(8,6,8,0.45) 0%, rgba(8,6,8,0.05) 35%, rgba(8,6,8,0.7) 65%, #080608 100%)"
+      }} />
+
+      <div className="absolute inset-x-0 bottom-0 px-5 pb-12 pt-24">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-1.5 mb-4 text-[0.52rem] tracking-widest uppercase">
+          <Link href="/courses" style={{ color: "rgba(196,133,122,0.6)" }}>קורסים</Link>
+          <span style={{ color: "rgba(196,133,122,0.3)" }}>›</span>
+          <span style={{ color: "rgba(255,248,245,0.4)" }}>{course.category}</span>
+        </div>
+
+        {/* Badges */}
+        <div className="flex gap-2 mb-4">
+          <Badge color="#C4857A" bg="rgba(196,133,122,0.15)" border="rgba(196,133,122,0.3)">
+            {TIER_LABEL[course.tier]}
+          </Badge>
+          <Badge color="rgba(255,248,245,0.5)" bg="rgba(255,255,255,0.06)" border="rgba(255,255,255,0.1)">
+            {DIFF_LABEL[course.difficulty]}
+          </Badge>
+        </div>
+
+        {/* Title */}
+        <h1 className="font-black leading-[1.05] mb-3" style={{ fontSize: "clamp(2rem, 9vw, 3rem)" }}>
+          <span style={{
+            backgroundImage: "linear-gradient(135deg, #FFF8F5 0%, #D4998E 60%, #C4857A 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}>
+            {course.title}
+          </span>
+        </h1>
+
+        {course.subtitle && (
+          <p className="text-sm mb-1 leading-snug" style={{ color: "rgba(255,248,245,0.55)" }}>{course.subtitle}</p>
+        )}
+
+        <div className="flex gap-3 text-[0.62rem] mb-6" style={{ color: "rgba(255,248,245,0.4)" }}>
+          <span>{course.lessons.length} שיעורים</span>
+          <span>·</span>
+          <span>{course.duration}</span>
+        </div>
+
+        <CourseCTA course={course} auth={auth} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Desktop Hero — MasterClass split ────────────────────────────
+function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthState }) {
+  return (
+    <div className="relative" style={{ height: "88vh", maxHeight: 800, background: "#080608" }} dir="ltr">
+      {/* Left — Image */}
+      <div className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: "46%" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={course.image} alt={course.title}
+          className="w-full h-full"
+          style={{ objectFit: "contain", objectPosition: "center" }}
+        />
+        {/* Blend right edge into panel */}
+        <div className="absolute inset-y-0 right-0 w-40"
+          style={{ background: "linear-gradient(to right, transparent, #080608)" }} />
+        {/* Blend bottom */}
+        <div className="absolute inset-x-0 bottom-0 h-20"
+          style={{ background: "linear-gradient(to bottom, transparent, rgba(8,6,8,0.85))" }} />
+      </div>
+
+      {/* Right — Info */}
+      <div className="absolute inset-y-0 right-0 flex flex-col justify-center overflow-y-auto"
+        style={{ width: "56%", padding: "3rem 3.5rem 3rem 1.5rem" }} dir="rtl">
+
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-1.5 mb-6 text-[0.52rem] tracking-widest uppercase">
+          <Link href="/courses" className="transition-colors hover:text-rose-400"
+            style={{ color: "rgba(196,133,122,0.6)" }}>קורסים</Link>
+          <span style={{ color: "rgba(196,133,122,0.3)" }}>›</span>
+          <span style={{ color: "rgba(255,248,245,0.4)" }}>{course.category}</span>
+        </div>
+
+        {/* Badges */}
+        <div className="flex gap-2 mb-5">
+          <Badge color="#C4857A" bg="rgba(196,133,122,0.1)" border="rgba(196,133,122,0.25)">
+            {TIER_LABEL[course.tier]}
+          </Badge>
+          <Badge color="rgba(255,248,245,0.5)" bg="rgba(255,255,255,0.04)" border="rgba(255,255,255,0.08)">
+            {DIFF_LABEL[course.difficulty]}
+          </Badge>
+          <Badge color="rgba(255,248,245,0.5)" bg="rgba(255,255,255,0.04)" border="rgba(255,255,255,0.08)">
+            <Clock size={10} className="inline ml-1" />{course.duration}
+          </Badge>
+        </div>
+
+        {/* Title */}
+        <motion.h1
+          className="font-black leading-[1.05] mb-3"
+          style={{ fontSize: "clamp(1.9rem, 2.8vw, 3rem)" }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.1 }}
+        >
+          <span style={{
+            backgroundImage: "linear-gradient(135deg, #FFF8F5 0%, #D4998E 50%, #C4857A 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}>
+            {course.title}
+          </span>
+        </motion.h1>
+
+        {course.subtitle && (
+          <p className="text-lg font-light mb-3" style={{ color: "rgba(255,248,245,0.55)" }}>
+            {course.subtitle}
+          </p>
+        )}
+
+        {course.shortDesc && (
+          <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(255,248,245,0.4)" }}>
+            {course.shortDesc}
+          </p>
+        )}
+
+        {/* Stats */}
+        <div className="flex gap-4 text-sm mb-7" style={{ color: "rgba(255,248,245,0.38)" }}>
+          <span>{course.lessons.length} שיעורים</span>
+          <span>·</span>
+          <span>{course.duration}</span>
+        </div>
+
+        {/* CTA */}
+        <div style={{ maxWidth: 280 }}>
+          <CourseCTA course={course} auth={auth} />
+        </div>
+
+        {/* Instructor strip */}
+        <div className="flex items-center gap-3 mt-7 pt-6"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={course.instructor.photoUrl} alt={course.instructor.name}
+            className="w-9 h-9 rounded-full object-cover shrink-0"
+            style={{ border: "1.5px solid rgba(196,133,122,0.3)" }}
+          />
           <div>
-            {/* Meta badges */}
-            <motion.div
-              className="flex flex-wrap gap-2 mb-6"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.18 }}
-            >
-              <Badge color="#C4857A" bg="rgba(196,133,122,0.1)" border="rgba(196,133,122,0.25)">
-                {TIER_LABEL[course.tier]}
-              </Badge>
-              <Badge color="rgba(255,248,245,0.5)" bg="rgba(255,255,255,0.04)" border="rgba(255,255,255,0.08)">
-                {DIFF_LABEL[course.difficulty]}
-              </Badge>
-              <Badge color="rgba(255,248,245,0.5)" bg="rgba(255,255,255,0.04)" border="rgba(255,255,255,0.08)">
-                <Clock size={10} className="inline ml-1" />
-                {course.duration}
-              </Badge>
-            </motion.div>
-
-            {/* Description */}
-            {course.fullDesc && (
-              <motion.div
-                className="mb-8"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.22 }}
-              >
-                <h2 className="text-base font-black mb-3" style={{ color: "#FFF8F5" }}>על הקורס</h2>
-                <p className="text-sm leading-relaxed" style={{ color: "#5A3830" }}>{course.fullDesc}</p>
-              </motion.div>
-            )}
-
-            {/* Lesson list */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.28 }}
-            >
-              <h2 className="text-base font-black mb-4" style={{ color: "#FFF8F5" }}>
-                תכנית הקורס — {course.lessons.length} שיעורים
-              </h2>
-              <div className="space-y-2">
-                {course.lessons.map((lesson, i) => (
-                  <LessonRow
-                    key={lesson.id}
-                    lesson={lesson}
-                    index={i}
-                    tier={course.tier}
-                    isAccessible={lesson.isFree || isLoggedIn || isAdmin}
-                    isActive={lesson.id === activeLessonId}
-                    progressSeconds={courseProgress[lesson.id] ?? 0}
-                    onSelect={() => setActiveLessonId(lesson.id)}
-                  />
-                ))}
-              </div>
-            </motion.div>
+            <p className="text-[0.5rem] tracking-widest uppercase" style={{ color: "rgba(196,133,122,0.55)" }}>המנטורית שלך</p>
+            <p className="text-[0.78rem] font-semibold" style={{ color: "rgba(255,248,245,0.75)" }}>
+              {course.instructor.name}
+            </p>
           </div>
-
-          {/* Right col — Instructor card */}
-          <motion.div
-            initial={{ opacity: 0, x: 12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.32 }}
-          >
-            <div
-              className="sticky top-6 rounded-2xl overflow-hidden"
-              style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.1)" }}
-            >
-              {/* Instructor photo */}
-              <div className="p-6 flex flex-col items-center text-center">
-                <div
-                  className="w-20 h-20 rounded-full overflow-hidden mb-4"
-                  style={{ border: "2px solid rgba(196,133,122,0.35)", boxShadow: "0 0 0 4px rgba(196,133,122,0.06)" }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={course.instructor.photoUrl} alt={course.instructor.name} className="w-full h-full object-cover" />
-                </div>
-                <p className="text-[0.55rem] tracking-[0.28em] uppercase mb-1.5" style={{ color: "#C4857A" }}>המנטורית שלך</p>
-                <h3 className="text-base font-black mb-2" style={{ color: "#FFF8F5" }}>{course.instructor.name}</h3>
-                {course.instructor.bio && (
-                  <p className="text-[0.68rem] leading-relaxed" style={{ color: "#5A3830" }}>{course.instructor.bio}</p>
-                )}
-              </div>
-
-              {/* CTA — לפי מצב auth + tier */}
-              <div className="px-5 pb-5">
-                {!isLoggedIn ? (
-                  <>
-                    <Link
-                      href="/subscription"
-                      className="block w-full py-3 rounded-xl text-center text-[0.82rem] font-black transition-all hover:opacity-90"
-                      style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608", boxShadow: "0 4px 18px rgba(196,133,122,0.3)" }}
-                    >
-                      הצטרפי עכשיו
-                    </Link>
-                    <p className="text-center text-[0.55rem] mt-2" style={{ color: "#3A2020" }}>
-                      גישה מלאה עם מנוי {TIER_LABEL[course.tier]}
-                    </p>
-                  </>
-                ) : isAdmin || tierCovers(userTier, course.tier) ? (
-                  <div
-                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl"
-                    style={{ background: "rgba(74,155,111,0.1)", border: "1px solid rgba(74,155,111,0.22)" }}
-                  >
-                    <Check size={14} style={{ color: "#4A9B6F" }} />
-                    <span className="text-[0.78rem] font-bold" style={{ color: "#4A9B6F" }}>גישה מלאה</span>
-                  </div>
-                ) : (
-                  <>
-                    <Link
-                      href="/subscription"
-                      className="block w-full py-3 rounded-xl text-center text-[0.82rem] font-black transition-all hover:opacity-90"
-                      style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608", boxShadow: "0 4px 18px rgba(196,133,122,0.3)" }}
-                    >
-                      שדרגי מנוי ↑
-                    </Link>
-                    <p className="text-center text-[0.55rem] mt-2" style={{ color: "#3A2020" }}>
-                      נדרש מנוי {TIER_LABEL[course.tier]}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-          </motion.div>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Cinematic Header ─────────────────────────────────────────────
-function CinematicHeader({ course }: { course: (typeof COURSES)[number] }) {
+// ─── Skills Section ───────────────────────────────────────────────
+function SkillsSection({ course }: { course: CourseData }) {
+  // Use admin-defined highlights if they exist, else fall back to first 4 lessons
+  const hasHighlights = course.highlights && course.highlights.length > 0;
+  const cards = hasHighlights
+    ? course.highlights!.map((h) => ({ id: h.id, text: h.text, imageUrl: h.imageUrl || course.image }))
+    : course.lessons.slice(0, 4).map((l) => ({ id: l.id, text: l.title || "", imageUrl: course.image }));
+
+  if (cards.length === 0) return null;
+
   return (
-    <div className="relative w-full overflow-hidden" style={{ minHeight: "60vh", display: "flex", alignItems: "flex-end" }}>
-      {/* Blurred background fill */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={course.image} alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: "blur(40px) brightness(0.22) saturate(0.5)", transform: "scale(1.1)" }}
-        />
-      </div>
-      {/* Portrait image — full, contained, centered, no crop */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={course.image} alt={course.title}
-          style={{ height: "100%", width: "auto", objectFit: "contain", filter: "brightness(0.72)" }}
-        />
-      </div>
-
-      {/* Cinematic gradients */}
-      <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.8) 30%, rgba(8,6,8,0.2) 70%, rgba(8,6,8,0.55) 100%)" }} />
-      <div className="absolute inset-0" style={{ background: "linear-gradient(to right, transparent 40%, rgba(8,6,8,0.6) 100%)" }} />
-
-      {/* Content */}
-      <div className="relative z-10 w-full px-4 md:px-10 pb-10 pt-24">
-        {/* Breadcrumb */}
-        <motion.div
-          className="flex items-center gap-2 mb-4 text-[0.58rem] tracking-wider uppercase"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Link href="/courses" className="transition-colors hover:text-rose-400" style={{ color: "rgba(196,133,122,0.6)" }}>
-            קורסים
-          </Link>
-          <span style={{ color: "rgba(196,133,122,0.3)" }}>›</span>
-          <span style={{ color: "rgba(255,248,245,0.4)" }}>{course.category}</span>
-        </motion.div>
-
-        {/* Title */}
-        <motion.h1
-          className="font-black leading-[1.0] mb-3"
-          style={{ fontSize: "clamp(2.2rem, 5vw, 4rem)" }}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.15 }}
-        >
-          <span
-            style={{
-              backgroundImage: "linear-gradient(135deg, #FFF8F5 0%, #D4998E 50%, #C4857A 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            {course.title}
-          </span>
-        </motion.h1>
-
-        {/* Subtitle */}
-        {course.subtitle && (
-          <motion.p
-            className="text-base md:text-lg font-light mb-2"
-            style={{ color: "rgba(255,248,245,0.55)" }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.22 }}
-          >
-            {course.subtitle}
-          </motion.p>
-        )}
-
-        <motion.p
-          className="text-sm"
-          style={{ color: "rgba(196,133,122,0.7)" }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.26 }}
-        >
-          עם {course.instructor.name}
-        </motion.p>
+    <div className="px-4 md:px-16 py-10">
+      <h2 className="text-lg font-black mb-5" style={{ color: "#FFF8F5" }}>מה תגלי בקורס זה</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {cards.map((card, i) => (
+          <div key={card.id} className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "4/3" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={card.imageUrl} alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ filter: "brightness(0.28)" }} />
+            <div
+              className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-[0.58rem] font-black"
+              style={{ background: "rgba(196,133,122,0.85)", color: "#080608" }}
+            >
+              {String(i + 1).padStart(2, "0")}
+            </div>
+            <div className="absolute inset-x-0 bottom-0 px-3 py-3"
+              style={{ background: "linear-gradient(to top, rgba(8,6,8,0.92), transparent)" }}>
+              <p className="text-[0.66rem] font-semibold leading-snug"
+                style={{ color: "rgba(255,248,245,0.85)" }}>
+                {card.text || `שיעור ${i + 1}`}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-// ─── YouTube embed with IFrame API (progress tracking) ───────────
+// ─── Course CTA (shared) ─────────────────────────────────────────
+function CourseCTA({ course, auth }: { course: CourseData; auth: AuthState }) {
+  const btnClass = "block w-full py-3 rounded-xl text-center text-[0.85rem] font-black transition-all hover:opacity-90";
+  const btnStyle: React.CSSProperties = {
+    background: "linear-gradient(135deg,#C4857A,#D4998E)",
+    color: "#080608",
+    boxShadow: "0 4px 18px rgba(196,133,122,0.3)",
+  };
+
+  if (!auth.isLoggedIn) {
+    return (
+      <>
+        <Link href="/subscription" className={btnClass} style={btnStyle}>הצטרפי עכשיו</Link>
+        <p className="text-center text-[0.55rem] mt-2" style={{ color: "rgba(255,248,245,0.3)" }}>
+          גישה מלאה עם מנוי {TIER_LABEL[course.tier]}
+        </p>
+      </>
+    );
+  }
+  if (auth.isAdmin || tierCovers(auth.userTier, course.tier)) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl"
+        style={{ background: "rgba(74,155,111,0.1)", border: "1px solid rgba(74,155,111,0.22)" }}>
+        <Check size={14} style={{ color: "#4A9B6F" }} />
+        <span className="text-[0.78rem] font-bold" style={{ color: "#4A9B6F" }}>גישה מלאה</span>
+      </div>
+    );
+  }
+  return (
+    <>
+      <Link href="/subscription" className={btnClass} style={btnStyle}>שדרגי מנוי ↑</Link>
+      <p className="text-center text-[0.55rem] mt-2" style={{ color: "rgba(255,248,245,0.3)" }}>
+        נדרש מנוי {TIER_LABEL[course.tier]}
+      </p>
+    </>
+  );
+}
+
+// ─── Instructor Section ───────────────────────────────────────────
+function InstructorSection({ course }: { course: CourseData }) {
+  return (
+    <div
+      className="rounded-2xl p-7 md:p-10 flex flex-col md:flex-row items-center md:items-start gap-6"
+      style={{ background: "#0f0d0e", border: "1px solid rgba(196,133,122,0.1)" }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={course.instructor.photoUrl} alt={course.instructor.name}
+        className="w-24 h-24 rounded-full object-cover shrink-0"
+        style={{ border: "2px solid rgba(196,133,122,0.35)", boxShadow: "0 0 0 4px rgba(196,133,122,0.06)" }}
+      />
+      <div>
+        <p className="text-[0.52rem] tracking-[0.28em] uppercase mb-1.5" style={{ color: "#C4857A" }}>המנטורית שלך</p>
+        <h3 className="text-xl font-black mb-3" style={{ color: "#FFF8F5" }}>{course.instructor.name}</h3>
+        {course.instructor.bio && (
+          <p className="text-sm leading-relaxed" style={{ color: "rgba(255,248,245,0.45)" }}>
+            {course.instructor.bio}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── YouTube embed with IFrame API ────────────────────────────────
 function YouTubeEmbed({ videoId, startAt, onProgress }: {
   videoId: string; startAt: number; onProgress?: (s: number) => void;
 }) {
-  const divRef  = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<any>(null);
+  const divRef     = useRef<HTMLDivElement>(null);
+  const playerRef  = useRef<any>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // seek if startAt changes after player is already created (race condition)
   useEffect(() => {
     if (startAt > 0 && playerRef.current?.seekTo) {
       playerRef.current.seekTo(startAt, true);
@@ -476,14 +584,14 @@ function YouTubeEmbed({ videoId, startAt, onProgress }: {
         playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, start: Math.floor(startAt) },
         events: {
           onStateChange(e: { data: number }) {
-            if (e.data === 1) { // PLAYING
+            if (e.data === 1) {
               intervalRef.current = setInterval(() => {
                 const t = playerRef.current?.getCurrentTime?.() ?? 0;
                 if (t > 0) onProgress?.(Math.floor(t));
               }, 10_000);
             } else {
               if (intervalRef.current) clearInterval(intervalRef.current);
-              if (e.data === 2 || e.data === 0) { // PAUSED or ENDED
+              if (e.data === 2 || e.data === 0) {
                 const t = playerRef.current?.getCurrentTime?.() ?? 0;
                 if (t > 0) onProgress?.(Math.floor(t));
               }
@@ -503,9 +611,9 @@ function YouTubeEmbed({ videoId, startAt, onProgress }: {
 }
 
 // ─── Video Player ─────────────────────────────────────────────────
-function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart = false, startAt = 0, onProgress }: {
+function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart = false, startAt = 0, onProgress, playLabel }: {
   videoId: string; provider?: VideoProvider; poster: string; title: string;
-  autoStart?: boolean; startAt?: number; onProgress?: (s: number) => void;
+  autoStart?: boolean; startAt?: number; onProgress?: (s: number) => void; playLabel?: string;
 }) {
   const [playing, setPlaying] = useState(autoStart);
 
@@ -525,19 +633,17 @@ function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart =
           allow="autoplay; fullscreen; encrypted-media" style={{ border: "none" }} />
       );
     }
-    // YouTube — with IFrame API for progress tracking
     return <YouTubeEmbed videoId={videoId} startAt={startAt} onProgress={onProgress} />;
   })();
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-2xl"
-      style={{ aspectRatio: "16/9", background: "#0f0b0e", boxShadow: "0 12px 40px rgba(0,0,0,0.55)" }}
-    >
+    <div className="relative w-full overflow-hidden rounded-2xl"
+      style={{ aspectRatio: "16/9", background: "#0f0b0e", boxShadow: "0 12px 40px rgba(0,0,0,0.55)" }}>
       {playing ? embedContent : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={poster} alt={title} className="absolute inset-0 w-full h-full object-cover" style={{ filter: "brightness(0.6)" }} />
+          <img src={poster} alt={title} className="absolute inset-0 w-full h-full object-cover"
+            style={{ filter: "brightness(0.6)" }} />
           <div className="absolute inset-0" style={{ background: "rgba(8,6,8,0.4)" }} />
           <motion.button
             onClick={() => setPlaying(true)}
@@ -553,7 +659,9 @@ function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart =
               <Play size={26} fill="#080608" style={{ color: "#080608", marginRight: "-2px" }} />
             </motion.div>
             <span className="text-sm font-semibold" style={{ color: "rgba(255,248,245,0.7)" }}>
-              {autoStart ? (startAt > 0 ? `המשך מ-${Math.floor(startAt / 60)}:${String(startAt % 60).padStart(2, "0")}` : "צפה בשיעור") : "צפי בטיזר"}
+              {autoStart
+                ? (startAt > 0 ? `המשך מ-${Math.floor(startAt / 60)}:${String(startAt % 60).padStart(2, "0")}` : "צפה בשיעור")
+                : (playLabel ?? "צפי בטיזר")}
             </span>
           </motion.button>
         </>
@@ -562,84 +670,99 @@ function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart =
   );
 }
 
-// ─── Lesson row ───────────────────────────────────────────────────
+// ─── Lesson Row — BBC Maestro style ──────────────────────────────
 function LessonRow({
   lesson,
   index,
   isAccessible,
   isActive,
   progressSeconds,
+  courseImage,
   onSelect,
 }: {
-  lesson: (typeof COURSES)[0]["lessons"][0];
+  lesson: CourseData["lessons"][0];
   index: number;
-  tier: string;
   isAccessible: boolean;
   isActive: boolean;
   progressSeconds: number;
+  courseImage: string;
   onSelect: () => void;
 }) {
+  const totalSec = lesson.durationMin * 60;
+  const progress = totalSec > 0 ? Math.min((progressSeconds / totalSec) * 100, 100) : 0;
+  const timeLabel = lesson.durationMin > 0 ? `${lesson.durationMin}:00` : "";
+
   return (
     <div
       onClick={isAccessible ? onSelect : undefined}
-      className="relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
+      className="flex items-center gap-3 md:gap-4 px-2 md:px-3 py-3 rounded-xl transition-all"
       style={{
-        background: isActive ? "rgba(196,133,122,0.1)" : "rgba(255,255,255,0.02)",
-        border: `1px solid ${isActive ? "rgba(196,133,122,0.3)" : "rgba(196,133,122,0.07)"}`,
-        opacity: isAccessible ? 1 : 0.55,
         cursor: isAccessible ? "pointer" : "default",
+        background: isActive ? "rgba(196,133,122,0.08)" : "transparent",
+        opacity: isAccessible ? 1 : 0.48,
       }}
     >
       {/* Number */}
-      <div
-        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[0.58rem] font-black"
-        style={{
-          background: isActive ? "rgba(196,133,122,0.25)" : lesson.isFree ? "rgba(196,133,122,0.15)" : "rgba(255,255,255,0.04)",
-          color: isActive || lesson.isFree ? "#C4857A" : "rgba(255,248,245,0.3)",
-        }}
+      <span
+        className="text-[0.62rem] font-mono w-5 shrink-0 text-center tabular-nums"
+        style={{ color: isActive ? "#C4857A" : "rgba(255,248,245,0.28)" }}
       >
-        {index + 1}
-      </div>
+        {String(index + 1).padStart(2, "0")}
+      </span>
 
-      {/* Title */}
-      <div className="flex-1 min-w-0">
-        <p className="text-[0.8rem] font-medium truncate" style={{ color: isAccessible ? "#FFF8F5" : "rgba(255,248,245,0.45)" }}>
-          {lesson.title || `שיעור ${index + 1}`}
-        </p>
-        {lesson.durationMin > 0 && (
-          <p className="text-[0.56rem] mt-0.5" style={{ color: "rgba(255,248,245,0.25)" }}>
-            {lesson.durationMin} דקות
-          </p>
+      {/* Thumbnail */}
+      <div className="relative shrink-0 rounded-lg overflow-hidden" style={{ width: 72, height: 54 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={courseImage} alt=""
+          className="w-full h-full object-cover"
+          style={{ filter: `brightness(${isActive ? 0.55 : 0.3})` }} />
+        {isActive && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Play size={13} fill="#C4857A" style={{ color: "#C4857A" }} />
+          </div>
+        )}
+        {progress > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 h-[3px]" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <div className="h-full" style={{ width: `${progress}%`, background: "linear-gradient(90deg,#C4857A,#D4998E)" }} />
+          </div>
         )}
       </div>
 
-      {/* Badge / progress */}
-      {lesson.isFree ? (
-        <span className="text-[0.5rem] font-bold px-2 py-[2px] rounded-full" style={{ background: "rgba(74,155,111,0.12)", color: "#4A9B6F", border: "1px solid rgba(74,155,111,0.25)" }}>
-          חינמי
-        </span>
-      ) : !isAccessible ? (
-        <Lock size={12} style={{ color: "rgba(255,248,245,0.25)" }} />
-      ) : null}
+      {/* Title + free badge */}
+      <div className="flex-1 min-w-0">
+        <p
+          className="text-[0.8rem] font-medium leading-snug truncate"
+          style={{ color: isAccessible ? (isActive ? "#FFF8F5" : "rgba(255,248,245,0.75)") : "rgba(255,248,245,0.3)" }}
+        >
+          {lesson.title || `שיעור ${index + 1}`}
+        </p>
+        {lesson.isFree && (
+          <span
+            className="text-[0.47rem] font-bold px-1.5 py-[1px] rounded-full mt-1 inline-block"
+            style={{ background: "rgba(74,155,111,0.12)", color: "#4A9B6F", border: "1px solid rgba(74,155,111,0.2)" }}
+          >
+            חינמי
+          </span>
+        )}
+      </div>
 
-      {/* Progress bar — shown when there's saved progress */}
-      {progressSeconds > 0 && lesson.durationMin > 0 && (
-        <div className="absolute bottom-0 right-0 left-0 h-[2px] rounded-b-xl overflow-hidden">
-          <div
-            className="h-full"
-            style={{
-              width: `${Math.min((progressSeconds / (lesson.durationMin * 60)) * 100, 100)}%`,
-              background: "linear-gradient(90deg, #C4857A, #D4998E)",
-            }}
-          />
-        </div>
-      )}
+      {/* Duration + lock */}
+      <div className="flex items-center gap-2 shrink-0">
+        {timeLabel && (
+          <span className="text-[0.6rem] tabular-nums" style={{ color: "rgba(255,248,245,0.28)" }}>
+            {timeLabel}
+          </span>
+        )}
+        {!isAccessible && <Lock size={11} style={{ color: "rgba(255,248,245,0.18)" }} />}
+      </div>
     </div>
   );
 }
 
-// ─── UI helpers ───────────────────────────────────────────────────
-function Badge({ children, color, bg, border }: { children: React.ReactNode; color: string; bg: string; border: string }) {
+// ─── Badge ────────────────────────────────────────────────────────
+function Badge({ children, color, bg, border }: {
+  children: React.ReactNode; color: string; bg: string; border: string;
+}) {
   return (
     <span
       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[0.58rem] font-semibold"

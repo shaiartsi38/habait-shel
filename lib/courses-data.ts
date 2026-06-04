@@ -17,6 +17,12 @@ export interface CourseInstructor {
   photoUrl: string;
 }
 
+export interface CourseHighlight {
+  id: string;
+  text: string;
+  imageUrl: string;
+}
+
 export interface CourseData {
   id: string;
   slug: string;
@@ -37,6 +43,8 @@ export interface CourseData {
   showOnHome?: boolean;
   sortOrder?: number;
   videoThumbnailUrl?: string;
+  highlights?: CourseHighlight[];
+  lessonThumbnails?: Record<string, string>;
   instructor: CourseInstructor;
   lessons: CourseLesson[];
   tags: string[];

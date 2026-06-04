@@ -1,5 +1,5 @@
 import { createClient } from "./client";
-import type { CourseData, CourseLesson } from "@/lib/courses-data";
+import type { CourseData, CourseLesson, CourseHighlight } from "@/lib/courses-data";
 import { COURSES } from "@/lib/courses-data";
 
 // כשמפתחות Supabase לא מוגדרים — נחזיר נתוני דמה מקומיים
@@ -54,6 +54,8 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
     showOnHome: row.show_on_home !== false,
     sortOrder: Number(row.sort_order ?? 0),
     videoThumbnailUrl: (meta.videoThumbnailUrl as string | undefined) || undefined,
+    highlights: (meta.highlights as CourseHighlight[] | undefined) || undefined,
+    lessonThumbnails: (meta.lessonThumbnails as Record<string, string> | undefined) || undefined,
     instructor: (meta.instructor as CourseData["instructor"]) ?? { name: "נטלי ארצי", bio: "", photoUrl: "" },
     lessons,
     tags: cleanTags,
@@ -62,7 +64,14 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
 
 function courseToRow(c: CourseData): Record<string, unknown> {
   const tags = [...c.tags, `cat:${c.category}`, `diff:${c.difficulty}`, ...(c.isNew ? ["new:true"] : [])];
-  const meta = { shortDesc: c.shortDesc, fullDesc: c.fullDesc, instructor: c.instructor, videoThumbnailUrl: c.videoThumbnailUrl ?? "" };
+  const meta = {
+    shortDesc: c.shortDesc,
+    fullDesc: c.fullDesc,
+    instructor: c.instructor,
+    videoThumbnailUrl: c.videoThumbnailUrl ?? "",
+    highlights: c.highlights ?? [],
+    lessonThumbnails: c.lessonThumbnails ?? {},
+  };
   return {
     slug: c.slug,
     title: c.title,
