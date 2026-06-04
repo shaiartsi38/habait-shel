@@ -298,7 +298,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
 
       {/* Row 1 — desktop only */}
       {row1.length > 0 && (
-        <div className="hidden md:grid md:grid-cols-4 gap-3 mb-2">
+        <div className="hidden md:grid md:grid-cols-4 gap-5 mb-2">
           {row1.map((course, i) => (
             <motion.div
               key={course.id}
@@ -354,7 +354,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
 
       {/* Row 2 — desktop only */}
       {row2.length > 0 && (
-        <div className="hidden md:grid md:grid-cols-4 gap-3 mb-2">
+        <div className="hidden md:grid md:grid-cols-4 gap-5 mb-2">
           {row2.map((course, i) => (
             <motion.div
               key={course.id}
@@ -373,7 +373,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
 
       {/* Row 3 — desktop only */}
       {row3.length > 0 && (
-        <div className="hidden md:grid md:grid-cols-4 gap-3 mb-8">
+        <div className="hidden md:grid md:grid-cols-4 gap-5 mb-8">
           {row3.map((course, i) => (
             <motion.div
               key={course.id}

@@ -7,7 +7,6 @@ import { Heart, ShoppingBag } from "lucide-react";
 import type { CourseData } from "@/lib/courses-data";
 import { useFavorites } from "@/lib/favorites-context";
 
-const COURSE_PRICE = 489;
 
 const TIER_LABEL: Record<string, string> = {
   basic: "Basic",
@@ -180,20 +179,37 @@ export function CourseCard({ course }: CourseCardProps) {
       {/* Purchase row */}
       <div className="flex items-center justify-between mt-2 px-0.5">
         <span className="text-[0.72rem] font-black" style={{ color: "#FFF8F5" }}>
-          ₪{COURSE_PRICE}
+          {course.price != null ? `₪${course.price}` : ""}
         </span>
-        <Link
-          href={`/checkout/${course.slug}`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-bold transition-all hover:opacity-90 active:scale-95"
-          style={{
-            background: "linear-gradient(135deg,#C4857A,#D4998E)",
-            color: "#080608",
-            boxShadow: "0 2px 10px rgba(196,133,122,0.35)",
-          }}
-        >
-          <ShoppingBag size={10} />
-          רכישת קורס
-        </Link>
+        {course.purchaseUrl ? (
+          <a
+            href={course.purchaseUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-bold transition-all hover:opacity-90 active:scale-95"
+            style={{
+              background: "linear-gradient(135deg,#C4857A,#D4998E)",
+              color: "#080608",
+              boxShadow: "0 2px 10px rgba(196,133,122,0.35)",
+            }}
+          >
+            <ShoppingBag size={10} />
+            רכישת קורס
+          </a>
+        ) : (
+          <Link
+            href={`/checkout/${course.slug}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-bold transition-all hover:opacity-90 active:scale-95"
+            style={{
+              background: "linear-gradient(135deg,#C4857A,#D4998E)",
+              color: "#080608",
+              boxShadow: "0 2px 10px rgba(196,133,122,0.35)",
+            }}
+          >
+            <ShoppingBag size={10} />
+            רכישת קורס
+          </Link>
+        )}
       </div>
     </div>
   );
