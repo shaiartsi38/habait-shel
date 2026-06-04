@@ -95,27 +95,36 @@ function HeroSection({ hero }: { hero: HeroContent }) {
   const { scrollY } = useScroll();
   const bgY = useTransform(scrollY, [0, 600], ["0%", "22%"]);
   const isVideo = hero.heroType === "video" && hero.heroVideoUrl;
+  const [videoReady, setVideoReady] = useState(false);
+
+  // fallback לURL ברירת מחדל אם heroBg ריק (למשל ב-Supabase הוגדר ריק)
+  const bgSrc = hero.heroBg || DEFAULT_HERO.heroBg;
 
   return (
     <section
       ref={ref}
       className="relative w-full min-h-[90vh] md:min-h-screen overflow-hidden flex flex-col"
     >
-      {/* BG — תמונה תמיד מוצגת כרקע, וידאו כ-overlay כשהוא עובד */}
+      {/* תמונת רקע — תמיד מוצגת */}
       <motion.div
         className="absolute inset-0"
         style={{ y: bgY, scale: 1.14, transformOrigin: "center top" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={hero.heroBg}
+          src={bgSrc}
           alt="Hero"
           className="w-full h-full object-cover object-center"
           loading="eager"
         />
       </motion.div>
+
+      {/* וידאו overlay — מוצג רק אחרי שנטען בהצלחה */}
       {isVideo && (
-        <div className="absolute inset-0">
+        <div
+          className="absolute inset-0 transition-opacity duration-700"
+          style={{ opacity: videoReady ? 1 : 0 }}
+        >
           <video
             src={hero.heroVideoUrl}
             autoPlay
@@ -123,6 +132,7 @@ function HeroSection({ hero }: { hero: HeroContent }) {
             loop
             playsInline
             className="w-full h-full object-cover object-center"
+            onCanPlay={() => setVideoReady(true)}
           />
         </div>
       )}
