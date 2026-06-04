@@ -73,6 +73,12 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       ? course.lessons[activeLessonIndex + 1]
       : null;
 
+  // nav always visible: before any selection "next" = first lesson
+  const navNext = activeLessonId ? nextLesson : (course.lessons[0] ?? null);
+  const navPrev = activeLessonId ? prevLesson : null;
+  const navNextLabel = navNext ? (navNext.title || `שיעור ${activeLessonId ? activeLessonIndex + 2 : 1}`) : "סוף הקורס";
+  const navPrevLabel = navPrev ? (navPrev.title || `שיעור ${activeLessonIndex}`) : "תחילת הקורס";
+
   useEffect(() => {
     if (!isLoggedIn || !course) return;
     dbGetCourseProgress(course.id).then(setCourseProgress).catch(() => {});
@@ -199,31 +205,30 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
           ) : null}
         </motion.div>
 
-        {/* Lesson prev/next navigation */}
-        {activeLessonId && (
+        {/* Lesson prev/next navigation — always visible */}
+        {course.lessons.length > 0 && (
           <div className="flex gap-2 mt-4">
             <button
-              onClick={() => nextLesson && setActiveLessonId(nextLesson.id)}
-              disabled={!nextLesson}
+              onClick={() => navNext && setActiveLessonId(navNext.id)}
+              disabled={!navNext}
               className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl transition-all disabled:opacity-25"
               style={{
-                background: nextLesson ? "#140e12" : "rgba(255,255,255,0.02)",
-                border: `1px solid ${nextLesson ? "rgba(196,133,122,0.28)" : "rgba(196,133,122,0.08)"}`,
+                background: navNext ? "#140e12" : "rgba(255,255,255,0.02)",
+                border: `1px solid ${navNext ? "rgba(196,133,122,0.28)" : "rgba(196,133,122,0.08)"}`,
               }}
             >
-              <ChevronRight size={15} style={{ color: nextLesson ? "#C4857A" : "rgba(255,248,245,0.2)" }} />
+              <ChevronRight size={15} style={{ color: navNext ? "#C4857A" : "rgba(255,248,245,0.2)" }} />
               <div className="text-right">
                 <p className="text-[0.52rem] tracking-wider mb-0.5" style={{ color: "rgba(196,133,122,0.55)" }}>שיעור הבא</p>
-                <p className="text-[0.72rem] font-semibold"
-                  style={{ color: nextLesson ? "#FFF8F5" : "rgba(255,248,245,0.25)" }}>
-                  {nextLesson ? (nextLesson.title || `שיעור ${activeLessonIndex + 2}`) : "סוף הקורס"}
+                <p className="text-[0.72rem] font-semibold" style={{ color: navNext ? "#FFF8F5" : "rgba(255,248,245,0.25)" }}>
+                  {navNextLabel}
                 </p>
               </div>
             </button>
 
             <button
-              onClick={() => prevLesson && setActiveLessonId(prevLesson.id)}
-              disabled={!prevLesson}
+              onClick={() => navPrev && setActiveLessonId(navPrev.id)}
+              disabled={!navPrev}
               className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl transition-all disabled:opacity-25"
               style={{
                 background: "rgba(255,255,255,0.02)",
@@ -232,9 +237,8 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
             >
               <div className="text-right">
                 <p className="text-[0.52rem] tracking-wider mb-0.5" style={{ color: "rgba(255,248,245,0.25)" }}>שיעור קודם</p>
-                <p className="text-[0.72rem] font-semibold"
-                  style={{ color: prevLesson ? "rgba(255,248,245,0.6)" : "rgba(255,248,245,0.2)" }}>
-                  {prevLesson ? (prevLesson.title || `שיעור ${activeLessonIndex}`) : "תחילת הקורס"}
+                <p className="text-[0.72rem] font-semibold" style={{ color: navPrev ? "rgba(255,248,245,0.6)" : "rgba(255,248,245,0.2)" }}>
+                  {navPrevLabel}
                 </p>
               </div>
               <ChevronLeft size={15} style={{ color: "rgba(255,248,245,0.2)" }} />
@@ -252,18 +256,24 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
           </span>
         </div>
         <div className="mt-4">
-          {course.lessons.map((lesson, i) => (
-            <LessonRow
-              key={lesson.id}
-              lesson={lesson}
-              index={i}
-              isAccessible={lesson.isFree || isLoggedIn || isAdmin}
-              isActive={lesson.id === activeLessonId}
-              progressSeconds={courseProgress[lesson.id] ?? 0}
-              courseImage={course.image}
-              onSelect={() => setActiveLessonId(lesson.id)}
-            />
-          ))}
+          {course.lessons.map((lesson, i) => {
+            const ytThumb = lesson.videoProvider === "youtube" && lesson.videoId
+              ? `https://img.youtube.com/vi/${lesson.videoId}/mqdefault.jpg`
+              : null;
+            const thumbSrc = course.lessonThumbnails?.[lesson.id] || ytThumb || course.image;
+            return (
+              <LessonRow
+                key={lesson.id}
+                lesson={lesson}
+                index={i}
+                isAccessible={lesson.isFree || isLoggedIn || isAdmin}
+                isActive={lesson.id === activeLessonId}
+                progressSeconds={courseProgress[lesson.id] ?? 0}
+                courseImage={thumbSrc}
+                onSelect={() => setActiveLessonId(lesson.id)}
+              />
+            );
+          })}
         </div>
       </div>
 
@@ -340,7 +350,7 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
   return (
     <div className="relative" style={{ height: "88vh", maxHeight: 800, background: "#080608" }} dir="ltr">
       {/* Left — Image */}
-      <div className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: "57%" }}>
+      <div className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: "46%" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={course.image} alt={course.title}
@@ -357,7 +367,7 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
 
       {/* Right — Info */}
       <div className="absolute inset-y-0 right-0 flex flex-col justify-center overflow-y-auto"
-        style={{ width: "47%", padding: "3rem 3.5rem 3rem 1.5rem" }} dir="rtl">
+        style={{ width: "56%", padding: "3rem 3.5rem 3rem 1.5rem" }} dir="rtl">
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 mb-6 text-[0.52rem] tracking-widest uppercase">
@@ -445,30 +455,35 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
 
 // ─── Skills Section ───────────────────────────────────────────────
 function SkillsSection({ course }: { course: CourseData }) {
-  const previewLessons = course.lessons.slice(0, 4);
+  // Use admin-defined highlights if they exist, else fall back to first 4 lessons
+  const hasHighlights = course.highlights && course.highlights.length > 0;
+  const cards = hasHighlights
+    ? course.highlights!.map((h) => ({ id: h.id, text: h.text, imageUrl: h.imageUrl || course.image }))
+    : course.lessons.slice(0, 4).map((l) => ({ id: l.id, text: l.title || "", imageUrl: course.image }));
+
+  if (cards.length === 0) return null;
+
   return (
     <div className="px-4 md:px-16 py-10">
       <h2 className="text-lg font-black mb-5" style={{ color: "#FFF8F5" }}>מה תגלי בקורס זה</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {previewLessons.map((lesson, i) => (
-          <div key={lesson.id} className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "4/3" }}>
+      <div className={`grid gap-3 ${cards.length <= 2 ? "grid-cols-2" : cards.length === 3 ? "grid-cols-3" : "grid-cols-2 md:grid-cols-4"}`}>
+        {cards.map((card, i) => (
+          <div key={card.id} className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "4/3" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={course.image} alt=""
+            <img src={card.imageUrl} alt=""
               className="absolute inset-0 w-full h-full object-cover"
               style={{ filter: "brightness(0.28)" }} />
-            {/* Number badge */}
             <div
               className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-[0.58rem] font-black"
               style={{ background: "rgba(196,133,122,0.85)", color: "#080608" }}
             >
               {String(i + 1).padStart(2, "0")}
             </div>
-            {/* Bottom gradient + title */}
             <div className="absolute inset-x-0 bottom-0 px-3 py-3"
               style={{ background: "linear-gradient(to top, rgba(8,6,8,0.92), transparent)" }}>
               <p className="text-[0.66rem] font-semibold leading-snug"
                 style={{ color: "rgba(255,248,245,0.85)" }}>
-                {lesson.title || `שיעור ${i + 1}`}
+                {card.text || `שיעור ${i + 1}`}
               </p>
             </div>
           </div>
