@@ -316,6 +316,32 @@ CREATE POLICY "users manage own progress" ON user_progress
 
 **⬜ הגבלת sessions** — מניעת שיתוף סיסמה (עתידי)
 
+### ✅ עיצוב מחדש דף קורס (branch feat/course-redesign — מוזג ל-main)
+
+**`app/courses/[slug]/page.tsx`** — שכתוב מלא של ה-UI, הלוגיקה לא שונתה:
+- **דסקטופ Hero:** MasterClass split — תמונה שמאל (46%), מידע+CTA ימין (56%), `dir="ltr"` על container לפריסה צפויה
+- **מובייל Hero:** Apple TV — `height: 100svh`, תמונה `object-cover`, gradient כבד מלמטה, טקסט בתחתית
+- **SkillsSection:** `grid-cols-2 md:grid-cols-4` — אם `course.highlights` מוגדר → שימוש בהם; אחרת fallback ל-4 שיעורים ראשונים
+- **נגן:** `md:max-w-2xl`, label לפי auth: לא מחובר = "צפי בטיזר", מחובר/אדמין = "צפי בפרק הראשון"
+- **רשימת שיעורים:** BBC Maestro — מספר + thumbnail (YouTube auto / lessonThumbnails / course.image) + כותרת + זמן + progress
+- **Nav שיעורים:** תמיד גלוי — לפני בחירה: "הבא" = שיעור ראשון
+- **Instructor:** סקשיין עצמאי בתחתית (במקום sidebar)
+
+**`lib/courses-data.ts`:**
+- `CourseHighlight { id, text, imageUrl }` — ממשק חדש
+- `highlights?: CourseHighlight[]` ו-`lessonThumbnails?: Record<string, string>` ב-`CourseData`
+
+**`lib/supabase/courses-db.ts`:**
+- `highlights` ו-`lessonThumbnails` נשמרים ב-meta JSON של `description` (ללא migration SQL)
+
+**`app/admin/page.tsx`:**
+- סקשיין "✨ מה תגלי בקורס" — הוסף/מחק כרטיסים, טקסט חופשי, YouTube thumbnail picker (טיזר + 4 שיעורים ראשונים) + upload ידני
+- Per-lesson thumbnail picker — YouTube auto-frames (1.jpg/2.jpg/3.jpg/hqdefault) + upload + URL
+
+**גיבוי לפני שינויים:** `git tag v1.0-mvp` + branch `backup/pre-redesign` ב-GitHub
+
+---
+
 ### ✅ MVP — פריטים שהושלמו
 - **og:image דינמי** — `app/(marketing)/layout.tsx` server component, מושך מ-`site_content.og_image`. אדמין → הגדרות → upload + preview.
 - **ייצוא CSV** — אדמין → משתמשות → "ייצוא לאקסל", עם BOM לעברית ב-Excel.
