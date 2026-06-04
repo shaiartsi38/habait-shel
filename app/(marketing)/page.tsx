@@ -241,8 +241,8 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
       : published.filter((c) => c.category === activeCategory);
 
   const row1 = visible.slice(0, 4);
-  const row2 = visible.slice(4, 7);
-  const rest = visible.slice(7);
+  const row2 = visible.slice(4, 8);
+  const row3 = visible.slice(8, 12);
 
   return (
     <section className="py-16 px-4 sidebar-safe md:px-10 text-right">
@@ -298,7 +298,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
 
       {/* Row 1 — desktop only */}
       {row1.length > 0 && (
-        <div className="hidden md:grid md:grid-cols-5 gap-2 mb-2">
+        <div className="hidden md:grid md:grid-cols-4 gap-3 mb-2">
           {row1.map((course, i) => (
             <motion.div
               key={course.id}
@@ -354,7 +354,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
 
       {/* Row 2 — desktop only */}
       {row2.length > 0 && (
-        <div className="hidden md:grid md:grid-cols-5 gap-2 mb-2">
+        <div className="hidden md:grid md:grid-cols-4 gap-3 mb-2">
           {row2.map((course, i) => (
             <motion.div
               key={course.id}
@@ -368,50 +368,19 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
               </BreathingCard>
             </motion.div>
           ))}
-          {/* Symmetry breaker */}
-          <motion.div
-            className="hidden md:flex flex-col justify-center items-start px-5 py-5 rounded-xl"
-            style={{
-              background: "rgba(196,133,122,0.04)",
-              border: "1px solid rgba(196,133,122,0.07)",
-              aspectRatio: "3/4",
-            }}
-            initial={{ opacity: 0, scale: 0.96 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, amount: 0.15 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-          >
-            <span className="text-[0.44rem] tracking-[0.3em] uppercase mb-3 font-semibold" style={{ color: "rgba(196,133,122,0.4)" }}>
-              קולקציה
-            </span>
-            <p
-              className="text-xl font-black leading-tight mb-3"
-              style={{
-                backgroundImage: "linear-gradient(160deg, #FFF8F5 0%, #D4998E 60%, #C4857A 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              ∞<br />עוד<br />קורסים
-            </p>
-            <Link href="/courses" className="text-[0.6rem] font-bold transition-all hover:opacity-70" style={{ color: "#C4857A" }}>
-              לכל הקורסים ←
-            </Link>
-          </motion.div>
         </div>
       )}
 
-      {/* Extra rows — desktop only */}
-      {rest.length > 0 && (
-        <div className="hidden md:grid md:grid-cols-5 gap-2 mb-8">
-          {rest.map((course, i) => (
+      {/* Row 3 — desktop only */}
+      {row3.length > 0 && (
+        <div className="hidden md:grid md:grid-cols-4 gap-3 mb-8">
+          {row3.map((course, i) => (
             <motion.div
               key={course.id}
               initial={{ opacity: 0, y: 25 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.45, ease: "easeOut", delay: (i % 4) * 0.07 }}
+              transition={{ duration: 0.45, ease: "easeOut", delay: i * 0.07 }}
             >
               <BreathingCard>
                 <CourseCard course={course} />

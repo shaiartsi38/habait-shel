@@ -56,7 +56,7 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
     videoThumbnailUrl: (meta.videoThumbnailUrl as string | undefined) || undefined,
     highlights: (meta.highlights as CourseHighlight[] | undefined) || undefined,
     lessonThumbnails: (meta.lessonThumbnails as Record<string, string> | undefined) || undefined,
-    price: (meta.price as number | undefined) || undefined,
+    price: typeof meta.price === "number" ? meta.price : undefined,
     purchaseUrl: (meta.purchaseUrl as string | undefined) || undefined,
     instructor: (meta.instructor as CourseData["instructor"]) ?? { name: "נטלי ארצי", bio: "", photoUrl: "" },
     lessons,

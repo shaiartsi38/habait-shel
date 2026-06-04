@@ -298,6 +298,10 @@ function CourseHeroMobile({ course, auth }: { course: CourseData; auth: AuthStat
         src={course.image} alt={course.title}
         className="absolute inset-0 w-full h-full object-cover"
         style={{ objectPosition: "50% 20%" }}
+        loading="eager"
+        // @ts-expect-error fetchpriority is valid HTML but missing from React types
+        fetchpriority="high"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
       <div className="absolute inset-0" style={{
         background: "linear-gradient(to bottom, rgba(8,6,8,0.45) 0%, rgba(8,6,8,0.05) 35%, rgba(8,6,8,0.7) 65%, #080608 100%)"
@@ -359,7 +363,11 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
         <img
           src={course.image} alt={course.title}
           className="w-full h-full"
-          style={{ objectFit: "contain", objectPosition: "center" }}
+          style={{ objectFit: "cover", objectPosition: "50% 15%" }}
+          loading="eager"
+          // @ts-expect-error fetchpriority is valid HTML but missing from React types
+          fetchpriority="high"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
         />
         {/* Blend right edge into panel */}
         <div className="absolute inset-y-0 right-0 w-40"
@@ -523,10 +531,22 @@ function CourseCTA({ course, auth }: { course: CourseData; auth: AuthState }) {
   }
   if (auth.isAdmin || tierCovers(auth.userTier, course.tier)) {
     return (
-      <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl"
-        style={{ background: "rgba(74,155,111,0.1)", border: "1px solid rgba(74,155,111,0.22)" }}>
-        <Check size={14} style={{ color: "#4A9B6F" }} />
-        <span className="text-[0.78rem] font-bold" style={{ color: "#4A9B6F" }}>גישה מלאה</span>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl"
+          style={{ background: "rgba(74,155,111,0.1)", border: "1px solid rgba(74,155,111,0.22)" }}>
+          <Check size={14} style={{ color: "#4A9B6F" }} />
+          <span className="text-[0.78rem] font-bold" style={{ color: "#4A9B6F" }}>גישה מלאה</span>
+        </div>
+        {course.purchaseUrl && (
+          <p className="text-center text-[0.52rem]" style={{ color: "rgba(255,248,245,0.25)" }}>
+            קישור רכישה:{" "}
+            <a href={course.purchaseUrl} target="_blank" rel="noopener noreferrer"
+              className="underline hover:opacity-70 transition-opacity"
+              style={{ color: "rgba(196,133,122,0.5)" }}>
+              {course.purchaseUrl}
+            </a>
+          </p>
+        )}
       </div>
     );
   }

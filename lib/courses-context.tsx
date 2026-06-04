@@ -5,7 +5,7 @@ import { COURSES, type CourseData } from "./courses-data";
 import { dbFetchCourses } from "./supabase/courses-db";
 import { prefetchAllContent } from "./supabase/content-db";
 
-const STORAGE_KEY = "hbm-courses-v3";
+const STORAGE_KEY = "hbm-courses-v4";
 
 interface CoursesContextValue {
   courses: CourseData[];
