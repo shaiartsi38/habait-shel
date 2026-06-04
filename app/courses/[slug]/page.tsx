@@ -202,6 +202,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               autoStart={!!activeLessonId}
               startAt={startAt}
               onProgress={activeLessonId ? handleProgress : undefined}
+              playLabel={!activeLessonId && (isLoggedIn || isAdmin) ? "צפי בפרק הראשון" : undefined}
             />
           ) : null}
         </motion.div>
@@ -395,7 +396,7 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
 
         {/* Title */}
         <motion.h1
-          className="font-black leading-[1.05] mb-3 text-center"
+          className="font-black leading-[1.05] mb-3"
           style={{ fontSize: "clamp(1.9rem, 2.8vw, 3rem)" }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -412,7 +413,7 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
         </motion.h1>
 
         {course.subtitle && (
-          <p className="text-lg font-light mb-3 text-center" style={{ color: "rgba(255,248,245,0.55)" }}>
+          <p className="text-lg font-light mb-3" style={{ color: "rgba(255,248,245,0.55)" }}>
             {course.subtitle}
           </p>
         )}
@@ -610,9 +611,9 @@ function YouTubeEmbed({ videoId, startAt, onProgress }: {
 }
 
 // ─── Video Player ─────────────────────────────────────────────────
-function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart = false, startAt = 0, onProgress }: {
+function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart = false, startAt = 0, onProgress, playLabel }: {
   videoId: string; provider?: VideoProvider; poster: string; title: string;
-  autoStart?: boolean; startAt?: number; onProgress?: (s: number) => void;
+  autoStart?: boolean; startAt?: number; onProgress?: (s: number) => void; playLabel?: string;
 }) {
   const [playing, setPlaying] = useState(autoStart);
 
@@ -660,7 +661,7 @@ function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart =
             <span className="text-sm font-semibold" style={{ color: "rgba(255,248,245,0.7)" }}>
               {autoStart
                 ? (startAt > 0 ? `המשך מ-${Math.floor(startAt / 60)}:${String(startAt % 60).padStart(2, "0")}` : "צפה בשיעור")
-                : "צפי בטיזר"}
+                : (playLabel ?? "צפי בטיזר")}
             </span>
           </motion.button>
         </>
