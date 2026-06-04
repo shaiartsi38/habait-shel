@@ -101,8 +101,20 @@ function HeroSection({ hero }: { hero: HeroContent }) {
       ref={ref}
       className="relative w-full min-h-[90vh] md:min-h-screen overflow-hidden flex flex-col"
     >
-      {/* BG — תמונה עם parallax או וידאו */}
-      {isVideo ? (
+      {/* BG — תמונה תמיד מוצגת כרקע, וידאו כ-overlay כשהוא עובד */}
+      <motion.div
+        className="absolute inset-0"
+        style={{ y: bgY, scale: 1.14, transformOrigin: "center top" }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={hero.heroBg}
+          alt="Hero"
+          className="w-full h-full object-cover object-center"
+          loading="eager"
+        />
+      </motion.div>
+      {isVideo && (
         <div className="absolute inset-0">
           <video
             src={hero.heroVideoUrl}
@@ -113,18 +125,6 @@ function HeroSection({ hero }: { hero: HeroContent }) {
             className="w-full h-full object-cover object-center"
           />
         </div>
-      ) : (
-        <motion.div
-          className="absolute inset-0"
-          style={{ y: bgY, scale: 1.14, transformOrigin: "center top" }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={hero.heroBg}
-            alt="Hero"
-            className="w-full h-full object-cover object-center"
-          />
-        </motion.div>
       )}
 
       {/* Overlay — קל יותר במובייל */}

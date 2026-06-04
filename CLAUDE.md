@@ -15,7 +15,7 @@
 ## הפרוייקט
 
 **שם:** הבית של המאפרים | **בעלים:** שי ארצי (`shaiartsi26@gmail.com`)
-**תיאור:** פלטפורמת מנויים ליוצרת איפור — נטלי ארצי. קורסי וידאו ב-3 רמות: Basic / Pro / Elite + רכישת קורס בודד ב-₪489.
+**תיאור:** פלטפורמת מנויים ליוצרת איפור — נטלי ארצי. קורסי וידאו ב-3 רמות: Basic / Pro / Elite + רכישת קורס בודד במחיר דינמי לפי קורס.
 
 ---
 
@@ -68,7 +68,7 @@ middleware.ts                         ← הגנת routes לפי role
 
 **`profiles`:** `id` (uuid) · `role` ("user"/"admin") · `email` · `first_name` · `last_name` · `years_experience` · `bio` · `photo_url` · `subscription_tier` ("basic"/"pro"/"elite"/null)
 
-**`courses`:** `id` (**text**, לא uuid!) · `slug` · `title` · `subtitle` · `thumbnail_url` · `trailer_video_id` · `trailer_provider` · `required_tier` · `is_published` · `tags` (text[]) · `description` (JSON: shortDesc, fullDesc, instructor) · `show_on_home` · `duration_minutes` · `lesson_count` · `updated_at`
+**`courses`:** `id` (**text**, לא uuid!) · `slug` · `title` · `subtitle` · `thumbnail_url` · `trailer_video_id` · `trailer_provider` · `required_tier` · `is_published` · `tags` (text[]) · `description` (JSON meta: shortDesc, fullDesc, instructor, videoThumbnailUrl, highlights, lessonThumbnails, **price**, **purchaseUrl**) · `show_on_home` · `duration_minutes` · `lesson_count` · `updated_at`
 
 **`lessons`:** `id` (text) · `course_id` (text, FK) · `title` · `video_id` · `video_provider` · `duration_seconds` · `is_free_preview` · `sort_order`
 
@@ -100,9 +100,11 @@ middleware.ts                         ← הגנת routes לפי role
 
 ---
 
-## מערכת רכישה בודדת (₪489)
+## מערכת רכישה בודדת
 
-- **UI קיים:** כפתור "רכישת קורס" + מחיר על כל כרטיס, דף `/checkout/[slug]` מלא.
+- **UI קיים:** כפתור "רכישת קורס" + מחיר על כל כרטיס (`CourseCard`), דף `/checkout/[slug]` מלא.
+- **מחיר דינמי:** `course.price` (מוגדר בניהול) מוצג על הכרטיס. אם לא מוגדר — לא מוצג מחיר.
+- **קישור חיצוני:** אם הוגדר `course.purchaseUrl` בניהול — כפתור "רכישת קורס" פותח URL חיצוני (דף סליקה/נחיתה) בטאב חדש. אחרת — מוביל ל-`/checkout/[slug]`.
 - **Backend בהמשך:** Cardcom webhook → יצירת משתמש → RLS per-course → מייל Resend.
 - **DB עתידי:** טבלת `course_purchases` — `user_id, course_id, purchased_at, price`.
 
@@ -315,6 +317,24 @@ CREATE POLICY "users manage own progress" ON user_progress
 **✅ CORS** — להגדיר ידנית ב-Supabase Dashboard: Storage → Settings → CORS → הוסף `https://natalieartsi.com` + URL ה-Vercel.
 
 **⬜ הגבלת sessions** — מניעת שיתוף סיסמה (עתידי)
+
+### ✅ שיפורים נוספים (אחרי course-redesign)
+
+**`CourseData`** — שדות חדשים: `price?: number`, `purchaseUrl?: string` — נשמרים ב-meta JSON של `description` (ללא SQL migration).
+
+**`CourseCard`** — מחיר דינמי מ-`course.price` (לא hardcoded). כפתור "רכישת קורס" → `course.purchaseUrl` (חיצוני) אם מוגדר, אחרת `/checkout/[slug]`.
+
+**`Sidebar`** — סגירה אוטומטית בלחיצה על `/courses` בדסקטופ בלבד.
+
+**גריד קורסים בדף הבית (דסקטופ)** — 4 עמודות × 3 שורות (0-4 / 4-8 / 8-12), `gap-5`. הוסרה "כרטיס קולקציה" (symmetry breaker).
+
+**HeroSection (דף הבית)** — תמונת הרקע `heroBg` **תמיד** מוצגת. וידאו (כשמוגדר `heroType: "video"`) מוצג כ-overlay מעל התמונה. כך אם הוידאו נכשל בטעינה — התמונה נראית. **אסור לחזור למבנה ישן (תמונה OR וידאו) — גורם להירו שחור לחלוטין כשהוידאו שבור.**
+
+**`courses-context.tsx`** — localStorage key עלה ל-`hbm-courses-v4` (ניקה cache ישן).
+
+**NATALIE.photoUrl** — עודכן ל-webp URL חדש: `https://i.imghippo.com/files/be7340nfw.webp`. שים לב: קורסים שמורים ב-Supabase ישמרו את ה-URL מה-meta JSON — לשינוי גלובלי יש לפתוח כל קורס ב-admin ולשמור מחדש.
+
+---
 
 ### ✅ עיצוב מחדש דף קורס (branch feat/course-redesign — מוזג ל-main)
 
