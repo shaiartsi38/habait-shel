@@ -56,6 +56,8 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
     videoThumbnailUrl: (meta.videoThumbnailUrl as string | undefined) || undefined,
     highlights: (meta.highlights as CourseHighlight[] | undefined) || undefined,
     lessonThumbnails: (meta.lessonThumbnails as Record<string, string> | undefined) || undefined,
+    price: (meta.price as number | undefined) || undefined,
+    purchaseUrl: (meta.purchaseUrl as string | undefined) || undefined,
     instructor: (meta.instructor as CourseData["instructor"]) ?? { name: "נטלי ארצי", bio: "", photoUrl: "" },
     lessons,
     tags: cleanTags,
@@ -71,6 +73,8 @@ function courseToRow(c: CourseData): Record<string, unknown> {
     videoThumbnailUrl: c.videoThumbnailUrl ?? "",
     highlights: c.highlights ?? [],
     lessonThumbnails: c.lessonThumbnails ?? {},
+    price: c.price ?? null,
+    purchaseUrl: c.purchaseUrl ?? "",
   };
   return {
     slug: c.slug,

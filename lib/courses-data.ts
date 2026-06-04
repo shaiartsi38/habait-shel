@@ -45,6 +45,8 @@ export interface CourseData {
   videoThumbnailUrl?: string;
   highlights?: CourseHighlight[];
   lessonThumbnails?: Record<string, string>;
+  price?: number;
+  purchaseUrl?: string;
   instructor: CourseInstructor;
   lessons: CourseLesson[];
   tags: string[];
@@ -65,7 +67,7 @@ export type Category = (typeof CATEGORIES)[number];
 const NATALIE: CourseInstructor = {
   name: "נטלי ארצי",
   bio: "מאפרת מקצועית עם מיליוני צפיות חודשיות ו-100,000+ עוקבים. כל מאסטרקלאס נבנה מהסטודיו האמיתי — אין מסנני אינסטגרם, רק טכניקה טהורה.",
-  photoUrl: "https://i.imghippo.com/files/ZNe4792NOg.jpeg",
+  photoUrl: "https://i.imghippo.com/files/be7340nfw.webp",
 };
 
 export const COURSES: CourseData[] = [

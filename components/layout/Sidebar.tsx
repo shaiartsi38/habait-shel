@@ -104,7 +104,14 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
                 {/* Nav */}
                 <div className="flex-1 py-3 px-3 flex flex-col gap-0.5 overflow-y-auto">
                   {NAV.map((item) => (
-                    <NavItem key={item.href} href={item.href} label={item.label} icon={item.icon} active={isActive(item.href)} />
+                    <NavItem
+                      key={item.href}
+                      href={item.href}
+                      label={item.label}
+                      icon={item.icon}
+                      active={isActive(item.href)}
+                      onClick={item.href === "/courses" ? () => setOpen(false) : undefined}
+                    />
                   ))}
                   {isAdmin && (
                     <>
@@ -213,9 +220,9 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
 }
 
 // ── Desktop nav item ─────────────────────────────────────────────
-function NavItem({ href, label, icon: Icon, active }: { href: string; label: string; icon: React.ElementType; active: boolean }) {
+function NavItem({ href, label, icon: Icon, active, onClick }: { href: string; label: string; icon: React.ElementType; active: boolean; onClick?: () => void }) {
   return (
-    <Link href={href} className="block relative">
+    <Link href={href} className="block relative" onClick={onClick}>
       <motion.div
         className="relative flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.82rem] font-medium cursor-pointer select-none"
         style={{ color: active ? "#FFF8F5" : "#4A2E2E" }}

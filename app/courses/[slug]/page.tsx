@@ -506,10 +506,15 @@ function CourseCTA({ course, auth }: { course: CourseData; auth: AuthState }) {
     boxShadow: "0 4px 18px rgba(196,133,122,0.3)",
   };
 
+  const buyHref = course.purchaseUrl || "/subscription";
+  const buyTarget = course.purchaseUrl ? "_blank" : undefined;
+  const buyRel = course.purchaseUrl ? "noopener noreferrer" : undefined;
+
   if (!auth.isLoggedIn) {
+    const label = course.price != null ? `הצטרפי עכשיו · ₪${course.price}` : "הצטרפי עכשיו";
     return (
       <>
-        <Link href="/subscription" className={btnClass} style={btnStyle}>הצטרפי עכשיו</Link>
+        <a href={buyHref} target={buyTarget} rel={buyRel} className={btnClass} style={btnStyle}>{label}</a>
         <p className="text-center text-[0.55rem] mt-2" style={{ color: "rgba(255,248,245,0.3)" }}>
           גישה מלאה עם מנוי {TIER_LABEL[course.tier]}
         </p>
@@ -525,9 +530,10 @@ function CourseCTA({ course, auth }: { course: CourseData; auth: AuthState }) {
       </div>
     );
   }
+  const upgradeLabel = course.price != null ? `רכשי קורס · ₪${course.price}` : "שדרגי מנוי ↑";
   return (
     <>
-      <Link href="/subscription" className={btnClass} style={btnStyle}>שדרגי מנוי ↑</Link>
+      <a href={buyHref} target={buyTarget} rel={buyRel} className={btnClass} style={btnStyle}>{upgradeLabel}</a>
       <p className="text-center text-[0.55rem] mt-2" style={{ color: "rgba(255,248,245,0.3)" }}>
         נדרש מנוי {TIER_LABEL[course.tier]}
       </p>

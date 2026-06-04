@@ -95,7 +95,7 @@ function emptyCourse(): CourseData {
     isPublished: false,
     isNew: false,
     showOnHome: true,
-    instructor: { name: "נטלי ארצי", bio: "", photoUrl: "https://i.imghippo.com/files/ZNe4792NOg.jpeg" },
+    instructor: { name: "נטלי ארצי", bio: "", photoUrl: "https://i.imghippo.com/files/be7340nfw.webp" },
     lessons: [emptyLesson()],
     tags: [],
   };
@@ -833,6 +833,28 @@ function CourseEditForm({
               <Checkbox checked={form.isPublished} onChange={(v) => set("isPublished", v)} label="מפורסם" />
               <Checkbox checked={form.isNew} onChange={(v) => set("isNew", v)} label='תגית "חדש"' />
               <Checkbox checked={form.showOnHome ?? true} onChange={(v) => set("showOnHome", v)} label="הצג בדף הבית" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <FieldLabel>מחיר (₪) — אופציונלי</FieldLabel>
+              <Input
+                value={form.price != null ? String(form.price) : ""}
+                onChange={(v) => set("price", v === "" ? undefined : (parseFloat(v) || undefined))}
+                placeholder="249"
+                type="number"
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <FieldLabel>קישור לרכישה — אופציונלי</FieldLabel>
+              <Input
+                value={form.purchaseUrl ?? ""}
+                onChange={(v) => set("purchaseUrl", v || undefined)}
+                placeholder="https://..."
+                dir="ltr"
+              />
             </div>
           </div>
         </FormSection>
