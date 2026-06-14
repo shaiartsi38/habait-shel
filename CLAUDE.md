@@ -170,10 +170,21 @@ ON storage.objects FOR SELECT USING (bucket_id = 'course-media');
 ## Auth
 
 - **Login:** `/login` (כולל "שכחתי סיסמה" — **אין** "הירשמי")
-- **Forgot/Reset:** `/forgot-password` → מייל → `/reset-password`
+- **Forgot/Reset:** `/forgot-password` → מייל → **`/auth/callback?next=/reset-password`** → `/reset-password`
 - **Signup:** Cardcom webhook בלבד. `/signup` מפנה ל-`/login`.
 - **Role** נקרא מ-JWT claim (`user_role`) — גיבוי: קריאת DB.
 - **subscription_tier** נשמר ב-profiles — יוגדר ע"י Cardcom webhook בעתיד.
+
+### PKCE Auth Callback — `app/auth/callback/route.ts`
+
+`@supabase/ssr` v0.5.x עובד עם PKCE flow. כשמשתמש לוחץ על קישור איפוס סיסמה, Supabase שולח `?code=xxx`. הcode חייב להיות מוחלף לsession בצד השרת לפני שהדף `reset-password` טוען.
+
+**הפתרון:**
+- `forgot-password` שולח `redirectTo: /auth/callback?next=/reset-password`
+- `/auth/callback` מקבל את ה-code, מחליף אותו לsession (server-side), ומנתב לדף הנכון
+- `/reset-password` טוען עם session קיים ←  `getSession()` מחזיר session תקין
+
+**אסור לשנות את הארכיטקטורה הזו** — חזרה ל-`redirectTo: .../reset-password` ישירות = session=null = "הקישור פג תוקפו".
 
 ---
 
