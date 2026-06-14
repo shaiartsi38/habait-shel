@@ -186,6 +186,20 @@ ON storage.objects FOR SELECT USING (bucket_id = 'course-media');
 
 **אסור לשנות את הארכיטקטורה הזו** — חזרה ל-`redirectTo: .../reset-password` ישירות = session=null = "הקישור פג תוקפו".
 
+### הגדרות Supabase חובה (Dashboard בלבד — לא קוד)
+
+אם קישור האיפוס מוביל ל-`localhost:3000` — Supabase לא מכיר את ה-`redirectTo` ומשתמש ב-Site URL במקומו.
+
+**Authentication → URL Configuration:**
+
+| שדה | ערך נדרש |
+|-----|----------|
+| Site URL | `https://academy.natalieartsi.com` |
+| Additional Redirect URLs | `https://academy.natalieartsi.com/auth/callback` |
+| Additional Redirect URLs | `https://habait-shel-git-main-shai-habait-shel.vercel.app/auth/callback` |
+
+**אין localhost בקוד** — הבעיה היא תמיד ב-Dashboard אם הקישור מוביל ל-localhost.
+
 ---
 
 ## וידאו
