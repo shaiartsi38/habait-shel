@@ -159,19 +159,20 @@ export default function AdminPage() {
 
   const saveEdit = async (updated: CourseData) => {
     setOpError(null);
-    const rawSlug = updated.slug || updated.title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-    // Fallback: if Hebrew title produces empty slug, use the course id
-    const slug = rawSlug.trim() || updated.id;
+    const rawSlug = (updated.slug || updated.title)
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-{2,}/g, "-")
+      .replace(/^-+|-+$/g, "");
+    const slug = rawSlug || updated.id;
     const duration = updated.duration || `${updated.durationMinutes} דקות`;
     const final = { ...updated, slug, duration };
-    try {
-      const saved = await dbUpsertCourse(final);
-      const newList = isNewCourse ? [saved, ...courses] : courses.map((c) => (c.id === saved.id ? saved : c));
-      syncCourses(newList);
-      setEditing(null);
-    } catch (e) {
-      setOpError(errMsg(e) || "שגיאה בשמירה");
-    }
+    // לא תופסים שגיאה כאן — CourseEditForm.handleSave תופסת ומציגה אותה בתוך הדיאלוג
+    const saved = await dbUpsertCourse(final);
+    const newList = isNewCourse ? [saved, ...courses] : courses.map((c) => (c.id === saved.id ? saved : c));
+    syncCourses(newList);
+    setEditing(null);
   };
 
   const deleteCourse = async (id: string) => {
