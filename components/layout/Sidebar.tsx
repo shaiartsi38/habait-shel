@@ -225,8 +225,8 @@ function NavItem({ href, label, icon: Icon, active, onClick }: { href: string; l
     <Link href={href} className="block relative" onClick={onClick}>
       <motion.div
         className="relative flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.82rem] font-medium cursor-pointer select-none"
-        style={{ color: active ? "#FFF8F5" : "#4A2E2E" }}
-        whileHover={{ color: active ? "#FFF8F5" : "#8B6355" }}
+        style={{ color: active ? "#FFF8F5" : "#8B6355" }}
+        whileHover={{ color: active ? "#FFF8F5" : "#C4857A" }}
         transition={{ duration: 0.14 }}
       >
         <AnimatePresence>
@@ -269,9 +269,9 @@ function MobileTab({ href, label, icon: Icon, active }: { href: string; label: s
       style={{ minHeight: 44, justifyContent: "center" }}
     >
       <motion.div className="p-2 rounded-xl" animate={{ background: active ? "rgba(196,133,122,0.12)" : "rgba(0,0,0,0)" }}>
-        <Icon size={22} style={{ color: active ? "#C4857A" : "#3A1818", transition: "color 0.18s" }} />
+        <Icon size={22} style={{ color: active ? "#C4857A" : "#7A5050", transition: "color 0.18s" }} />
       </motion.div>
-      <span className="text-[0.56rem] font-medium" style={{ color: active ? "#C4857A" : "#3A1818" }}>
+      <span className="text-[0.56rem] font-medium" style={{ color: active ? "#C4857A" : "#7A5050" }}>
         {label}
       </span>
     </Link>

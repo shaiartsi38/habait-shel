@@ -315,6 +315,20 @@ CREATE POLICY "users manage own progress" ON user_progress
   FOR ALL TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
+
+-- user_favorites (מועדפים)
+CREATE TABLE IF NOT EXISTS user_favorites (
+  id         uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id    uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  course_id  text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, course_id)
+);
+ALTER TABLE user_favorites ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users manage own favorites" ON user_favorites
+  FOR ALL TO authenticated
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
 ```
 
 ---
@@ -413,15 +427,24 @@ CREATE POLICY "users manage own progress" ON user_progress
 - **Admin mobile nav** — horizontal scroll tabs לאדמין במובייל.
 - **Admin CSV export** — `exportUsersCSV()` עם first_name, last_name, email, role, subscription_tier.
 - **סידור קורסים** — `sort_order` על טבלת courses. אדמין: drag-and-drop + חיצי ↑↓ + כפתור "שמור סדר". `dbFetchCourses` מסודר לפי sort_order ASC. `dbUpdateCourseOrder()` שומר batch לDB.
-- **מועדפים** — `user_favorites` table (RLS). `lib/supabase/favorites-db.ts` + `lib/favorites-context.tsx` (FavoritesProvider, useFavorites). לב ♡ על כל כרטיס קורס — ורוד כשמסומן, אופטימיסטי. דף `/favorites`. "מועדפים" בתפריט sidebar.
+- **מועדפים** — `user_favorites` table (RLS). `lib/supabase/favorites-db.ts` + `lib/favorites-context.tsx` (FavoritesProvider, useFavorites). לב ♡ על כל כרטיס קורס — ורוד כשמסומן, אופטימיסטי. דף `/favorites`. "מועדפים" בתפריט sidebar. **SQL נדרש — ראה "מצב פתוח — SQL migrations".**
 - **"המנטורית שלך"** — הוחלף "המדריכה" בכל דפי הקורסים.
 - **תמונות קורס — Blurred Dual-Layer** — `CinematicHeader` משתמש בשתי שכבות: (1) רקע: אותה תמונה `object-cover` עם `blur(40px) brightness(0.22) saturate(0.5) scale(1.1)` — ממלא צדדים ריקים. (2) פורטרט: `height:100%, width:auto, objectFit:contain` — מוצג שלם ללא חיתוך. גישה זו פותרת את בעיית תמונות פורטרט 3:4 בcontainer landscape. **אסור לשנות ל-`object-top` / `object-center` — נוסו ונכשלו (הראו קודקוד/תקרה).** `CourseData.videoThumbnailUrl` — שדה אופציונלי לthumbnail מותאם לנגן (16:9), נשמר ב-JSON של `description`. Admin: upload + preview + URL בטופס עריכה. Fallback ל-`course.image`.
 - **CTA חכם בדף קורס** — לא מחובר: "הצטרפי עכשיו". מחובר+גישה/אדמין: ✓ "גישה מלאה" (ירוק). מחובר+tier נמוך: "שדרגי מנוי ↑". `userTier` נטען מ-`profiles.subscription_tier`.
 - **תמונות נעלמות — תיקון** — `NatalieSection` מושכת תמונה מ-`dbGetNatalie()` (לא hardcoded). `DEFAULT_NATALIE.photo` ריק — Admin חייב להעלות מה-panel. `ComingSoonCard` מטפל ב-empty string + onError (**`src=""`** לא מפעיל onError בChrome — תמיד בדוק `!item.image || imgError`).
 
+### ✅ תיקוני פרודקשן (יוני 2026)
+
+- **Auth PKCE Callback** — `app/auth/callback/route.ts` נוצר. `resetPasswordForEmail` מפנה ל-`/auth/callback?next=/reset-password` (לא ל-`/reset-password` ישירות). Open Redirect מאובטח עם regex ולידציה על `next` param.
+- **Supabase Site URL** — עודכן ל-`https://academy.natalieartsi.com` ב-Dashboard. Redirect URLs כוללים `/auth/callback` לשני הדומיינים.
+- **Admin — slug עברית** — slug generation מנקה dashes מובילים/נגררים → fallback ל-`course.id` עבור כותרות עברית.
+- **Admin — שגיאות גלויות** — `saveEdit` כבר לא בולעת שגיאות. שגיאות מציפות ל-`CourseEditForm.handleSave` שמציג אותן בתוך הדיאלוג.
+- **Sidebar טקסט** — צבע inactive desktop: `#4A2E2E` → `#8B6355`. Hover: `#C4857A`. Mobile: `#3A1818` → `#7A5050`.
+
 ### ⬜ MVP — נשאר לעשות (לפי עדיפות)
 
 **🔴 קריטי:**
+- [ ] **SQL לטבלת `user_favorites`** — הרץ ב-Supabase SQL Editor (ראה "מצב פתוח — SQL migrations"). קוד הלבבות קיים ומוכן, רק הטבלה חסרה.
 - [ ] **Cardcom webhook** — `app/api/webhooks/cardcom/route.ts`: אמת HMAC, צור משתמש ב-Supabase Auth, עדכן subscription_tier, שלח מייל Resend. *ממתין לcredentials מCardcom.*
 - [ ] **Resend — מייל ברוכה הבאה** — תבנית HTML עם שם + סיסמה זמנית. *ממתין ל-Cardcom webhook.*
 
