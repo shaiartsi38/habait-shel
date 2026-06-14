@@ -24,9 +24,16 @@
 | שירות | פרטים |
 |--------|--------|
 | **Vercel** | `https://habait-shel-git-main-shai-habait-shel.vercel.app` |
-| **דומיין** | `https://natalieartsi.com` |
+| **דומיין** | `https://academy.natalieartsi.com` |
 | **GitHub** | `git@github.com:shaiartsi38/habait-shel.git` |
 | **SSH key** | `~/.ssh/github_habait` — push ישיר ללא tokens |
+| **Supabase** | Plan: **Pro** (נדרש — Free plan מושהה אחרי חוסר פעילות) |
+
+### פרויקט Supabase — הערות תפעול
+- **Free plan = מסכן.** Supabase משהה פרויקטים בחינמיים אחרי 1 שבוע ללא פעילות. כל הAPI קורס — לוגין, קורסים, תמונות, הכל.
+- **Pro plan פעיל** (החל מיוני 2026) — הפרויקט לא יושהה יותר.
+- **Supabase Site URL חייב להיות:** `https://academy.natalieartsi.com` (לא localhost!)
+- **Redirect URLs חייבים לכלול:** `https://academy.natalieartsi.com/auth/callback` ו-`https://habait-shel-git-main-shai-habait-shel.vercel.app/auth/callback`
 
 ```bash
 git add <files> && git commit -m "..." && GIT_SSH_COMMAND="ssh -i ~/.ssh/github_habait" git push origin main
@@ -129,6 +136,15 @@ middleware.ts                         ← הגנת routes לפי role
 - פונקציה `get_my_role() SECURITY DEFINER` — בכל policy של admin.
 - **אסור להרדקוד אימייל** — תמיד `role = 'admin'` בלבד.
 - **API route מאובטח** `/api/lesson-video` — כל גישה לוידאו עוברת דרכו ונבדקת בשרת.
+
+### Table RLS — policies קיימות ב-`courses`:
+| Policy | פעולה | מי |
+|--------|--------|-----|
+| `admin_write_courses` | ALL (INSERT + UPDATE + DELETE + SELECT) | admin בלבד |
+| `read_courses` | SELECT | public |
+
+`ALL` = מכסה INSERT. אין צורך ב-policy נפרדת ל-INSERT.
+**אם יצירת קורס חדש נכשלת ולא נראית שגיאת RLS** — הסיבה הסבירה ביותר היא הפרויקט ב-Supabase מושהה (paused). ראה: "פרויקט Supabase — הערות תפעול".
 
 ### Storage RLS — policies קיימות ב-course-media:
 | Policy | פעולה | מי |
