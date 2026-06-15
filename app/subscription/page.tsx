@@ -6,6 +6,8 @@ import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { type SubPlan, DEFAULT_PLANS, dbGetPlans } from "@/lib/supabase/content-db";
 
+const CARDCOM_URL = "https://secure.cardcom.solutions/EA/EA5/iMUhBY4oM06Dkx8yz8r2A/PaymentSP";
+
 const FAQ = [
   { q: "האם יש ניסיון חינם?", a: "כן — שיעורים מסומנים כ'חינמי' זמינים לכולן, ללא קרדיט." },
   { q: "האם אוכל לבטל בכל עת?", a: "בהחלט. אין מינימום ואין דמי ביטול." },
@@ -87,8 +89,10 @@ export default function SubscriptionPage() {
                 </ul>
 
                 {/* CTA */}
-                <Link
-                  href="/checkout/subscription"
+                <a
+                  href={CARDCOM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="block w-full py-3 rounded-xl text-center text-[0.82rem] font-black transition-all hover:opacity-90 active:scale-95"
                   style={
                     plan.featured
@@ -97,7 +101,7 @@ export default function SubscriptionPage() {
                   }
                 >
                   {plan.cta || (plan.featured ? "הצטרף עכשיו" : "בחר תוכנית")}
-                </Link>
+                </a>
               </div>
             </motion.div>
           ))}
