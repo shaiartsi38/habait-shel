@@ -447,8 +447,9 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 ### ⬜ MVP — נשאר לעשות (לפי עדיפות)
 
 **🔴 קריטי:**
-- [ ] **Cardcom webhook** — `app/api/webhooks/cardcom/route.ts`: קבל POST מקארדקום, אמת את הבקשה, צור משתמש ב-Supabase Auth, עדכן subscription_tier, שלח מייל Resend.
-- [ ] **Resend — מייל ברוכה הבאה** — ראה פרטים מלאים בסעיף "מערכת מייל" למטה.
+- ✅ **Cardcom webhook** — `app/api/webhooks/cardcom/route.ts`: מקבל POST, מאמת terminal+responsecode, יוצר משתמש ב-Supabase Auth, מעדכן subscription_tier, שולח מייל ברוכה הבאה דרך שלח מסר.
+- ✅ **מייל ברוכה הבאה** — HTML מותאם מותג, נשלח דרך שלח מסר API מ-`office@natalieartsi.com`.
+- ✅ **דף מנויים** — כפתורי "בחר תוכנית" מובילים לדף קארדקום. כשיהיו תוכניות נפרדות — להוסיף `paymentUrl` לכל `SubPlan` בניהול.
 
 ### תכנית Cardcom Webhook — פרטים טכניים
 

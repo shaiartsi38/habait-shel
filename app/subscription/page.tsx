@@ -87,8 +87,10 @@ export default function SubscriptionPage() {
                 </ul>
 
                 {/* CTA */}
-                <Link
-                  href="/signup"
+                <a
+                  href="https://secure.cardcom.solutions/EA/EA5/iMUhBY4oM06Dkx8yz8r2A/PaymentSP"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="block w-full py-3 rounded-xl text-center text-[0.82rem] font-black transition-all hover:opacity-90 active:scale-95"
                   style={
                     plan.featured
@@ -97,7 +99,7 @@ export default function SubscriptionPage() {
                   }
                 >
                   {plan.cta || (plan.featured ? "הצטרף עכשיו" : "בחר תוכנית")}
-                </Link>
+                </a>
               </div>
             </motion.div>
           ))}
