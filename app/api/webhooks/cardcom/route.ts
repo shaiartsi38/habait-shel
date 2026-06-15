@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { randomInt } from "crypto";
 
 // מיפוי: ProdGroupID של קארדקום → subscription_tier
 // להוסיף כאן כשיהיו מוצרי מנוי נוספים בקארדקום
@@ -9,9 +10,7 @@ const GROUP_TIER: Record<string, string> = {
 
 function generateTempPassword(): string {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  return Array.from({ length: 10 }, () =>
-    chars[Math.floor(Math.random() * chars.length)]
-  ).join("");
+  return Array.from({ length: 16 }, () => chars[randomInt(0, chars.length)]).join("");
 }
 
 function cleanName(raw: string): string {
