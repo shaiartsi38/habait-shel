@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
   // שלח מייל ברוכה הבאה
   const emailHtml = buildEmailHtml(firstName, userEmail, tempPassword);
   const smRes = await fetch(
-    "https://gconvertrest.sendmsg.co.il/api/Sendmsg/AddUsersAndSendEmail",
+    "https://gconvertrest.sendmsg.co.il/api/Sendmsg/AddUsersAndSend",
     {
       method: "POST",
       headers: {
