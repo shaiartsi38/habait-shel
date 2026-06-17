@@ -101,7 +101,7 @@ middleware.ts                         ← הגנת routes לפי role
 | `extra_sections` | `ExtraSection[]` | סקשיינים בין נטלי למנויים |
 | `faqs` | `FaqItem[]` | שאלות ותשובות |
 | `coming_soon` | `ComingSoonItem[]` | קורסים עתידיים — מוצגים מקסימום 3, עם hover float |
-| `subscription_plans` | `SubPlan[]` | תוכניות מנוי |
+| `subscription_plans` | `SubPlan[]` | תוכניות מנוי — כל תוכנית כוללת `checkoutUrl?` לדף סליקה ייחודי |
 | `natalie` | `NatalieContent` | תמונה, ביו, instagram/youtube/tiktok/facebook/whatsapp |
 | `terms` | `string` | תקנון המועדון — מוצג ב-ClosingCTA, 5 שורות preview |
 | `cancellation_flow` | `CancellationFlow` | שאלות/הצעות במערכת ביטול המנוי |
@@ -449,7 +449,7 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 **🔴 קריטי:**
 - ✅ **Cardcom webhook** — `app/api/webhooks/cardcom/route.ts`: מקבל POST, מאמת terminal+responsecode, יוצר משתמש ב-Supabase Auth, מעדכן subscription_tier, שולח מייל ברוכה הבאה דרך שלח מסר.
 - ✅ **מייל ברוכה הבאה** — HTML מותאם מותג, נשלח דרך שלח מסר API מ-`office@natalieartsi.com`.
-- ✅ **דף מנויים** — כפתורי "בחר תוכנית" מובילים לדף קארדקום. כשיהיו תוכניות נפרדות — להוסיף `paymentUrl` לכל `SubPlan` בניהול.
+- ✅ **דף מנויים** — כפתורי "בחר תוכנית" מובילים לדף קארדקום בטאב חדש. כל תוכנית יכולה להגדיר `checkoutUrl` ייחודי דרך אדמין. ניתן גם למחוק תוכניות מנוי מהאדמין. Fallback: URL בקוד ב-`subscription/page.tsx`.
 
 ### תכנית Cardcom Webhook — פרטים טכניים
 
