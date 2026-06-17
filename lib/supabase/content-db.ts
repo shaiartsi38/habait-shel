@@ -80,6 +80,7 @@ export type SubPlan = {
   cta: string;
   featured: boolean;
   color: string;
+  checkoutUrl?: string;
 };
 
 export type NatalieContent = {

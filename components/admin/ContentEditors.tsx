@@ -664,6 +664,9 @@ export function SubscriptionEditor() {
       : p
     ));
 
+  const removePlan = (i: number) =>
+    setPlans(plans.filter((_, j) => j !== i));
+
   const handleSave = async () => {
     setSaving(true); clearFeedback();
     try {
@@ -705,7 +708,16 @@ export function SubscriptionEditor() {
           >
             <div className="flex items-center justify-between">
               <span className="text-sm font-black" style={{ color: "#FFF8F5" }}>{plan.name || `תוכנית ${i + 1}`}</span>
-              <Checkbox checked={plan.featured} onChange={(v) => updatePlan(i, "featured", v)} label="הכי פופולרי" />
+              <div className="flex items-center gap-3">
+                <Checkbox checked={plan.featured} onChange={(v) => updatePlan(i, "featured", v)} label="הכי פופולרי" />
+                <button
+                  onClick={() => removePlan(i)}
+                  className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                  title="מחק תוכנית"
+                >
+                  <Trash2 size={13} style={{ color: "#5A3830" }} />
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -733,6 +745,11 @@ export function SubscriptionEditor() {
             <div>
               <FieldLabel>תיאור קצר</FieldLabel>
               <Input value={plan.desc} onChange={(v) => updatePlan(i, "desc", v)} placeholder="תיאור קצר של התוכנית" />
+            </div>
+
+            <div>
+              <FieldLabel>קישור לדף סליקה (URL)</FieldLabel>
+              <Input value={plan.checkoutUrl ?? ""} onChange={(v) => updatePlan(i, "checkoutUrl", v)} placeholder="https://secure.cardcom.solutions/..." dir="ltr" />
             </div>
 
             <div>

@@ -90,7 +90,7 @@ export default function SubscriptionPage() {
 
                 {/* CTA */}
                 <a
-                  href={CARDCOM_URL}
+                  href={plan.checkoutUrl || CARDCOM_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full py-3 rounded-xl text-center text-[0.82rem] font-black transition-all hover:opacity-90 active:scale-95"
