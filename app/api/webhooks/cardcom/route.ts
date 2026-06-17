@@ -146,43 +146,24 @@ export async function POST(req: NextRequest) {
     subscription_tier: tier,
   });
 
-  // שלח מייל ברוכה הבאה
+  // שלח מייל ברוכה הבאה דרך Resend
   const emailHtml = buildEmailHtml(firstName, userEmail, tempPassword);
-  const smRes = await fetch(
-    "https://gconvertrest.sendmsg.co.il/api/Sendmsg/AddUsersAndSend",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: process.env.SENDMSG_API_KEY!,
-      },
-      body: JSON.stringify({
-        users: [
-          {
-            EmailAddress: userEmail,
-            FirstName: firstName,
-            LastName: lastName,
-            Cellphone: data.CardOwnerPhone ?? "",
-          },
-        ],
-        Message: {
-          MessageContent: emailHtml,
-          MessageSubject: "פרטי התחברות לבית של המאפרים",
-          SenderEmailAddress: "office@natalieartsi.com",
-          SenderName: "נטלי ארצי",
-          MessageBackColor: "#080608",
-          MessageDirection: 1,
-          MessageInnerName: `welcome-${userId}`,
-          AddFacebook: false,
-          AddForward: false,
-          AddShowMessage: false,
-        },
-      }),
-    }
-  );
+  const resendRes = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+    },
+    body: JSON.stringify({
+      from: "נטלי ארצי <office@natalieartsi.com>",
+      to: [userEmail],
+      subject: "פרטי התחברות לבית של המאפרים",
+      html: emailHtml,
+    }),
+  });
 
-  const smResult = await smRes.json().catch(() => ({}));
-  console.log("[cardcom] sendmsg result:", JSON.stringify(smResult));
+  const resendResult = await resendRes.json().catch(() => ({}));
+  console.log("[cardcom] resend result:", JSON.stringify(resendResult));
   console.log("[cardcom] ✅ done — email:", userEmail, "tier:", tier);
 
   return new Response("OK", { status: 200 });
