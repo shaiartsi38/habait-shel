@@ -447,8 +447,8 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 ### ⬜ MVP — נשאר לעשות (לפי עדיפות)
 
 **🔴 קריטי:**
-- ✅ **Cardcom webhook** — `app/api/webhooks/cardcom/route.ts`: מקבל POST, מאמת terminal+responsecode, יוצר משתמש ב-Supabase Auth, מעדכן subscription_tier, שולח מייל ברוכה הבאה דרך שלח מסר.
-- ✅ **מייל ברוכה הבאה** — HTML מותאם מותג, נשלח דרך שלח מסר API מ-`office@natalieartsi.com`.
+- ✅ **Cardcom webhook** — `app/api/webhooks/cardcom/route.ts`: מקבל POST, מאמת terminal+responsecode, יוצר משתמש ב-Supabase Auth, מעדכן subscription_tier, שולח מייל ברוכה הבאה דרך Resend.
+- ✅ **מייל ברוכה הבאה** — HTML מותאם מותג, נשלח דרך **Resend** מ-`office@natalieartsi.com`. נבדק ועובד (יוני 2026).
 - ✅ **דף מנויים** — כפתורי "בחר תוכנית" מובילים לדף קארדקום בטאב חדש. כל תוכנית יכולה להגדיר `checkoutUrl` ייחודי דרך אדמין. ניתן גם למחוק תוכניות מנוי מהאדמין. Fallback: URL בקוד ב-`subscription/page.tsx`.
 
 ### תכנית Cardcom Webhook — פרטים טכניים
@@ -470,28 +470,27 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 **טסט:**
 רכישה רגילה (לא מנוי) של 1 ש"ח דרך דף הנחיתה של קארדקום — ה-webhook יגיע בדיוק אותו דבר. כשעוברים לאמת, מגדירים את הדף להוראת קבע.
 
-**ממתין מקארדקום:**
-- פורמט ה-payload המדויק (אילו שדות נשלחים — אימייל, שם, סכום, סוג עסקה)
-- מפתח/סיסמה לאימות הבקשה
+**הflow המלא עובד ✅:**
+קארדקום → webhook → Supabase (יצירת משתמש + tier) → Resend (מייל ברוכה הבאה)
 
 ---
 
-### מערכת מייל — Resend
+### מערכת מייל — Resend ✅ פעיל
 
-**רקע:** עד היום שלח מסר ניהלה אוטומציות מייל. מהנקודה הזו, מיילי ה-webhook ישלחו דרך Resend (מיועד לתראנזקציות אוטומטיות מקוד).
+**סטטוס:** עובד בפרודקשן (נבדק יוני 2026).
 
 **הגדרות:**
+- **שירות:** Resend (`https://resend.com`) — חשבון: `shaiartsi26@gmail.com`
 - **שולח:** `office@natalieartsi.com`
-- **reply-to:** `natalieartsi@gmail.com`
-- **לפני בנייה:** לאמת דומיין `natalieartsi.com` ב-Resend (הוספת רשומת DNS אחת אצל ספק הדומיין)
+- **דומיין מאומת:** `natalieartsi.com` — רשומות DNS הוספו ב-שלח מסר (DKIM + MX + SPF לסאבדומיין `send`)
+- **Env var:** `RESEND_API_KEY` ב-Vercel
+- **API:** `POST https://api.resend.com/emails` עם Bearer token
 
-**עיצוב המייל** (מבוסס על תבנית שלח מסר הקיימת):
-- רקע כהה `#080608`, כיתוב "NATALIE ARTSI / הבית של המאפרים" בורדרד `#C4857A` — זהה למסך הפתיחה של הפלטפורמה
-- שלום + שם לקוחה
-- טקסט ברכה ("איזה כיף שהצטרפת...")
-- תיבת פרטים (רקע בז'/קרם): שם משתמש (אימייל) + סיסמה זמנית
-- כפתור "כניסה לבית של המאפרים" → `https://academy.natalieartsi.com/login`
+**עיצוב המייל:**
+- רקע כהה `#080608`, כיתוב "NATALIE ARTSI / הבית של המאפרים" בורדרד `#C4857A`
+- שלום + שם לקוחה → טקסט ברכה → תיבת פרטי התחברות (אימייל + סיסמה זמנית) → כפתור כניסה
 - חתימה: "אוהבת המון, נטלי ארצי"
+- **עיצוב טקסט — שינויים קטנים עתידיים** (לא דחוף)
 
 **🟡 חשוב — ✅ הושלם:**
 - ✅ כפתור "שלחי ב-WhatsApp" בדשבורד — deep link + טקסט הזמנה — דומיין: `https://www.natalieartsi.com`
