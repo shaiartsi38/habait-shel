@@ -7,6 +7,7 @@ import { Lock, Check, Star, ChevronDown } from "lucide-react";
 import { type Category } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import { CourseCard } from "@/components/courses/CourseCard";
+import { createClient } from "@/lib/supabase/client";
 import { CategoryFilter } from "@/components/courses/CategoryFilter";
 import {
   type HeroContent, type Testimonial, type SubPlan, type ExtraSection, type FaqItem, type ComingSoonItem, type NatalieContent,
@@ -37,6 +38,8 @@ export default function HomePage() {
   const [comingSoon, setComingSoon]       = useState<ComingSoonItem[]>(DEFAULT_COMING_SOON);
   const [terms, setTerms]               = useState<string>(DEFAULT_TERMS);
   const [natalie, setNatalie]             = useState<NatalieContent>(DEFAULT_NATALIE);
+  const [isLoggedIn, setIsLoggedIn]       = useState(false);
+  const [hasSubscription, setHasSubscription] = useState(false);
 
   useEffect(() => {
     dbGetHero().then(setHero).catch(() => {});
@@ -47,19 +50,28 @@ export default function HomePage() {
     dbGetComingSoon().then(setComingSoon).catch(() => {});
     dbGetTerms().then(setTerms).catch(() => {});
     dbGetNatalie().then(setNatalie).catch(() => {});
+
+    const sb = createClient();
+    sb.auth.getUser().then(async ({ data }) => {
+      if (data.user) {
+        setIsLoggedIn(true);
+        const { data: p } = await sb.from("profiles").select("subscription_tier").eq("id", data.user.id).single();
+        if (p?.subscription_tier) setHasSubscription(true);
+      }
+    });
   }, []);
 
   return (
     <div style={{ background: "var(--black)" }}>
-      <JoinClubButton />
-      <HeroSection hero={hero} />
-      <CoursesSection comingSoon={comingSoon} />
+      {!isLoggedIn && <JoinClubButton />}
+      <HeroSection hero={hero} isLoggedIn={isLoggedIn} />
+      <CoursesSection comingSoon={comingSoon} hasSubscription={hasSubscription} />
       <TestimonialsSection testimonials={testimonials} />
       <NatalieSection natalie={natalie} />
       <ExtraContentSections sections={extraSections} />
-      <SubscriptionSection plans={plans} terms={terms} />
+      {!hasSubscription && <SubscriptionSection plans={plans} terms={terms} />}
       <FaqSection faqs={faqs} />
-      <ClosingCTA terms={terms} />
+      {!hasSubscription && <ClosingCTA terms={terms} />}
     </div>
   );
 }
@@ -90,7 +102,7 @@ function JoinClubButton() {
 }
 
 // ─── Full-Bleed Parallax Hero ─────────────────────────────────────
-function HeroSection({ hero }: { hero: HeroContent }) {
+function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const bgY = useTransform(scrollY, [0, 600], ["0%", "22%"]);
@@ -201,20 +213,22 @@ function HeroSection({ hero }: { hero: HeroContent }) {
           className="flex flex-col items-start gap-4"
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <motion.button
-              onClick={scrollToSub}
-              className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl text-sm font-black tracking-wide"
-              style={{
-                background: "linear-gradient(135deg, #C4857A 0%, #D4998E 100%)",
-                color: "#080608",
-                boxShadow: "0 6px 32px rgba(196,133,122,0.45)",
-              }}
-              whileHover={{ scale: 1.03, boxShadow: "0 8px 40px rgba(196,133,122,0.6)" }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-            >
-              {hero.ctaText}
-            </motion.button>
+            {!isLoggedIn && (
+              <motion.button
+                onClick={scrollToSub}
+                className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl text-sm font-black tracking-wide"
+                style={{
+                  background: "linear-gradient(135deg, #C4857A 0%, #D4998E 100%)",
+                  color: "#080608",
+                  boxShadow: "0 6px 32px rgba(196,133,122,0.45)",
+                }}
+                whileHover={{ scale: 1.03, boxShadow: "0 8px 40px rgba(196,133,122,0.6)" }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              >
+                {hero.ctaText}
+              </motion.button>
+            )}
             <Link
               href="/courses"
               className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl text-sm font-medium border transition-all hover:bg-white/[0.04]"
@@ -242,7 +256,7 @@ function HeroSection({ hero }: { hero: HeroContent }) {
 }
 
 // ─── Courses Section ──────────────────────────────────────────────
-function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
+function CoursesSection({ comingSoon, hasSubscription }: { comingSoon: ComingSoonItem[]; hasSubscription: boolean }) {
   const [activeCategory, setActiveCategory] = useState<Category>("הכל");
   const { courses } = useCourses();
   const published = courses.filter((c) => c.isPublished && c.showOnHome !== false);
@@ -300,7 +314,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
               transition={{ duration: 0.45, ease: "easeOut", delay: (i % 4) * 0.07 }}
             >
               <BreathingCard>
-                <CourseCard course={course} />
+                <CourseCard course={course} hidePurchase={hasSubscription} />
               </BreathingCard>
             </motion.div>
           ))}
@@ -319,7 +333,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
               transition={{ duration: 0.45, ease: "easeOut", delay: i * 0.07 }}
             >
               <BreathingCard>
-                <CourseCard course={course} />
+                <CourseCard course={course} hidePurchase={hasSubscription} />
               </BreathingCard>
             </motion.div>
           ))}
@@ -375,7 +389,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
               transition={{ duration: 0.45, ease: "easeOut", delay: i * 0.07 }}
             >
               <BreathingCard>
-                <CourseCard course={course} />
+                <CourseCard course={course} hidePurchase={hasSubscription} />
               </BreathingCard>
             </motion.div>
           ))}
@@ -394,7 +408,7 @@ function CoursesSection({ comingSoon }: { comingSoon: ComingSoonItem[] }) {
               transition={{ duration: 0.45, ease: "easeOut", delay: i * 0.07 }}
             >
               <BreathingCard>
-                <CourseCard course={course} />
+                <CourseCard course={course} hidePurchase={hasSubscription} />
               </BreathingCard>
             </motion.div>
           ))}

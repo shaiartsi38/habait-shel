@@ -39,7 +39,7 @@ export async function dbFetchPosts(): Promise<CommunityPost[]> {
 
   return (data ?? []).map((row) => {
     const p = row.profiles as { first_name?: string; last_name?: string; photo_url?: string } | null;
-    const fullName = [p?.first_name, p?.last_name].filter(Boolean).join(" ") || "חברת מועדון";
+    const fullName = [p?.first_name, p?.last_name].filter(Boolean).join(" ") || "חבר מועדון";
     const initials = [p?.first_name?.[0], p?.last_name?.[0]].filter(Boolean).join("").toUpperCase() || "?";
     return {
       ...(row as unknown as CommunityPost),

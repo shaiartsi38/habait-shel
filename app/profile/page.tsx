@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, Check, AlertCircle, Loader2, User } from "lucide-react";
+import { Camera, Check, AlertCircle, Loader2, User, KeyRound } from "lucide-react";
 import { dbGetMyProfile, dbUpdateProfile, dbUploadAvatar, type UserProfile } from "@/lib/supabase/profile-db";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ProfilePage() {
   const [profile, setProfile]       = useState<UserProfile | null>(null);
@@ -78,6 +79,28 @@ export default function ProfilePage() {
       setError(e instanceof Error ? e.message : "שגיאה בשמירה");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const [pwForm, setPwForm] = useState({ newPassword: "", confirm: "" });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+
+  const handlePasswordChange = async () => {
+    if (pwForm.newPassword.length < 8) { setPwError("הסיסמה חייבת להכיל לפחות 8 תווים"); return; }
+    if (pwForm.newPassword !== pwForm.confirm) { setPwError("הסיסמאות אינן תואמות"); return; }
+    setPwSaving(true); setPwError(null);
+    try {
+      const { error } = await createClient().auth.updateUser({ password: pwForm.newPassword });
+      if (error) throw error;
+      setPwSuccess(true);
+      setPwForm({ newPassword: "", confirm: "" });
+      setTimeout(() => setPwSuccess(false), 3000);
+    } catch (e) {
+      setPwError(e instanceof Error ? e.message : "שגיאה בשינוי הסיסמה");
+    } finally {
+      setPwSaving(false);
     }
   };
 
@@ -260,6 +283,72 @@ export default function ProfilePage() {
           {saving && <Loader2 size={14} className="animate-spin" />}
           שמרי שינויים
         </button>
+
+        {/* Password change */}
+        <div
+          className="rounded-2xl p-6 space-y-4 mt-8"
+          style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <KeyRound size={14} style={{ color: "#C4857A" }} />
+            <p className="text-sm font-black" style={{ color: "#FFF8F5" }}>שינוי סיסמה</p>
+          </div>
+
+          {(pwSuccess || pwError) && (
+            <div
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-[0.75rem]"
+              style={pwSuccess
+                ? { background: "rgba(74,155,111,0.08)", color: "#4A9B6F", border: "1px solid rgba(74,155,111,0.2)" }
+                : { background: "rgba(196,50,50,0.08)", color: "#e05555", border: "1px solid rgba(196,50,50,0.2)" }
+              }
+            >
+              {pwSuccess ? <Check size={14} /> : <AlertCircle size={14} />}
+              {pwSuccess ? "הסיסמה שונתה בהצלחה!" : pwError}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-[0.6rem] font-semibold mb-1.5 tracking-wider uppercase" style={{ color: "#8B6355" }}>
+              סיסמה חדשה
+            </label>
+            <input
+              type="password"
+              value={pwForm.newPassword}
+              onChange={(e) => setPwForm((f) => ({ ...f, newPassword: e.target.value }))}
+              placeholder="לפחות 8 תווים"
+              dir="ltr"
+              className="w-full px-3 py-2 rounded-xl text-sm outline-none transition-all"
+              style={{ background: "#0f0b0e", border: "1px solid rgba(196,133,122,0.12)", color: "#FFF8F5", caretColor: "#C4857A" }}
+              onFocus={(e) => (e.target.style.borderColor = "rgba(196,133,122,0.4)")}
+              onBlur={(e) => (e.target.style.borderColor = "rgba(196,133,122,0.12)")}
+            />
+          </div>
+          <div>
+            <label className="block text-[0.6rem] font-semibold mb-1.5 tracking-wider uppercase" style={{ color: "#8B6355" }}>
+              אימות סיסמה
+            </label>
+            <input
+              type="password"
+              value={pwForm.confirm}
+              onChange={(e) => setPwForm((f) => ({ ...f, confirm: e.target.value }))}
+              placeholder="הכניסי שוב את הסיסמה"
+              dir="ltr"
+              className="w-full px-3 py-2 rounded-xl text-sm outline-none transition-all"
+              style={{ background: "#0f0b0e", border: "1px solid rgba(196,133,122,0.12)", color: "#FFF8F5", caretColor: "#C4857A" }}
+              onFocus={(e) => (e.target.style.borderColor = "rgba(196,133,122,0.4)")}
+              onBlur={(e) => (e.target.style.borderColor = "rgba(196,133,122,0.12)")}
+            />
+          </div>
+          <button
+            onClick={handlePasswordChange}
+            disabled={pwSaving || !pwForm.newPassword}
+            className="w-full py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-40"
+            style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
+          >
+            {pwSaving && <Loader2 size={14} className="animate-spin" />}
+            שנה סיסמה
+          </button>
+        </div>
       </motion.div>
     </div>
   );

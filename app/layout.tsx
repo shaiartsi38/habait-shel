@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ background: "#080608" }}>
         <Providers>
-          <ShellLayout isAdmin={true}>
+          <ShellLayout>
             {children}
           </ShellLayout>
         </Providers>

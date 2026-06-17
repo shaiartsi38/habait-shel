@@ -26,10 +26,12 @@ export default function LoginPage() {
       const { data: { user } } = await sb.auth.getUser();
       const { data: profile } = await sb
         .from("profiles")
-        .select("role")
+        .select("role, first_name")
         .eq("id", user!.id)
         .single();
-      router.push(profile?.role === "admin" ? "/admin" : "/dashboard");
+      if (profile?.role === "admin") router.push("/admin");
+      else if (!profile?.first_name) router.push("/profile");
+      else router.push("/dashboard");
       router.refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? "אימייל או סיסמה שגויים" : "שגיאה לא ידועה");

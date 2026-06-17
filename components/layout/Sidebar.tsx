@@ -18,17 +18,25 @@ const NAV = [
   { href: "/profile",       label: "הפרופיל שלי",  icon: UserCircle },
 ] as const;
 
-export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
+export default function Sidebar({ isAdmin: _isAdminProp = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const router   = useRouter();
   const [open, setOpen]       = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const sb = createClient();
-    sb.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+    sb.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+      if (data.user) {
+        sb.from("profiles").select("role").eq("id", data.user.id).single()
+          .then(({ data: p }) => setIsAdmin(p?.role === "admin"));
+      }
+    });
     const { data: { subscription } } = sb.auth.onAuthStateChange((_, session) => {
       setUserEmail(session?.user.email ?? null);
+      if (!session?.user) setIsAdmin(false);
     });
     return () => subscription.unsubscribe();
   }, []);

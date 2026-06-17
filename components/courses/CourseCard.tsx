@@ -34,9 +34,10 @@ const TIER_COLOR: Record<string, { color: string; bg: string; border: string }> 
 
 interface CourseCardProps {
   course: CourseData;
+  hidePurchase?: boolean;
 }
 
-export function CourseCard({ course }: CourseCardProps) {
+export function CourseCard({ course, hidePurchase = false }: CourseCardProps) {
   const [showVideo, setShowVideo] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tc = TIER_COLOR[course.tier];
@@ -177,7 +178,7 @@ export function CourseCard({ course }: CourseCardProps) {
       </Link>
 
       {/* Purchase row */}
-      <div className="flex items-center justify-between mt-2 px-0.5">
+      {!hidePurchase && <div className="flex items-center justify-between mt-2 px-0.5">
         <span className="text-[0.72rem] font-black" style={{ color: "#FFF8F5" }}>
           {course.price != null ? `₪${course.price}` : ""}
         </span>
@@ -210,7 +211,7 @@ export function CourseCard({ course }: CourseCardProps) {
             רכישת קורס
           </Link>
         )}
-      </div>
+      </div>}
     </div>
   );
 }
