@@ -297,10 +297,10 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 ## מצב פתוח — SQL migrations שחייבים לרוץ
 
 ```sql
--- created_at לטבלת profiles (נדרש לתאריך הצטרפות בניהול משתמשות + ייצוא CSV)
+-- created_at לטבלת profiles — חובה להריץ! (תאריך הצטרפות בניהול משתמשות + ייצוא CSV)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
 ```
-⚠️ עד שמריצים את זה — עמודת "תאריך הצטרפות" בניהול משתמשות תציג "—".
+⚠️ עד שמריצים — "תאריך הצטרפות" מציג "—". משתמשים קיימים יקבלו תאריך ריצת המיגרציה (לא ניתן לשחזר).
 
 ```sql
 -- subscription_tier (שלב 3א)
