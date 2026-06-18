@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const ADMIN_ROUTES = ["/admin"];
-const USER_ROUTES  = ["/dashboard", "/community"];
+const USER_ROUTES  = ["/dashboard", "/community", "/profile"];
 const AUTH_ROUTES  = ["/login", "/signup"];
 
 export async function middleware(request: NextRequest) {
@@ -78,6 +78,8 @@ export const config = {
     "/admin/:path*",
     "/dashboard/:path*",
     "/community/:path*",
+    "/profile/:path*",
+    "/profile",
     "/login",
     "/signup",
   ],

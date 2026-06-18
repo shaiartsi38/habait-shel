@@ -376,9 +376,15 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 
 **✅ Security headers** — `next.config.js`: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS, CSP (YouTube/Vimeo/Supabase מורשים)
 
-**✅ Rate limiting** — `lib/rate-limit.ts`: in-memory, 30 req/min per IP על `/api/lesson-video`, 429 על חריגה. לסקייל גדול → Upstash Redis.
+**✅ Rate limiting** — `lib/rate-limit.ts`: in-memory, 30 req/min per IP על `/api/lesson-video`, 20 req/min על `/api/webhooks/cardcom`, 429 על חריגה. לסקייל גדול → Upstash Redis.
 
-**✅ CORS** — להגדיר ידנית ב-Supabase Dashboard: Storage → Settings → CORS → הוסף `https://natalieartsi.com` + URL ה-Vercel.
+**✅ Webhook token verification** — `app/api/webhooks/cardcom/route.ts`: בודק query param `?token=` מול `CARDCOM_WEBHOOK_TOKEN` env var. `timingSafeEqual` למניעת timing attacks. **נדרש**: (1) הוסף `CARDCOM_WEBHOOK_TOKEN=<ערך אקראי>` ל-Vercel env vars, (2) עדכן URL בקארדקום.
+
+**✅ CORS** — להגדיר ידנית ב-Supabase Dashboard: Storage → Settings → CORS → הוסף `https://natalieartzi.com` + URL ה-Vercel.
+
+**✅ /profile מוגן ב-Middleware** — נוסף ל-`USER_ROUTES` ול-`matcher`.
+
+**✅ מחיקת wildcard תמונות** — הוסר `{ hostname: "**" }` מ-`next.config.js`. מותרים: supabase.co, imghippo, vimeocdn, youtube, mux.
 
 **⬜ הגבלת sessions** — מניעת שיתוף סיסמה (עתידי)
 
@@ -467,7 +473,9 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 ### תכנית Cardcom Webhook — פרטים טכניים
 
 **URL ה-webhook (להגדיר בקארדקום):**
-`https://academy.natalieartsi.com/api/webhooks/cardcom`
+`https://academy.natalieartzi.com/api/webhooks/cardcom?token=<CARDCOM_WEBHOOK_TOKEN>`
+
+> חשוב: לעדכן URL זה בקארדקום לאחר הוספת `CARDCOM_WEBHOOK_TOKEN` ל-Vercel env vars.
 
 **איפה מגדירים בקארדקום:**
 פעילות שוטפת → דף נחיתה לתשלום → עיפרון/עריכה → לשונית "מתקדם" → "האם לבצע דוח עסקה נוסף"

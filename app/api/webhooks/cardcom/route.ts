@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { randomInt } from "crypto";
+import { randomInt, timingSafeEqual } from "crypto";
+import { rateLimit } from "@/lib/rate-limit";
 
 // מיפוי: ProdGroupID של קארדקום → subscription_tier
 // להוסיף כאן כשיהיו מוצרי מנוי נוספים בקארדקום
@@ -74,11 +75,33 @@ function buildEmailHtml(firstName: string, email: string, password: string): str
 </html>`;
 }
 
+function verifyToken(req: NextRequest): boolean {
+  const expected = process.env.CARDCOM_WEBHOOK_TOKEN;
+  if (!expected) return true; // אם לא הוגדר — לא בודקים (backwards compat)
+  const received = req.nextUrl.searchParams.get("token") ?? "";
+  try {
+    return timingSafeEqual(Buffer.from(received), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
+  // Rate limit: 20 בקשות לדקה per IP (webhook אמיתי יבוא לכל היותר פעמים בודדות ביום)
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const { allowed } = rateLimit(`cardcom-webhook:${ip}`, 20, 60_000);
+  if (!allowed) {
+    return new Response("Too many requests", { status: 429 });
+  }
+
+  // אימות טוקן — מונע בקשות מזויפות
+  if (!verifyToken(req)) {
+    console.warn("[cardcom] invalid webhook token from IP:", ip);
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const rawBody = await req.text();
   const data = Object.fromEntries(new URLSearchParams(rawBody).entries());
-
-  console.log("[cardcom] received fields:", Object.keys(data).join(", "));
 
   // אמת שהתשלום הצליח ושזה הטרמינל שלנו
   if (data.responsecode !== "0") {
@@ -163,8 +186,8 @@ export async function POST(req: NextRequest) {
   });
 
   const resendResult = await resendRes.json().catch(() => ({}));
-  console.log("[cardcom] resend result:", JSON.stringify(resendResult));
-  console.log("[cardcom] ✅ done — email:", userEmail, "tier:", tier);
+  if (!resendRes.ok) console.error("[cardcom] resend error:", JSON.stringify(resendResult));
+  console.log("[cardcom] ✅ done — tier:", tier);
 
   return new Response("OK", { status: 200 });
 }

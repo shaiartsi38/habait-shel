@@ -7,7 +7,6 @@ const nextConfig = {
       { protocol: "https", hostname: "i.vimeocdn.com" },
       { protocol: "https", hostname: "img.youtube.com" },
       { protocol: "https", hostname: "image.mux.com" },
-      { protocol: "https", hostname: "**" },
     ],
   },
 
