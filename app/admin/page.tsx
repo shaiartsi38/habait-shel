@@ -1408,6 +1408,7 @@ function UsersSection() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [confirmPromotion, setConfirmPromotion] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -1429,6 +1430,16 @@ function UsersSection() {
 
   const toggleRole = async (id: string, currentRole: string) => {
     const newRole = currentRole === "admin" ? "user" : "admin";
+    if (newRole === "admin") {
+      const user = users.find((u) => u.id === id);
+      const name = [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.email || "משתמשת זו";
+      setConfirmPromotion({ id, name });
+      return;
+    }
+    await doRoleChange(id, "user");
+  };
+
+  const doRoleChange = async (id: string, newRole: string) => {
     setUpdating(id);
     try {
       const sb = createClient();
@@ -1439,6 +1450,7 @@ function UsersSection() {
       setError(errMsg(e) || "שגיאה בעדכון");
     } finally {
       setUpdating(null);
+      setConfirmPromotion(null);
     }
   };
 
@@ -1517,6 +1529,36 @@ function UsersSection() {
           <p className="text-center text-sm py-12" style={{ color: "rgba(255,248,245,0.18)" }}>אין משתמשות רשומות עדיין</p>
         )}
       </div>
+
+      {/* אישור כפול להעלאה לאדמין */}
+      {confirmPromotion && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(8,6,8,0.85)", backdropFilter: "blur(6px)" }}>
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#0f0b0e", border: "1px solid rgba(196,133,122,0.2)" }}>
+            <p className="text-[0.65rem] tracking-widest uppercase mb-3" style={{ color: "#C4857A" }}>אישור נדרש</p>
+            <p className="text-sm font-black mb-1" style={{ color: "#FFF8F5" }}>העלאה לאדמין</p>
+            <p className="text-xs leading-relaxed mb-6" style={{ color: "#5A3830" }}>
+              אתה עומד להפוך את <span style={{ color: "#C4857A" }}>{confirmPromotion.name}</span> לאדמין עם גישה מלאה למערכת. פעולה זו ניתנת לביטול אחר כך.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmPromotion(null)}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-70"
+                style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,248,245,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                ביטול
+              </button>
+              <button
+                onClick={() => doRoleChange(confirmPromotion.id, "admin")}
+                disabled={updating === confirmPromotion.id}
+                className="flex-1 py-2.5 rounded-xl text-xs font-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }}
+              >
+                {updating === confirmPromotion.id ? "מעדכן..." : "כן, העלה לאדמין"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

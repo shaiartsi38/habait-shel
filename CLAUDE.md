@@ -386,6 +386,8 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 
 **✅ מחיקת wildcard תמונות** — הוסר `{ hostname: "**" }` מ-`next.config.js`. מותרים: supabase.co, imghippo, vimeocdn, youtube, mux.
 
+**✅ אישור כפול להעלאה לאדמין** — `app/admin/page.tsx`: לחיצה על "העלה לאדמין" פותחת חלונית אישור עם שם המשתמשת ואזהרה. הורדה מאדמין לא מצריכה אישור.
+
 **⬜ הגבלת sessions** — מניעת שיתוף סיסמה (עתידי)
 
 ### ✅ שיפורים נוספים (אחרי course-redesign)
