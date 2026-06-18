@@ -297,6 +297,12 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 ## מצב פתוח — SQL migrations שחייבים לרוץ
 
 ```sql
+-- created_at לטבלת profiles (נדרש לתאריך הצטרפות בניהול משתמשות + ייצוא CSV)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+```
+⚠️ עד שמריצים את זה — עמודת "תאריך הצטרפות" בניהול משתמשות תציג "—".
+
+```sql
 -- subscription_tier (שלב 3א)
 ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS subscription_tier text
@@ -451,9 +457,12 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 - ✅ **דף מנויים** — כפתורי "בחר תוכנית" מובילים לדף קארדקום בטאב חדש. כל תוכנית יכולה להגדיר `checkoutUrl` ייחודי דרך אדמין. ניתן גם למחוק תוכניות מנוי מהאדמין. Fallback: URL בקוד ב-`subscription/page.tsx`.
 - ✅ **כניסה ראשונה → פרופיל** — `app/(auth)/login/page.tsx`: אם `first_name` ריק → redirect ל-`/profile` במקום `/dashboard`.
 - ✅ **isAdmin בסיידבר** — `components/layout/Sidebar.tsx`: קביעת admin לפי `profiles.role` מה-DB (לא hardcoded). `app/layout.tsx` תוקן.
-- ✅ **הסתרת CTA + סקשיין מנויים למנויים** — `app/(marketing)/page.tsx`: כפתור "אני רוצה להיכנס", `JoinClubButton`, `SubscriptionSection`, `ClosingCTA` — נסתרים כשיש `subscription_tier`. כפתור "רכישת קורס" נסתר מכרטיסי קורסים בדף הבית.
+- ✅ **הסתרת CTA + סקשיין מנויים למנויים** — `app/(marketing)/page.tsx` + `app/courses/page.tsx`: כפתור "אני רוצה להיכנס", `JoinClubButton`, `SubscriptionSection`, `ClosingCTA` + "רכישת קורס" על כרטיסים — נסתרים כשיש `subscription_tier`.
 - ✅ **שינוי סיסמה** — `app/profile/page.tsx`: סקשיין "שינוי סיסמה" בתחתית הפרופיל.
 - ✅ **שם בקהילה** — `lib/supabase/community-db.ts`: fallback שונה ל-"חבר מועדון". שם אמיתי מוצג כשמשתמש הגדיר `first_name + last_name` בפרופיל.
+- ✅ **פרופיל בדשבורד** — `app/dashboard/page.tsx`: כרטיס "הפרופיל שלי" עם קישור לעריכה — נגיש גם במובייל.
+- ✅ **אנליטיקס שלב א'** — `app/admin/page.tsx`: מנויות לפי tier (basic/pro/elite), פעילות שבועית, שיעורים שנצפו הכי הרבה (מ-`user_progress`).
+- ✅ **משתמשות — תיקון created_at** — השאילתה הוסרה; עמודה תתווסף עם SQL migration (ראה סעיף "מצב פתוח").
 
 ### תכנית Cardcom Webhook — פרטים טכניים
 
