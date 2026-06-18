@@ -378,7 +378,7 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 
 **✅ Rate limiting** — `lib/rate-limit.ts`: in-memory, 30 req/min per IP על `/api/lesson-video`, 20 req/min על `/api/webhooks/cardcom`, 429 על חריגה. לסקייל גדול → Upstash Redis.
 
-**✅ Webhook token verification** — `app/api/webhooks/cardcom/route.ts`: בודק query param `?token=` מול `CARDCOM_WEBHOOK_TOKEN` env var. `timingSafeEqual` למניעת timing attacks. **נדרש**: (1) הוסף `CARDCOM_WEBHOOK_TOKEN=<ערך אקראי>` ל-Vercel env vars, (2) עדכן URL בקארדקום.
+**✅ Webhook token verification** — `app/api/webhooks/cardcom/route.ts`: בודק query param `?token=` מול `CARDCOM_WEBHOOK_TOKEN` env var. `timingSafeEqual` למניעת timing attacks. **הוגדר ✅**: `CARDCOM_WEBHOOK_TOKEN` הוסף ל-Vercel, URL עודכן בקארדקום עם `?token=`.
 
 **✅ CORS** — להגדיר ידנית ב-Supabase Dashboard: Storage → Settings → CORS → הוסף `https://natalieartsi.com` + URL ה-Vercel.
 
