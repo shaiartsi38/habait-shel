@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CATEGORIES, type Category } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { CategoryFilter } from "@/components/courses/CategoryFilter";
+import { createClient } from "@/lib/supabase/client";
 
 function CourseSkeleton() {
   return (
@@ -24,6 +25,17 @@ function CourseSkeleton() {
 export default function CoursesPage() {
   const [activeCategory, setActiveCategory] = useState<Category>("הכל");
   const { courses, loading } = useCourses();
+  const [hasSubscription, setHasSubscription] = useState(false);
+
+  useEffect(() => {
+    const sb = createClient();
+    sb.auth.getUser().then(async ({ data }) => {
+      if (data.user) {
+        const { data: p } = await sb.from("profiles").select("subscription_tier").eq("id", data.user.id).single();
+        if (p?.subscription_tier) setHasSubscription(true);
+      }
+    });
+  }, []);
 
   const visible =
     activeCategory === "הכל"
@@ -112,7 +124,7 @@ export default function CoursesPage() {
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.38, delay: (i % 4) * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
                 >
-                  <CourseCard course={course} />
+                  <CourseCard course={course} hidePurchase={hasSubscription} />
                 </motion.div>
               ))}
             </motion.div>

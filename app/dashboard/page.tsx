@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { BookOpen, Trophy, Flame, Clock, X, ChevronRight, AlertCircle, CheckCircle, Share2 } from "lucide-react";
+import { BookOpen, Trophy, Flame, Clock, X, ChevronRight, AlertCircle, CheckCircle, Share2, UserCircle } from "lucide-react";
 import {
   type CancellationFlow, DEFAULT_CANCELLATION_FLOW,
   dbGetCancellationFlow,
@@ -62,6 +62,28 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+      </motion.div>
+
+      {/* Profile link */}
+      <motion.div
+        className="rounded-2xl p-6 flex items-center justify-between gap-4 mb-4"
+        style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
+      >
+        <div className="flex items-center gap-3">
+          <UserCircle size={20} style={{ color: "#C4857A" }} />
+          <div>
+            <p className="text-sm font-black" style={{ color: "#FFF8F5" }}>הפרופיל שלי</p>
+            <p className="text-[0.65rem]" style={{ color: "#5A3830" }}>ערכי שם, תמונה ושינוי סיסמה</p>
+          </div>
+        </div>
+        <Link
+          href="/profile"
+          className="px-4 py-2 rounded-xl text-[0.75rem] font-black shrink-0 transition-opacity hover:opacity-80"
+          style={{ background: "rgba(196,133,122,0.1)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
+        >
+          עריכה
+        </Link>
       </motion.div>
 
       {/* WhatsApp share */}

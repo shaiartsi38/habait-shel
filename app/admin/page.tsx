@@ -1372,7 +1372,7 @@ function ActionBtn({ onClick, title, children, style, disabled }: { onClick: () 
 // ─── Users Section ────────────────────────────────────────────────
 
 type ProfileRow = {
-  id: string; role: string; created_at: string;
+  id: string; role: string; created_at?: string;
   email?: string; first_name?: string; last_name?: string;
   subscription_tier?: string | null;
 };
@@ -1386,7 +1386,7 @@ function exportUsersCSV(users: ProfileRow[]) {
     u.email ?? "",
     u.role,
     u.subscription_tier ? (TIER_LABEL[u.subscription_tier] ?? u.subscription_tier) : "אין",
-    new Date(u.created_at).toLocaleDateString("he-IL"),
+    u.created_at ? new Date(u.created_at).toLocaleDateString("he-IL") : "—",
   ]);
   const csv = [headers, ...rows]
     .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
@@ -1415,8 +1415,8 @@ function UsersSection() {
         const sb = createClient();
         const { data, error: err } = await sb
           .from("profiles")
-          .select("id, role, created_at, email, first_name, last_name, subscription_tier")
-          .order("created_at", { ascending: false });
+          .select("id, role, email, first_name, last_name, subscription_tier")
+          .order("id", { ascending: false });
         if (err) throw err;
         setUsers((data ?? []) as ProfileRow[]);
       } catch (e) {
@@ -1490,7 +1490,7 @@ function UsersSection() {
               </p>
               <p className="text-[0.58rem] truncate" style={{ color: "#5A3830" }}>
                 {u.email && (u.first_name || u.last_name) ? u.email + " · " : ""}
-                {new Date(u.created_at).toLocaleDateString("he-IL")}
+                {u.created_at ? new Date(u.created_at).toLocaleDateString("he-IL") : ""}
                 {u.subscription_tier ? ` · ${u.subscription_tier}` : ""}
               </p>
             </div>
@@ -1523,54 +1523,132 @@ function UsersSection() {
 
 // ─── Analytics Section ────────────────────────────────────────────
 
+type TopLesson = { lesson_id: string; course_id: string; views: number };
+
 function AnalyticsSection() {
-  const [stats, setStats]     = useState({ users: 0, courses: 0, published: 0, admins: 0 });
+  const { courses } = useCourses();
+  const [stats, setStats] = useState({ users: 0, courses: 0, published: 0, basic: 0, pro: 0, elite: 0, activeWeek: 0 });
+  const [topLessons, setTopLessons] = useState<TopLesson[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
         const sb = createClient();
-        const [{ count: users }, { count: courses }, { count: published }, { count: admins }] = await Promise.all([
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+        const [
+          { count: totalUsers },
+          { count: totalCourses },
+          { count: published },
+          { data: tierData },
+          { data: activeData },
+          { data: lessonsData },
+        ] = await Promise.all([
           sb.from("profiles").select("*", { count: "exact", head: true }),
           sb.from("courses").select("*", { count: "exact", head: true }),
           sb.from("courses").select("*", { count: "exact", head: true }).eq("is_published", true),
-          sb.from("profiles").select("*", { count: "exact", head: true }).eq("role", "admin"),
+          sb.from("profiles").select("subscription_tier").not("subscription_tier", "is", null),
+          sb.from("user_progress").select("user_id").gte("updated_at", sevenDaysAgo),
+          sb.from("user_progress").select("lesson_id, course_id").eq("completed", true),
         ]);
-        setStats({ users: users ?? 0, courses: courses ?? 0, published: published ?? 0, admins: admins ?? 0 });
+
+        const basic  = (tierData ?? []).filter((r) => r.subscription_tier === "basic").length;
+        const pro    = (tierData ?? []).filter((r) => r.subscription_tier === "pro").length;
+        const elite  = (tierData ?? []).filter((r) => r.subscription_tier === "elite").length;
+        const activeWeek = new Set((activeData ?? []).map((r) => r.user_id)).size;
+
+        const lessonCount: Record<string, { course_id: string; views: number }> = {};
+        for (const r of (lessonsData ?? [])) {
+          if (!lessonCount[r.lesson_id]) lessonCount[r.lesson_id] = { course_id: r.course_id, views: 0 };
+          lessonCount[r.lesson_id].views++;
+        }
+        const top5 = Object.entries(lessonCount)
+          .map(([lesson_id, v]) => ({ lesson_id, ...v }))
+          .sort((a, b) => b.views - a.views)
+          .slice(0, 5);
+
+        setStats({ users: totalUsers ?? 0, courses: totalCourses ?? 0, published: published ?? 0, basic, pro, elite, activeWeek });
+        setTopLessons(top5);
       } catch { /* show zeros */ }
       finally { setLoading(false); }
     })();
   }, []);
 
-  const tiles = [
+  const getLessonName = (lessonId: string, courseId: string) => {
+    const course = courses.find((c) => c.id === courseId);
+    const lesson = course?.lessons?.find((l) => l.id === lessonId);
+    return lesson?.title ?? lessonId;
+  };
+
+  const statTiles = [
     { label: "משתמשות רשומות", value: stats.users,     color: "#C4857A" },
-    { label: "קורסים סה\"כ",    value: stats.courses,   color: "#D4998E" },
     { label: "קורסים פורסמו",  value: stats.published, color: "#4A9B6F" },
-    { label: "מנהלי מערכת",    value: stats.admins,    color: "#8B6355" },
+    { label: "פעילות השבוע",   value: stats.activeWeek, color: "#D4998E" },
+    { label: "סה\"כ מנויות",   value: stats.basic + stats.pro + stats.elite, color: "#C4857A" },
   ];
 
   return (
-    <div>
-      <div className="mb-6">
+    <div className="space-y-8">
+      <div>
         <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>אנליטיקס</h2>
         <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>נתונים כלליים על הפלטפורמה</p>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16 gap-3" style={{ color: "#5A3830" }}>
+        <div className="flex items-center justify-center py-16 gap-3">
           <Loader2 size={18} className="animate-spin" style={{ color: "#C4857A" }} />
-          <span className="text-sm">טוען...</span>
+          <span className="text-sm" style={{ color: "#5A3830" }}>טוען...</span>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {tiles.map((tile) => (
-            <div key={tile.label} className="rounded-2xl p-5 text-center" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
-              <p className="text-3xl font-black mb-1" style={{ color: tile.color }}>{tile.value}</p>
-              <p className="text-[0.6rem]" style={{ color: "#5A3830" }}>{tile.label}</p>
+        <>
+          {/* General stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {statTiles.map((tile) => (
+              <div key={tile.label} className="rounded-2xl p-5 text-center" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+                <p className="text-3xl font-black mb-1" style={{ color: tile.color }}>{tile.value}</p>
+                <p className="text-[0.6rem]" style={{ color: "#5A3830" }}>{tile.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Subscribers by tier */}
+          <div className="rounded-2xl p-5" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+            <p className="text-sm font-black mb-4" style={{ color: "#FFF8F5" }}>מנויות לפי תוכנית</p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "Basic", value: stats.basic,  color: "#8B6355" },
+                { label: "Pro",   value: stats.pro,    color: "#C4857A" },
+                { label: "Elite", value: stats.elite,  color: "#D4998E" },
+              ].map((t) => (
+                <div key={t.label} className="rounded-xl p-4 text-center" style={{ background: "#0f0b0e", border: "1px solid rgba(196,133,122,0.06)" }}>
+                  <p className="text-2xl font-black mb-0.5" style={{ color: t.color }}>{t.value}</p>
+                  <p className="text-[0.6rem]" style={{ color: "#5A3830" }}>{t.label}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+
+          {/* Top lessons */}
+          <div className="rounded-2xl p-5" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+            <p className="text-sm font-black mb-4" style={{ color: "#FFF8F5" }}>שיעורים שנצפו הכי הרבה</p>
+            {topLessons.length === 0 ? (
+              <p className="text-[0.7rem] text-center py-4" style={{ color: "#5A3830" }}>עדיין אין נתוני צפייה</p>
+            ) : (
+              <div className="space-y-2">
+                {topLessons.map((item, i) => (
+                  <div key={item.lesson_id} className="flex items-center gap-3 py-2" style={{ borderBottom: i < topLessons.length - 1 ? "1px solid rgba(196,133,122,0.06)" : "none" }}>
+                    <span className="text-[0.6rem] font-black w-4 text-center shrink-0" style={{ color: "#5A3830" }}>{i + 1}</span>
+                    <p className="text-[0.72rem] flex-1 truncate" style={{ color: "rgba(255,248,245,0.7)" }}>
+                      {getLessonName(item.lesson_id, item.course_id)}
+                    </p>
+                    <span className="text-[0.65rem] font-black shrink-0" style={{ color: "#C4857A" }}>{item.views} צפיות</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
