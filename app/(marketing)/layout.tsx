@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 const SITE_NAME  = "הבית של המאפרים";
 const SITE_DESC  = "פלטפורמת המאסטרקלאס המובילה לאמני איפור מקצועיים — עם נטלי ארצי";
-const SITE_URL   = "https://natalieartzi.com";
+const SITE_URL   = "https://academy.natalieartsi.com";
 const FALLBACK_OG = "https://i.imghippo.com/files/ZNe4792NOg.jpeg"; // תמונת נטלי
 
 export async function generateMetadata(): Promise<Metadata> {

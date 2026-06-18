@@ -380,7 +380,7 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 
 **✅ Webhook token verification** — `app/api/webhooks/cardcom/route.ts`: בודק query param `?token=` מול `CARDCOM_WEBHOOK_TOKEN` env var. `timingSafeEqual` למניעת timing attacks. **נדרש**: (1) הוסף `CARDCOM_WEBHOOK_TOKEN=<ערך אקראי>` ל-Vercel env vars, (2) עדכן URL בקארדקום.
 
-**✅ CORS** — להגדיר ידנית ב-Supabase Dashboard: Storage → Settings → CORS → הוסף `https://natalieartzi.com` + URL ה-Vercel.
+**✅ CORS** — להגדיר ידנית ב-Supabase Dashboard: Storage → Settings → CORS → הוסף `https://natalieartsi.com` + URL ה-Vercel.
 
 **✅ /profile מוגן ב-Middleware** — נוסף ל-`USER_ROUTES` ול-`matcher`.
 
@@ -473,7 +473,7 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 ### תכנית Cardcom Webhook — פרטים טכניים
 
 **URL ה-webhook (להגדיר בקארדקום):**
-`https://academy.natalieartzi.com/api/webhooks/cardcom?token=<CARDCOM_WEBHOOK_TOKEN>`
+`https://academy.natalieartsi.com/api/webhooks/cardcom?token=<CARDCOM_WEBHOOK_TOKEN>`
 
 > חשוב: לעדכן URL זה בקארדקום לאחר הוספת `CARDCOM_WEBHOOK_TOKEN` ל-Vercel env vars.
 
