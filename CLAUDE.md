@@ -444,12 +444,16 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 - **Admin — שגיאות גלויות** — `saveEdit` כבר לא בולעת שגיאות. שגיאות מציפות ל-`CourseEditForm.handleSave` שמציג אותן בתוך הדיאלוג.
 - **Sidebar טקסט** — צבע inactive desktop: `#4A2E2E` → `#8B6355`. Hover: `#C4857A`. Mobile: `#3A1818` → `#7A5050`.
 
-### ⬜ MVP — נשאר לעשות (לפי עדיפות)
+### ✅ MVP — הושלם
 
-**🔴 קריטי:**
 - ✅ **Cardcom webhook** — `app/api/webhooks/cardcom/route.ts`: מקבל POST, מאמת terminal+responsecode, יוצר משתמש ב-Supabase Auth, מעדכן subscription_tier, שולח מייל ברוכה הבאה דרך Resend.
 - ✅ **מייל ברוכה הבאה** — HTML מותאם מותג, נשלח דרך **Resend** מ-`office@natalieartsi.com`. נבדק ועובד (יוני 2026).
 - ✅ **דף מנויים** — כפתורי "בחר תוכנית" מובילים לדף קארדקום בטאב חדש. כל תוכנית יכולה להגדיר `checkoutUrl` ייחודי דרך אדמין. ניתן גם למחוק תוכניות מנוי מהאדמין. Fallback: URL בקוד ב-`subscription/page.tsx`.
+- ✅ **כניסה ראשונה → פרופיל** — `app/(auth)/login/page.tsx`: אם `first_name` ריק → redirect ל-`/profile` במקום `/dashboard`.
+- ✅ **isAdmin בסיידבר** — `components/layout/Sidebar.tsx`: קביעת admin לפי `profiles.role` מה-DB (לא hardcoded). `app/layout.tsx` תוקן.
+- ✅ **הסתרת CTA + סקשיין מנויים למנויים** — `app/(marketing)/page.tsx`: כפתור "אני רוצה להיכנס", `JoinClubButton`, `SubscriptionSection`, `ClosingCTA` — נסתרים כשיש `subscription_tier`. כפתור "רכישת קורס" נסתר מכרטיסי קורסים בדף הבית.
+- ✅ **שינוי סיסמה** — `app/profile/page.tsx`: סקשיין "שינוי סיסמה" בתחתית הפרופיל.
+- ✅ **שם בקהילה** — `lib/supabase/community-db.ts`: fallback שונה ל-"חבר מועדון". שם אמיתי מוצג כשמשתמש הגדיר `first_name + last_name` בפרופיל.
 
 ### תכנית Cardcom Webhook — פרטים טכניים
 
