@@ -23,8 +23,20 @@ const PREVIEW_ALLOWED_TAGS = [
 function sanitize(html: string) {
   return sanitizeHtml(html, {
     allowedTags: PREVIEW_ALLOWED_TAGS,
-    allowedAttributes: { a: ["href","target","rel"], img: ["src","alt","width","height"], "*": ["class","dir","style"] },
-    allowedStyles: { "*": { "text-align": [/.*/], "font-size": [/.*/], "color": [/.*/], "font-family": [/.*/] } },
+    allowedAttributes: {
+      a:   ["href", "target", "rel"],
+      img: ["src", "alt", "width", "height", "style", "data-align"],
+      "*": ["class", "dir", "style", "data-align"],
+    },
+    allowedStyles: {
+      "*": {
+        "text-align":  [/.*/],
+        "font-size":   [/.*/],
+        "color":       [/.*/],
+        "font-family": [/.*/],
+        "width":       [/.*/],
+      },
+    },
   });
 }
 
@@ -79,12 +91,26 @@ function PreviewModal({ form, onClose }: { form: Partial<BlogPost>; onClose: () 
             </p>
           )}
 
-          {/* Content */}
+          {/* Content — custom CSS instead of prose to prevent overriding inline styles */}
+          <style>{`
+            .preview-content { color: #374151; font-size: 16px; line-height: 1.8; }
+            .preview-content h1 { font-size: 2em; font-weight: 700; margin: 0.75em 0 0.4em; color: #111; }
+            .preview-content h2 { font-size: 1.5em; font-weight: 700; margin: 0.75em 0 0.4em; color: #111; }
+            .preview-content h3 { font-size: 1.25em; font-weight: 700; margin: 0.75em 0 0.4em; color: #111; }
+            .preview-content p  { margin: 0.6em 0; }
+            .preview-content ul { list-style: disc; padding-right: 1.5em; margin: 0.5em 0; }
+            .preview-content ol { list-style: decimal; padding-right: 1.5em; margin: 0.5em 0; }
+            .preview-content blockquote { border-right: 3px solid #C4857A; padding-right: 1em; color: #6b7280; margin: 1em 0; }
+            .preview-content a   { color: #C4857A; text-decoration: underline; }
+            .preview-content img { max-width: 100%; border-radius: 8px; margin: 0.5em 0; }
+            .preview-content img[data-align="center"] { display: block; margin: 0.5em auto; }
+            .preview-content img[data-align="left"]   { display: block; margin-left: 0; }
+            .preview-content img[data-align="right"]  { display: block; margin-right: 0; }
+          `}</style>
           {form.content ? (
             <div
-              className="prose prose-lg max-w-none text-right text-gray-700"
+              className="preview-content max-w-none text-right"
               dir="rtl"
-              style={{ lineHeight: 1.8 }}
               dangerouslySetInnerHTML={{ __html: sanitize(form.content) }}
             />
           ) : (
@@ -175,6 +201,8 @@ export default function AdminBlogPage() {
     try {
       await dbDeletePost(id);
       setPosts((p) => p.filter((x) => x.id !== id));
+      setView("list");
+      setForm(emptyForm());
     } catch {
       alert("שגיאה במחיקה");
     } finally {
@@ -193,9 +221,21 @@ export default function AdminBlogPage() {
               <ArrowRight size={18} />
               <span>חזרה לרשימה</span>
             </button>
-            <h1 className="text-xl font-bold text-gray-800">
-              {form.id ? "עריכת מאמר" : "מאמר חדש"}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-gray-800">
+                {form.id ? "עריכת מאמר" : "מאמר חדש"}
+              </h1>
+              {form.id && (
+                <button
+                  onClick={() => setDeleteConfirm(form.id!)}
+                  className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition-colors"
+                  title="מחק מאמר זה"
+                >
+                  <Trash2 size={13} />
+                  מחיקה
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-4">

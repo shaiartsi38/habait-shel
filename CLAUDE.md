@@ -569,6 +569,7 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 - `app/blog/[slug]/page.tsx` — עמוד פוסט בודד (SSR). כולל SEO מלא (og:title, og:description, og:image). תוכן עובר `sanitize-html` לפני רינדור — הגנת XSS.
 - `app/admin/blog/page.tsx` — ממשק ניהול בלוג לאדמין בלבד. תצוגה: רשימה ← עורך. כולל תצוגה מקדימה (PreviewModal) + מחיקה עם אישור.
 - `components/blog/RichEditor.tsx` — עורך TipTap עשיר: מודגש/נטוי/קו תחתון, כותרות H1-H3, רשימות, ציטוט, יישור RTL, קישורים, תמונות, **גופן** (Arial/Georgia/Times/Tahoma/Courier), **גודל** (12-48px), **צבע טקסט** (לוח 16 צבעים + custom).
+- `components/blog/ResizableImageView.tsx` — NodeView לתמונות: לחיצה על תמונה → toolbar עם ישור (ימין/מרכז/שמאל) + שדה רוחב בפיקסלים + כפתור מלא + מחיקה. גרירת פינה תחתונה → resize חופשי. TipTap Image מורחב עם attrs: `width` (style), `align` (data-align).
 - `lib/supabase/blog-db.ts` — CRUD: `dbGetPublishedPosts`, `dbGetAllPosts`, `dbGetPostBySlug`, `dbUpsertPost`, `dbDeletePost`, `dbUploadBlogImage`.
 - `supabase/blog_posts_migration.sql` — SQL migration שהורץ ✅.
 
@@ -593,6 +594,7 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 ### Storage
 - תמונות בלוג עולות ל-bucket `course-media`, נתיב: `blog/{timestamp}.{ext}`
 - כוסה על ידי policy קיימת `course-media: admin upload`
+- **⚠️ שגיאה ידועה שתוקנה:** בגרסה ראשונה הקוד ניסה לעלות ל-bucket `images` (לא קיים). תוקן ל-`course-media`.
 
 ### ניווט
 - לינק "בלוג" נוסף ל-Sidebar (desktop + mobile)
