@@ -9,7 +9,7 @@ import {
   Plus, Edit2, Eye, EyeOff, Trash2, X,
   GripVertical, Upload, Check, ChevronDown, ChevronUp, Save,
   Users, BarChart3, Settings, Video, Loader2,
-  RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles, Download,
+  RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles, Download, BookOpen,
 } from "lucide-react";
 import { HomepageEditor, SubscriptionEditor, NatalieEditor } from "@/components/admin/ContentEditors";
 import { dbGetOgImage, dbSetOgImage } from "@/lib/supabase/content-db";
@@ -225,6 +225,13 @@ export default function AdminPage() {
             style={{ color: "#8B6355", border: "1px solid rgba(196,133,122,0.12)" }}
           >
             <Home size={12} /> לאתר
+          </Link>
+          <Link
+            href="/admin/blog"
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[0.72rem] font-semibold hover:opacity-80 transition-opacity"
+            style={{ color: "#8B6355", border: "1px solid rgba(196,133,122,0.12)" }}
+          >
+            <BookOpen size={12} /> בלוג
           </Link>
           <button
             onClick={async () => { await createClient().auth.signOut(); router.push("/"); router.refresh(); }}

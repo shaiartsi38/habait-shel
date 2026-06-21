@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CreditCard, Heart, Home, LayoutDashboard, Play, Settings, Sparkles, Users, PanelRightClose, PanelRightOpen, LogIn, LogOut, UserCircle } from "lucide-react";
+import { BookOpen, CreditCard, Heart, Home, LayoutDashboard, Play, Settings, Sparkles, Users, PanelRightClose, PanelRightOpen, LogIn, LogOut, UserCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV = [
   { href: "/",              label: "בית",         icon: Home },
   { href: "/courses",       label: "קורסים",       icon: Play },
+  { href: "/blog",          label: "בלוג",         icon: BookOpen },
   { href: "/favorites",     label: "מועדפים",      icon: Heart },
   { href: "/dashboard",     label: "דשבורד",        icon: LayoutDashboard },
   { href: "/community",     label: "קהילה",        icon: Users },
