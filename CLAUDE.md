@@ -601,11 +601,14 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 - לינק "בלוג" נוסף לכפתורי header בפאנל האדמין
 
 ### עיצוב (יוני 2026 — שכתוב מלא)
-- **`app/blog/page.tsx`** — שוכתב לעיצוב כהה מותאם מותג (#080608). Hero עם gradient + tag מונפש, פיתרי קטגוריות עם צבעים ייחודיים לפי קטגוריה, Featured post עם overlay, banner ציטוט נטלי, גריד כרטיסים עם hover אנימציות (CSS בלבד, ללא Framer Motion). סינון קטגוריות ע"י URL param `?cat=`.
-- **`app/blog/[slug]/page.tsx`** — שוכתב לעיצוב כהה. ReadingProgress bar בראש הדף (client component). Drop cap על האות הראשונה (CSS `::first-letter`). סטיילינג pull quotes, typography מלא כולל כותרות/רשימות/קישורים/קוד בצבעי המותג. כרטיס "על נטלי" בתחתית.
-- **`components/blog/ReadingProgress.tsx`** — client component: פס ורדרד/זהב בראש הדף שמתקדם עם הגלילה.
-- **צבעי קטגוריות:** כללי/טכניקות = ורדרד (#C4857A) · בחירת מוצרים = זהב (#c9a96e) · קריירה = כחול (#7eb8e8) · השראה = סגול (#c89ad4) · שאלות = ירוק (#7ed49a)
-- **אנימציות:** CSS keyframes `fadeUp` + `fadeDown` — ללא תלות ב-Framer Motion.
+- **`app/blog/page.tsx`** — שוכתב לעיצוב כהה (#080608). גריד 3 עמודות אחיד לכל הפוסטים (ללא featured נפרד). כל כרטיס: תמונה 16:10 → קטגוריה → כותרת (3 שורות) → תקציר (3 שורות) → "המשך קריאה »»»" + תאריך. hover: lift + border glow + title color. סינון קטגוריות ע"י URL param `?cat=` (SSR).
+- **`app/blog/[slug]/page.tsx`** — שוכתב לעיצוב כהה. ReadingProgress bar. Drop cap על האות הראשונה (CSS `::first-letter`). Pull quotes עם border #C4857A. Typography מלא. כרטיס "על נטלי" בתחתית.
+- **`components/blog/ReadingProgress.tsx`** — client component: פס gradient ורדרד→זהב שמתקדם עם גלילה.
+- **Fallback תמונה אוטומטי** — אם `cover_image` ריק, חולצת התמונה הראשונה מה-HTML של `content` (גם בכרטיס גם ב-hero).
+- **העלאת תמונה ראשית (אדמין)** — כפתור upload → `course-media/blog/` + preview חי + X למחיקה.
+- **⚠️ Slug חייב להיות ASCII בלבד** — Next.js App Router שובר slug עברי בדינמיק routes. `generateSlug` = לטינית בלבד, fallback `post-{timestamp}`. תמיד לשמור slug בלטינית בשדה האדמין.
+- **צבעי קטגוריות:** כללי/טכניקות = #C4857A · בחירת מוצרים = #c9a96e · קריירה = #7eb8e8 · השראה = #c89ad4 · שאלות = #7ed49a
+- **אנימציות:** CSS keyframes `fadeUp`/`fadeDown` — ללא Framer Motion.
 
 ### חבילות npm שנוספו
 - `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-image`, `@tiptap/extension-link`, `@tiptap/extension-text-align`, `@tiptap/extension-underline`, `@tiptap/extension-placeholder`
