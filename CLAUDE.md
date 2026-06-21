@@ -600,6 +600,13 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 - לינק "בלוג" נוסף ל-Sidebar (desktop + mobile)
 - לינק "בלוג" נוסף לכפתורי header בפאנל האדמין
 
+### עיצוב (יוני 2026 — שכתוב מלא)
+- **`app/blog/page.tsx`** — שוכתב לעיצוב כהה מותאם מותג (#080608). Hero עם gradient + tag מונפש, פיתרי קטגוריות עם צבעים ייחודיים לפי קטגוריה, Featured post עם overlay, banner ציטוט נטלי, גריד כרטיסים עם hover אנימציות (CSS בלבד, ללא Framer Motion). סינון קטגוריות ע"י URL param `?cat=`.
+- **`app/blog/[slug]/page.tsx`** — שוכתב לעיצוב כהה. ReadingProgress bar בראש הדף (client component). Drop cap על האות הראשונה (CSS `::first-letter`). סטיילינג pull quotes, typography מלא כולל כותרות/רשימות/קישורים/קוד בצבעי המותג. כרטיס "על נטלי" בתחתית.
+- **`components/blog/ReadingProgress.tsx`** — client component: פס ורדרד/זהב בראש הדף שמתקדם עם הגלילה.
+- **צבעי קטגוריות:** כללי/טכניקות = ורדרד (#C4857A) · בחירת מוצרים = זהב (#c9a96e) · קריירה = כחול (#7eb8e8) · השראה = סגול (#c89ad4) · שאלות = ירוק (#7ed49a)
+- **אנימציות:** CSS keyframes `fadeUp` + `fadeDown` — ללא תלות ב-Framer Motion.
+
 ### חבילות npm שנוספו
 - `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-image`, `@tiptap/extension-link`, `@tiptap/extension-text-align`, `@tiptap/extension-underline`, `@tiptap/extension-placeholder`
 - `@tiptap/extension-text-style`, `@tiptap/extension-color`, `@tiptap/extension-font-family`
