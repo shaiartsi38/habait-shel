@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Plus, Edit2, Trash2, Eye, ArrowRight,
-  Loader2, Save, X, Globe, FileText, Monitor,
+  Loader2, Save, X, Globe, FileText, Monitor, Upload, ImageIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -142,6 +142,7 @@ export default function AdminBlogPage() {
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   // ── Auth guard ─────────────────────────────────────────────────
   useEffect(() => {
@@ -286,14 +287,66 @@ export default function AdminBlogPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">תמונה ראשית (URL)</label>
-                <input
-                  value={form.cover_image ?? ""}
-                  onChange={(e) => setField("cover_image", e.target.value)}
-                  placeholder="https://..."
-                  dir="ltr"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 text-gray-900 bg-white"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">תמונה ראשית</label>
+
+                {/* Preview */}
+                {form.cover_image && (
+                  <div className="relative mb-2 rounded-xl overflow-hidden" style={{ aspectRatio: "16/7" }}>
+                    <img src={form.cover_image} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setField("cover_image", "")}
+                      className="absolute top-2 left-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Upload button + URL input */}
+                <div className="flex gap-2">
+                  <input
+                    value={form.cover_image ?? ""}
+                    onChange={(e) => setField("cover_image", e.target.value)}
+                    placeholder="https://... או העלי קובץ ←"
+                    dir="ltr"
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 text-gray-900 bg-white"
+                  />
+                  <label className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-colors border ${
+                    uploadingCover
+                      ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                      : "bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200"
+                  }`}>
+                    {uploadingCover
+                      ? <Loader2 size={15} className="animate-spin" />
+                      : <Upload size={15} />}
+                    {uploadingCover ? "מעלה..." : "העלאה"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingCover}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingCover(true);
+                        try {
+                          const url = await dbUploadBlogImage(file);
+                          setField("cover_image", url);
+                        } catch {
+                          alert("שגיאה בהעלאת התמונה");
+                        } finally {
+                          setUploadingCover(false);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+                  <ImageIcon size={11} />
+                  אם לא תעלי תמונה, תוצג אוטומטית התמונה הראשונה מהמאמר
+                </p>
               </div>
             </div>
 

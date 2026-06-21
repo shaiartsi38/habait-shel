@@ -94,6 +94,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   const mins = readingTime(post.content);
   const s = catStyle(post.category);
+  const heroImg = post.cover_image || (post.content.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] ?? null);
 
   return (
     <main style={{ background: "#080608", minHeight: "100vh", color: "#FFF8F5", direction: "rtl" }}>
@@ -159,11 +160,11 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         }
       `}</style>
 
-      {/* ── HERO IMAGE ── */}
-      {post.cover_image ? (
+      {/* ── HERO IMAGE (cover_image or first image from content) ── */}
+      {heroImg ? (
         <div style={{ height: 400, position: "relative", overflow: "hidden" }}>
           <img
-            src={post.cover_image}
+            src={heroImg}
             alt={post.title}
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           />

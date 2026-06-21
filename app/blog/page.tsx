@@ -32,6 +32,11 @@ function readingTime(content: string) {
   return Math.max(1, Math.ceil(words / 200));
 }
 
+function firstImageFromContent(html: string): string | null {
+  const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  return m ? m[1] : null;
+}
+
 async function getPosts(category?: string) {
   try {
     const sb = createClient();
@@ -205,6 +210,7 @@ export default async function BlogPage({
             }}>
               {posts.map((post) => {
                 const s = catStyle(post.category);
+                const imgSrc = post.cover_image || firstImageFromContent(post.content);
                 return (
                   <Link key={post.id} href={`/blog/${post.slug}`} style={{ textDecoration: "none" }}>
                     <article className="bcard" style={{
@@ -219,9 +225,9 @@ export default async function BlogPage({
 
                       {/* ── Image ── */}
                       <div className="bcard-img" style={{ aspectRatio: "16/10", overflow: "hidden", flexShrink: 0 }}>
-                        {post.cover_image ? (
+                        {imgSrc ? (
                           <img
-                            src={post.cover_image}
+                            src={imgSrc}
                             alt={post.title}
                             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                           />
