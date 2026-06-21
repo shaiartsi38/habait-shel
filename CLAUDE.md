@@ -562,6 +562,50 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 
 ---
 
+## בלוג (`/blog`) ✅ הושלם
+
+### קבצים
+- `app/blog/page.tsx` — עמוד רשימת מאמרים ציבורי (SSR, revalidate 60s). פוסט ראשון מוצג גדול כ-featured, שאר הפוסטים בגריד.
+- `app/blog/[slug]/page.tsx` — עמוד פוסט בודד (SSR). כולל SEO מלא (og:title, og:description, og:image). תוכן עובר `sanitize-html` לפני רינדור — הגנת XSS.
+- `app/admin/blog/page.tsx` — ממשק ניהול בלוג לאדמין בלבד. תצוגה: רשימה ← עורך. כולל תצוגה מקדימה (PreviewModal) + מחיקה עם אישור.
+- `components/blog/RichEditor.tsx` — עורך TipTap עשיר: מודגש/נטוי/קו תחתון, כותרות H1-H3, רשימות, ציטוט, יישור RTL, קישורים, תמונות, **גופן** (Arial/Georgia/Times/Tahoma/Courier), **גודל** (12-48px), **צבע טקסט** (לוח 16 צבעים + custom).
+- `lib/supabase/blog-db.ts` — CRUD: `dbGetPublishedPosts`, `dbGetAllPosts`, `dbGetPostBySlug`, `dbUpsertPost`, `dbDeletePost`, `dbUploadBlogImage`.
+- `supabase/blog_posts_migration.sql` — SQL migration שהורץ ✅.
+
+### DB — `blog_posts`
+| עמודה | סוג | הערות |
+|-------|-----|--------|
+| `id` | uuid | PK, gen_random_uuid() |
+| `title` | text | NOT NULL |
+| `slug` | text | UNIQUE, NOT NULL |
+| `content` | text | HTML מה-TipTap |
+| `excerpt` | text | מוצג בכרטיסיית הבלוג |
+| `cover_image` | text | URL תמונה ראשית |
+| `category` | text | ברירת מחדל: 'כללי' |
+| `status` | text | 'draft' / 'published' |
+| `published_at` | timestamptz | מוגדר אוטומטית בפרסום |
+| `author_id` | uuid | FK → profiles |
+
+### RLS
+- SELECT: כולם רואים `status = 'published'`; אדמין רואה הכל (כולל טיוטות)
+- INSERT / UPDATE / DELETE: אדמין בלבד
+
+### Storage
+- תמונות בלוג עולות ל-bucket `course-media`, נתיב: `blog/{timestamp}.{ext}`
+- כוסה על ידי policy קיימת `course-media: admin upload`
+
+### ניווט
+- לינק "בלוג" נוסף ל-Sidebar (desktop + mobile)
+- לינק "בלוג" נוסף לכפתורי header בפאנל האדמין
+
+### חבילות npm שנוספו
+- `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-image`, `@tiptap/extension-link`, `@tiptap/extension-text-align`, `@tiptap/extension-underline`, `@tiptap/extension-placeholder`
+- `@tiptap/extension-text-style`, `@tiptap/extension-color`, `@tiptap/extension-font-family`
+- `sanitize-html` + `@types/sanitize-html`
+
+
+---
+
 ## ⬜ תכנית עתידית — Onboarding Quiz (ממתין לתמונות מנטלי)
 
 ### מה זה

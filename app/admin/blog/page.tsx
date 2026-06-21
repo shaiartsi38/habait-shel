@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Plus, Edit2, Trash2, Eye, EyeOff, ArrowRight,
-  Loader2, Save, X, Globe, FileText,
+  Plus, Edit2, Trash2, Eye, ArrowRight,
+  Loader2, Save, X, Globe, FileText, Monitor,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -13,8 +13,88 @@ import {
   generateSlug, type BlogPost,
 } from "@/lib/supabase/blog-db";
 import { RichEditor } from "@/components/blog/RichEditor";
+import sanitizeHtml from "sanitize-html";
+
+const PREVIEW_ALLOWED_TAGS = [
+  "h1","h2","h3","h4","h5","h6","p","br","strong","em","u","s",
+  "ul","ol","li","blockquote","a","img","figure","figcaption",
+  "table","thead","tbody","tr","th","td","hr","code","pre",
+];
+function sanitize(html: string) {
+  return sanitizeHtml(html, {
+    allowedTags: PREVIEW_ALLOWED_TAGS,
+    allowedAttributes: { a: ["href","target","rel"], img: ["src","alt","width","height"], "*": ["class","dir","style"] },
+    allowedStyles: { "*": { "text-align": [/.*/], "font-size": [/.*/], "color": [/.*/], "font-family": [/.*/] } },
+  });
+}
 
 const CATEGORIES = ["כללי", "טכניקות איפור", "בחירת מוצרים", "קריירה", "השראה", "שאלות ותשובות"];
+
+// ─── Preview Modal ────────────────────────────────────────────────
+function PreviewModal({ form, onClose }: { form: Partial<BlogPost>; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+      <div
+        className="min-h-screen bg-[#FDF8F5] max-w-3xl mx-auto my-8 rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+        dir="rtl"
+      >
+        {/* Preview header bar */}
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Monitor size={15} />
+            <span>תצוגה מקדימה</span>
+            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">לא פורסם</span>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X size={18} className="text-gray-500" />
+          </button>
+        </div>
+
+        {/* Cover image */}
+        {form.cover_image && (
+          <div className="w-full aspect-[16/6] overflow-hidden">
+            <img src={form.cover_image} alt={form.title} className="w-full h-full object-cover" />
+          </div>
+        )}
+
+        <div className="px-8 py-10">
+          {/* Meta */}
+          <div className="flex flex-wrap items-center gap-3 mb-5">
+            <span className="text-xs bg-rose-100 text-rose-600 px-3 py-1 rounded-full font-medium">
+              {form.category || "כללי"}
+            </span>
+            <span className="text-xs text-gray-400">היום</span>
+          </div>
+
+          {/* Title */}
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 leading-tight mb-4">
+            {form.title || <span className="text-gray-300">ללא כותרת</span>}
+          </h1>
+
+          {/* Excerpt */}
+          {form.excerpt && (
+            <p className="text-lg text-gray-500 leading-relaxed mb-8 pb-8 border-b border-gray-200">
+              {form.excerpt}
+            </p>
+          )}
+
+          {/* Content */}
+          {form.content ? (
+            <div
+              className="prose prose-lg max-w-none text-right text-gray-700"
+              dir="rtl"
+              style={{ lineHeight: 1.8 }}
+              dangerouslySetInnerHTML={{ __html: sanitize(form.content) }}
+            />
+          ) : (
+            <p className="text-gray-300 italic text-center py-12">אין תוכן עדיין</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Empty form ───────────────────────────────────────────────────
 const emptyForm = (): Partial<BlogPost> => ({
@@ -35,6 +115,7 @@ export default function AdminBlogPage() {
   const [form, setForm] = useState<Partial<BlogPost>>(emptyForm());
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   // ── Auth guard ─────────────────────────────────────────────────
   useEffect(() => {
@@ -187,7 +268,7 @@ export default function AdminBlogPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-wrap gap-3 pt-2">
               <button
                 onClick={() => save("published")}
                 disabled={saving}
@@ -205,6 +286,13 @@ export default function AdminBlogPage() {
                 שמרי כטיוטה
               </button>
               <button
+                onClick={() => setShowPreview(true)}
+                className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 px-5 py-2.5 rounded-xl font-medium transition-colors border border-blue-200"
+              >
+                <Monitor size={16} />
+                תצוגה מקדימה
+              </button>
+              <button
                 onClick={cancelEdit}
                 className="flex items-center gap-2 text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-xl transition-colors"
               >
@@ -214,9 +302,11 @@ export default function AdminBlogPage() {
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
+
+      {showPreview && <PreviewModal form={form} onClose={() => setShowPreview(false)} />}
+    </div>
+  );
+}
 
   // ── Render: List ───────────────────────────────────────────────
   return (

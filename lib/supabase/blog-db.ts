@@ -109,8 +109,8 @@ export async function dbUploadBlogImage(file: File): Promise<string> {
   const sb = createClient();
   const ext = file.name.split(".").pop() ?? "jpg";
   const path = `blog/${Date.now()}.${ext}`;
-  const { error } = await sb.storage.from("images").upload(path, file, { upsert: true });
+  const { data, error } = await sb.storage.from("course-media").upload(path, file, { upsert: true });
   if (error) throw error;
-  const { data } = sb.storage.from("images").getPublicUrl(path);
-  return data.publicUrl;
+  const { data: { publicUrl } } = sb.storage.from("course-media").getPublicUrl(data.path);
+  return publicUrl;
 }
