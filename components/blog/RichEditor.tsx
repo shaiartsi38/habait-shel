@@ -1,9 +1,10 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import ImageExt from "@tiptap/extension-image";
 import LinkExt from "@tiptap/extension-link";
+import { ResizableImageView } from "./ResizableImageView";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -165,7 +166,26 @@ export function RichEditor({ content, onChange, onImageUpload }: Props) {
       Color,
       FontFamily,
       FontSize,
-      ImageExt.configure({ inline: false, allowBase64: true }),
+      ImageExt.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            width: {
+              default: null,
+              parseHTML: (el) => (el as HTMLImageElement).style.width || el.getAttribute("width") || null,
+              renderHTML: (attrs) => attrs.width ? { style: `width: ${attrs.width}` } : {},
+            },
+            align: {
+              default: "center",
+              parseHTML: (el) => el.getAttribute("data-align") || "center",
+              renderHTML: (attrs) => ({ "data-align": attrs.align ?? "center" }),
+            },
+          };
+        },
+        addNodeView() {
+          return ReactNodeViewRenderer(ResizableImageView);
+        },
+      }).configure({ inline: false, allowBase64: true }),
       LinkExt.configure({ openOnClick: false }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder: "כתבי את המאמר כאן..." }),

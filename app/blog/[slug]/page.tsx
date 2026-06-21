@@ -16,11 +16,17 @@ function sanitize(html: string) {
     allowedTags: ALLOWED_TAGS,
     allowedAttributes: {
       a: ["href", "target", "rel"],
-      img: ["src", "alt", "width", "height"],
-      "*": ["class", "dir", "style"],
+      img: ["src", "alt", "width", "height", "data-align"],
+      "*": ["class", "dir", "style", "data-align"],
     },
     allowedStyles: {
-      "*": { "text-align": [/.*/] },
+      "*": {
+        "text-align": [/.*/],
+        "font-size": [/.*/],
+        "color": [/.*/],
+        "font-family": [/.*/],
+        "width": [/.*/],
+      },
     },
   });
 }
@@ -108,8 +114,14 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         )}
 
         {/* Content */}
+        <style>{`
+          .blog-content img { border-radius: 12px; max-width: 100%; }
+          .blog-content img[data-align="center"] { display: block; margin: 0 auto; }
+          .blog-content img[data-align="right"]  { display: block; margin-right: 0; }
+          .blog-content img[data-align="left"]   { display: block; margin-left: 0; }
+        `}</style>
         <div
-          className="prose prose-lg max-w-none text-right prose-headings:text-gray-800 prose-p:text-gray-600 prose-p:leading-relaxed prose-a:text-rose-500 prose-blockquote:border-rose-300 prose-blockquote:bg-rose-50 prose-blockquote:rounded-lg prose-blockquote:px-4 prose-img:rounded-2xl"
+          className="blog-content prose prose-lg max-w-none text-right prose-headings:text-gray-800 prose-p:text-gray-600 prose-p:leading-relaxed prose-a:text-rose-500 prose-blockquote:border-rose-300 prose-blockquote:bg-rose-50 prose-blockquote:rounded-lg prose-blockquote:px-4"
           dir="rtl"
           dangerouslySetInnerHTML={{ __html: sanitize(post.content) }}
         />
