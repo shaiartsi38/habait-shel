@@ -125,7 +125,7 @@ export default function AdminBlogPage() {
                 value={form.title ?? ""}
                 onChange={(e) => onTitleChange(e.target.value)}
                 placeholder="כותרת המאמר..."
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-rose-300"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-rose-300 text-gray-900 bg-white"
               />
             </div>
 
@@ -136,7 +136,7 @@ export default function AdminBlogPage() {
                 value={form.slug ?? ""}
                 onChange={(e) => setField("slug", e.target.value)}
                 dir="ltr"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-rose-300"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-rose-300 text-gray-900 bg-white"
               />
             </div>
 
@@ -148,7 +148,7 @@ export default function AdminBlogPage() {
                 onChange={(e) => setField("excerpt", e.target.value)}
                 rows={2}
                 placeholder="תקציר קצר של המאמר..."
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 resize-none"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 resize-none text-gray-900 bg-white"
               />
             </div>
 
@@ -159,7 +159,7 @@ export default function AdminBlogPage() {
                 <select
                   value={form.category ?? "כללי"}
                   onChange={(e) => setField("category", e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 bg-white"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 bg-white text-gray-900"
                 >
                   {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                 </select>
@@ -171,7 +171,7 @@ export default function AdminBlogPage() {
                   onChange={(e) => setField("cover_image", e.target.value)}
                   placeholder="https://..."
                   dir="ltr"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 text-gray-900 bg-white"
                 />
               </div>
             </div>
