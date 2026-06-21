@@ -17,12 +17,15 @@ export interface BlogPost {
 
 export type BlogPostInput = Omit<BlogPost, "id" | "created_at" | "updated_at">;
 
+// Only ASCII-safe slugs — Next.js App Router dynamic segments
+// don't route correctly with Hebrew/non-Latin characters (known issue, same as courses).
 function slugify(text: string): string {
   return text
     .trim()
     .replace(/\s+/g, "-")
-    .replace(/[^֐-׿a-zA-Z0-9-]/g, "")
+    .replace(/[^a-zA-Z0-9-]/g, "")   // strip everything non-ASCII including Hebrew
     .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
     .toLowerCase();
 }
 
