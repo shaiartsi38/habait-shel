@@ -565,9 +565,9 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 ## בלוג (`/blog`) ✅ הושלם
 
 ### קבצים
-- `app/blog/page.tsx` — עמוד רשימת מאמרים ציבורי (SSR, revalidate 60s). פוסט ראשון מוצג גדול כ-featured, שאר הפוסטים בגריד.
-- `app/blog/[slug]/page.tsx` — עמוד פוסט בודד (SSR). כולל SEO מלא (og:title, og:description, og:image). תוכן עובר `sanitize-html` לפני רינדור — הגנת XSS.
-- `app/admin/blog/page.tsx` — ממשק ניהול בלוג לאדמין בלבד. תצוגה: רשימה ← עורך. כולל תצוגה מקדימה (PreviewModal) + מחיקה עם אישור.
+- `app/blog/page.tsx` — עמוד רשימת מאמרים ציבורי (SSR, revalidate 60s). גריד 3 עמודות אחיד לכל הפוסטים. Hero כהה + פיתרי קטגוריות. Fallback תמונה אוטומטי מהתוכן. סינון ע"י URL param `?cat=`.
+- `app/blog/[slug]/page.tsx` — עמוד פוסט בודד (SSR). SEO מלא. `sanitize-html` עם הגנת XSS. ReadingProgress bar. Drop cap. כרטיס "על נטלי". Fallback hero מתמונה ראשונה בתוכן.
+- `app/admin/blog/page.tsx` — ממשק ניהול לאדמין בלבד. רשימה ← עורך. PreviewModal (sanitized). מחיקה עם אישור (גם מרשימה גם מעורך). כפתור upload לתמונה ראשית + preview + X.
 - `components/blog/RichEditor.tsx` — עורך TipTap עשיר: מודגש/נטוי/קו תחתון, כותרות H1-H3, רשימות, ציטוט, יישור RTL, קישורים, תמונות, **גופן** (Arial/Georgia/Times/Tahoma/Courier), **גודל** (12-48px), **צבע טקסט** (לוח 16 צבעים + custom).
 - `components/blog/ResizableImageView.tsx` — NodeView לתמונות: לחיצה על תמונה → toolbar עם ישור (ימין/מרכז/שמאל) + שדה רוחב בפיקסלים + כפתור מלא + מחיקה. גרירת פינה תחתונה → resize חופשי. TipTap Image מורחב עם attrs: `width` (style), `align` (data-align).
 - `lib/supabase/blog-db.ts` — CRUD: `dbGetPublishedPosts`, `dbGetAllPosts`, `dbGetPostBySlug`, `dbUpsertPost`, `dbDeletePost`, `dbUploadBlogImage`.
