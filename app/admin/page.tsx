@@ -12,7 +12,7 @@ import {
   RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles, Download, BookOpen, Tag,
 } from "lucide-react";
 import { HomepageEditor, SubscriptionEditor, NatalieEditor } from "@/components/admin/ContentEditors";
-import { dbGetOgImage, dbSetOgImage } from "@/lib/supabase/content-db";
+import { dbGetOgImage, dbSetOgImage, dbGetCourseCategories, dbSetCourseCategories } from "@/lib/supabase/content-db";
 import { CATEGORIES, type CourseData, type CourseLesson, type CourseHighlight } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import {
@@ -28,7 +28,7 @@ import type { VideoProvider } from "@/lib/courses-data";
 
 // ─── Types ────────────────────────────────────────────────────────
 
-type AdminSection = "courses" | "homepage" | "subscription" | "natalie" | "users" | "analytics" | "settings" | "categories";
+type AdminSection = "courses" | "homepage" | "subscription" | "natalie" | "users" | "analytics" | "settings";
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -203,7 +203,6 @@ export default function AdminPage() {
     { id: "subscription", label: "מנויים",   icon: CreditCard },
     { id: "natalie",      label: "נטלי",     icon: Sparkles },
     { id: "users",        label: "משתמשות",  icon: Users },
-    { id: "categories",   label: "קטגוריות", icon: Tag },
     { id: "analytics",    label: "אנליטיקס", icon: BarChart3 },
     { id: "settings",     label: "הגדרות",   icon: Settings },
   ];
@@ -326,8 +325,6 @@ export default function AdminPage() {
             <NatalieEditor />
           ) : section === "users" ? (
             <UsersSection />
-          ) : section === "categories" ? (
-            <CategoriesSection />
           ) : section === "analytics" ? (
             <AnalyticsSection />
           ) : section === "settings" ? (
@@ -588,6 +585,25 @@ function CourseEditForm({
   const photoRef = useRef<HTMLInputElement>(null);
   const highlightFileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // ── Dynamic categories ────────────────────────────────────────────
+  const [dbCategories, setDbCategories] = useState<string[]>([...CATEGORIES.filter((c) => c !== "הכל")]);
+  const [showCatManager, setShowCatManager] = useState(false);
+  const [catDraft, setCatDraft]             = useState<string[]>([]);
+  const [newCatName, setNewCatName]         = useState("");
+  const [savingCats, setSavingCats]         = useState(false);
+
+  useEffect(() => {
+    dbGetCourseCategories().then((cats) => { setDbCategories(cats); setCatDraft(cats); }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openCatManager = () => { setCatDraft([...dbCategories]); setShowCatManager(true); };
+  const saveCats = async () => {
+    const trimmed = catDraft.map((c) => c.trim()).filter(Boolean);
+    setSavingCats(true);
+    try { await dbSetCourseCategories(trimmed); setDbCategories(trimmed); setShowCatManager(false); } catch {}
+    setSavingCats(false);
+  };
+
   const set = <K extends keyof CourseData>(key: K, val: CourseData[K]) =>
     setForm((p) => ({ ...p, [key]: val }));
 
@@ -821,14 +837,77 @@ function CourseEditForm({
 
           <div className="grid grid-cols-2 gap-3 mt-3">
             <div>
-              <FieldLabel>קטגוריה</FieldLabel>
-              <Select value={form.category} onChange={(v) => set("category", v)} options={CATEGORIES.filter((c) => c !== "הכל")} />
+              <div className="flex items-center justify-between mb-1.5">
+                <FieldLabel className="mb-0">קטגוריה</FieldLabel>
+                <button type="button" onClick={openCatManager}
+                  className="text-[0.52rem] flex items-center gap-0.5 transition-opacity hover:opacity-70"
+                  style={{ color: "#C4857A" }}>
+                  <Settings size={9} /> ניהול קטגוריות
+                </button>
+              </div>
+              <Select value={form.category} onChange={(v) => set("category", v)} options={dbCategories} />
             </div>
             <div>
               <FieldLabel>רמת גישה</FieldLabel>
               <Select value={form.tier} onChange={(v) => set("tier", v as CourseData["tier"])} options={["basic", "pro", "elite"]} labels={["Basic", "Pro", "Elite"]} />
             </div>
           </div>
+
+          {/* Inline category manager */}
+          {showCatManager && (
+            <div className="mt-3 rounded-xl p-3 space-y-2"
+              style={{ background: "#0f0b0e", border: "1px solid rgba(196,133,122,0.15)" }}>
+              <p className="text-[0.62rem] font-bold tracking-wide uppercase" style={{ color: "#C4857A" }}>
+                ניהול קטגוריות
+              </p>
+              {catDraft.map((cat, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    className="flex-1 px-2 py-1 rounded-lg text-[0.72rem] outline-none"
+                    style={{ background: "#140e12", border: "1px solid rgba(255,255,255,0.06)", color: "#FFF8F5" }}
+                    value={cat}
+                    onChange={(e) => { const d = [...catDraft]; d[i] = e.target.value; setCatDraft(d); }}
+                  />
+                  <button type="button" onClick={() => setCatDraft(catDraft.filter((_, j) => j !== i))}
+                    className="p-1 rounded hover:opacity-60">
+                    <X size={11} style={{ color: "#5A3830" }} />
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 px-2 py-1 rounded-lg text-[0.72rem] outline-none"
+                  style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.2)", color: "#FFF8F5" }}
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  placeholder="קטגוריה חדשה..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newCatName.trim()) {
+                      setCatDraft([...catDraft, newCatName.trim()]); setNewCatName("");
+                    }
+                  }}
+                />
+                <button type="button"
+                  onClick={() => { if (newCatName.trim()) { setCatDraft([...catDraft, newCatName.trim()]); setNewCatName(""); } }}
+                  className="px-3 py-1 rounded-lg text-[0.68rem] font-bold"
+                  style={{ background: "rgba(196,133,122,0.12)", color: "#C4857A" }}>
+                  + הוספה
+                </button>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={saveCats} disabled={savingCats}
+                  className="flex-1 py-1.5 rounded-lg text-[0.72rem] font-bold disabled:opacity-40"
+                  style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }}>
+                  {savingCats ? "שומרת..." : "שמרי קטגוריות"}
+                </button>
+                <button type="button" onClick={() => setShowCatManager(false)}
+                  className="px-4 py-1.5 rounded-lg text-[0.72rem]"
+                  style={{ color: "#5A3830", border: "1px solid rgba(196,133,122,0.1)" }}>
+                  ביטול
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3 mt-3">
             <div>
@@ -1215,41 +1294,35 @@ function LessonRow({
       </div>
 
       {/* Products */}
-      <div>
-        <p className="text-[0.52rem] uppercase tracking-wider mb-1.5" style={{ color: "rgba(196,133,122,0.45)" }}>מוצרים מומלצים לשיעור</p>
+      <div className="rounded-lg p-2.5" style={{ background: "rgba(196,133,122,0.04)", border: "1px solid rgba(196,133,122,0.1)" }}>
+        <p className="text-[0.62rem] font-semibold mb-2" style={{ color: "#C4857A" }}>🛍 קישורים ומוצרים לשיעור זה</p>
         {products.map((prod, i) => (
           <div key={i} className="flex gap-1.5 items-center mb-1.5">
             <input
-              className="flex-1 bg-transparent text-[0.62rem] outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.2)] transition-colors"
-              style={{ color: "rgba(255,248,245,0.6)" }}
+              className="flex-1 px-2 py-1 rounded text-[0.65rem] outline-none"
+              style={{ background: "#140e12", border: "1px solid rgba(255,255,255,0.06)", color: "#FFF8F5" }}
               value={prod.name}
-              onChange={(e) => {
-                const next = [...products]; next[i] = { ...next[i], name: e.target.value };
-                onProductsChange(next);
-              }}
-              placeholder="שם מוצר"
+              onChange={(e) => { const next = [...products]; next[i] = { ...next[i], name: e.target.value }; onProductsChange(next); }}
+              placeholder="שם מוצר / לינק"
             />
             <input
-              className="flex-1 bg-transparent text-[0.58rem] outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.2)] transition-colors"
-              style={{ color: "rgba(255,248,245,0.3)", direction: "ltr" }}
+              className="flex-1 px-2 py-1 rounded text-[0.6rem] outline-none"
+              style={{ background: "#140e12", border: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,248,245,0.45)", direction: "ltr" }}
               dir="ltr"
               value={prod.url}
-              onChange={(e) => {
-                const next = [...products]; next[i] = { ...next[i], url: e.target.value };
-                onProductsChange(next);
-              }}
+              onChange={(e) => { const next = [...products]; next[i] = { ...next[i], url: e.target.value }; onProductsChange(next); }}
               placeholder="https://..."
             />
-            <button type="button" onClick={() => onProductsChange(products.filter((_, j) => j !== i))} className="p-0.5 hover:opacity-60">
-              <X size={9} style={{ color: "#5A3830" }} />
+            <button type="button" onClick={() => onProductsChange(products.filter((_, j) => j !== i))} className="p-1 rounded hover:bg-white/5">
+              <X size={11} style={{ color: "#5A3830" }} />
             </button>
           </div>
         ))}
         <button type="button"
           onClick={() => onProductsChange([...products, { name: "", url: "" }])}
-          className="text-[0.5rem] flex items-center gap-1 mt-1 transition-opacity hover:opacity-70"
-          style={{ color: "rgba(196,133,122,0.4)" }}>
-          <Plus size={9} /> הוסיפי מוצר
+          className="mt-1 text-[0.65rem] flex items-center gap-1 px-2 py-1 rounded transition-colors hover:bg-white/5"
+          style={{ color: "#C4857A" }}>
+          <Plus size={11} /> הוסיפי קישור / מוצר
         </button>
       </div>
 

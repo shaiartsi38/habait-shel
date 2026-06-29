@@ -1,40 +1,24 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { dbFetchCoursesByCategory } from "@/lib/supabase/courses-db";
 import { CourseCard } from "@/components/courses/CourseCard";
 
 export const revalidate = 60;
 
-async function getCategory(slug: string) {
-  try {
-    const sb = createClient();
-    const { data } = await sb
-      .from("categories")
-      .select("id, name, slug")
-      .eq("slug", slug)
-      .maybeSingle();
-    return data;
-  } catch {
-    return null;
-  }
-}
-
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const cat = await getCategory(params.slug);
-  if (!cat) return {};
+  const name = decodeURIComponent(params.slug);
   return {
-    title: `${cat.name} — הבית של המאפרים`,
-    description: `קורסים בקטגוריית ${cat.name} — הבית של המאפרים`,
+    title: `${name} — הבית של המאפרים`,
+    description: `קורסים בקטגוריית ${name} — הבית של המאפרים`,
   };
 }
 
 export default async function CategoryPage({ params }: { params: { slug: string } }) {
-  const cat = await getCategory(params.slug);
-  if (!cat) notFound();
+  const categoryName = decodeURIComponent(params.slug);
+  if (!categoryName) notFound();
 
-  const courses = await dbFetchCoursesByCategory(cat.name).catch(() => []);
+  const courses = await dbFetchCoursesByCategory(categoryName).catch(() => []);
 
   return (
     <main style={{ background: "#080608", minHeight: "100vh", color: "#FFF8F5", direction: "rtl" }}>
@@ -58,7 +42,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
           WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           marginBottom: 12,
         }}>
-          {cat.name}
+          {categoryName}
         </h1>
         <p style={{ fontSize: "0.9rem", color: "rgba(255,248,245,0.35)" }}>
           {courses.length} קורסים בקטגוריה זו
