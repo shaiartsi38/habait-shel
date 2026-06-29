@@ -219,6 +219,37 @@ export async function dbUpdateCourseOrder(updates: { id: string; sortOrder: numb
   );
 }
 
+export async function dbFetchCoursesByCategory(categoryName: string): Promise<CourseData[]> {
+  if (!hasSupabase()) return COURSES.filter((c) => c.category === categoryName);
+  const sb = createClient();
+
+  const { data: coursesData, error } = await sb
+    .from("courses")
+    .select("*")
+    .eq("is_published", true)
+    .contains("tags", [`cat:${categoryName}`])
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  if (!coursesData || coursesData.length === 0) return [];
+
+  const courseIds = coursesData.map((c) => (c as Record<string, unknown>).id as string);
+  const { data: lessonsData } = await sb
+    .from("lessons")
+    .select("*")
+    .in("course_id", courseIds);
+
+  const byId: Record<string, unknown[]> = {};
+  for (const lesson of lessonsData ?? []) {
+    const cid = (lesson as Record<string, unknown>).course_id as string;
+    if (!byId[cid]) byId[cid] = [];
+    byId[cid].push(lesson);
+  }
+
+  return coursesData.map((row) =>
+    courseFromRow({ ...(row as Record<string, unknown>), lessons: byId[(row as Record<string, unknown>).id as string] ?? [] })
+  );
+}
+
 export async function dbUploadImage(file: File): Promise<string> {
   if (!hasSupabase()) throw new Error("Supabase לא מוגדר — השתמשי ב-URL ישיר");
   const sb = createClient();

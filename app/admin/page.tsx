@@ -9,7 +9,7 @@ import {
   Plus, Edit2, Eye, EyeOff, Trash2, X,
   GripVertical, Upload, Check, ChevronDown, ChevronUp, Save,
   Users, BarChart3, Settings, Video, Loader2,
-  RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles, Download, BookOpen,
+  RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles, Download, BookOpen, Tag,
 } from "lucide-react";
 import { HomepageEditor, SubscriptionEditor, NatalieEditor } from "@/components/admin/ContentEditors";
 import { dbGetOgImage, dbSetOgImage } from "@/lib/supabase/content-db";
@@ -28,7 +28,7 @@ import type { VideoProvider } from "@/lib/courses-data";
 
 // ─── Types ────────────────────────────────────────────────────────
 
-type AdminSection = "courses" | "homepage" | "subscription" | "natalie" | "users" | "analytics" | "settings";
+type AdminSection = "courses" | "homepage" | "subscription" | "natalie" | "users" | "analytics" | "settings" | "categories";
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -203,6 +203,7 @@ export default function AdminPage() {
     { id: "subscription", label: "מנויים",   icon: CreditCard },
     { id: "natalie",      label: "נטלי",     icon: Sparkles },
     { id: "users",        label: "משתמשות",  icon: Users },
+    { id: "categories",   label: "קטגוריות", icon: Tag },
     { id: "analytics",    label: "אנליטיקס", icon: BarChart3 },
     { id: "settings",     label: "הגדרות",   icon: Settings },
   ];
@@ -325,6 +326,8 @@ export default function AdminPage() {
             <NatalieEditor />
           ) : section === "users" ? (
             <UsersSection />
+          ) : section === "categories" ? (
+            <CategoriesSection />
           ) : section === "analytics" ? (
             <AnalyticsSection />
           ) : section === "settings" ? (
@@ -1816,6 +1819,143 @@ function SettingsSection() {
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Categories section ───────────────────────────────────────────
+
+function CategoriesSection() {
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newName, setNewName] = useState("");
+  const [newSlug, setNewSlug] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function autoSlug(name: string) {
+    return name.trim().toLowerCase().replace(/\s+/g, "-");
+  }
+
+  useEffect(() => {
+    const sb = createClient();
+    (async () => {
+      try {
+        const { data } = await sb.from("categories").select("id, name, slug").order("name");
+        setCategories(data ?? []);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  async function handleAdd() {
+    const name = newName.trim();
+    const slug = newSlug.trim() || autoSlug(name);
+    if (!name) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const sb = createClient();
+      const { data, error: e } = await sb.from("categories").insert({ name, slug }).select().single();
+      if (e) throw e;
+      setCategories((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewName("");
+      setNewSlug("");
+    } catch (e) {
+      setError(errMsg(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    const sb = createClient();
+    try { await sb.from("categories").delete().eq("id", id); } catch {}
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  return (
+    <div style={{ maxWidth: 560 }}>
+      <h2 className="text-xl font-black mb-2" style={{ color: "#FFF8F5" }}>קטגוריות קורסים</h2>
+      <p className="text-sm mb-6" style={{ color: "rgba(255,248,245,0.35)" }}>
+        קטגוריות מוצגות בסינון ובדף{" "}
+        <code style={{ fontSize: "0.8em", color: "#C4857A" }}>/categories/[slug]</code>
+      </p>
+
+      {/* Add form */}
+      <div className="flex gap-2 mb-6">
+        <input
+          value={newName}
+          onChange={(e) => { setNewName(e.target.value); if (!newSlug) setNewSlug(autoSlug(e.target.value)); }}
+          placeholder="שם קטגוריה (עברית)"
+          className="flex-1 px-3 py-2 rounded-lg text-sm"
+          style={{ background: "#140e12", border: "1px solid rgba(255,255,255,0.07)", color: "#FFF8F5" }}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+        />
+        <input
+          value={newSlug}
+          onChange={(e) => setNewSlug(e.target.value)}
+          placeholder="slug (אנגלית)"
+          className="w-32 px-3 py-2 rounded-lg text-sm"
+          style={{ background: "#140e12", border: "1px solid rgba(255,255,255,0.07)", color: "#FFF8F5" }}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+        />
+        <button
+          onClick={handleAdd}
+          disabled={saving || !newName.trim()}
+          className="px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-40 transition-opacity hover:opacity-90"
+          style={{ background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }}
+        >
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+        </button>
+      </div>
+      {error && <p className="text-sm mb-4" style={{ color: "#e87070" }}>{error}</p>}
+
+      {/* List */}
+      {loading ? (
+        <div className="flex items-center gap-2 py-8" style={{ color: "#5A3830" }}>
+          <Loader2 size={16} className="animate-spin" style={{ color: "#C4857A" }} />
+          <span className="text-sm">טוען...</span>
+        </div>
+      ) : categories.length === 0 ? (
+        <p className="text-sm py-8 text-center" style={{ color: "rgba(255,248,245,0.2)" }}>
+          אין קטגוריות עדיין — הוסיפי את הראשונה
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {categories.map((cat) => (
+            <div key={cat.id} className="flex items-center justify-between px-4 py-3 rounded-xl"
+              style={{ background: "#0f0b0e", border: "1px solid rgba(255,255,255,0.05)" }}>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: "#FFF8F5" }}>{cat.name}</p>
+                <p className="text-[0.65rem]" style={{ color: "rgba(196,133,122,0.5)" }}>/categories/{cat.slug}</p>
+              </div>
+              <button
+                onClick={() => handleDelete(cat.id)}
+                className="p-1.5 rounded-lg transition-colors hover:bg-red-900/20"
+                style={{ color: "rgba(255,100,100,0.5)" }}
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-8 p-4 rounded-xl" style={{ background: "rgba(196,133,122,0.05)", border: "1px solid rgba(196,133,122,0.1)" }}>
+        <p className="text-[0.68rem] font-bold mb-2" style={{ color: "#C4857A" }}>SQL — יש להריץ פעם אחת ב-Supabase</p>
+        <pre className="text-[0.6rem] overflow-x-auto" style={{ color: "rgba(255,248,245,0.45)", lineHeight: 1.6 }}>{`CREATE TABLE IF NOT EXISTS categories (
+  id   uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text NOT NULL UNIQUE,
+  slug text NOT NULL UNIQUE
+);
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read" ON categories FOR SELECT USING (true);
+CREATE POLICY "admin write" ON categories FOR ALL TO authenticated
+  USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin')
+  WITH CHECK ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');`}</pre>
       </div>
     </div>
   );
