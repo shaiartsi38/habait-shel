@@ -1,5 +1,5 @@
 import { createClient } from "./client";
-import type { CourseData, CourseLesson, CourseHighlight } from "@/lib/courses-data";
+import type { CourseData, CourseLesson, CourseHighlight, CourseProduct } from "@/lib/courses-data";
 import { COURSES } from "@/lib/courses-data";
 
 // כשמפתחות Supabase לא מוגדרים — נחזיר נתוני דמה מקומיים
@@ -56,6 +56,7 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
     videoThumbnailUrl: (meta.videoThumbnailUrl as string | undefined) || undefined,
     highlights: (meta.highlights as CourseHighlight[] | undefined) || undefined,
     lessonThumbnails: (meta.lessonThumbnails as Record<string, string> | undefined) || undefined,
+    lessonProducts: (meta.lessonProducts as Record<string, CourseProduct[]> | undefined) || undefined,
     price: typeof meta.price === "number" ? meta.price : undefined,
     purchaseUrl: (meta.purchaseUrl as string | undefined) || undefined,
     instructor: (meta.instructor as CourseData["instructor"]) ?? { name: "נטלי ארצי", bio: "", photoUrl: "" },
@@ -73,6 +74,7 @@ function courseToRow(c: CourseData): Record<string, unknown> {
     videoThumbnailUrl: c.videoThumbnailUrl ?? "",
     highlights: c.highlights ?? [],
     lessonThumbnails: c.lessonThumbnails ?? {},
+    lessonProducts: c.lessonProducts ?? {},
     price: c.price ?? null,
     purchaseUrl: c.purchaseUrl ?? "",
   };

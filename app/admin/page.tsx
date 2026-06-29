@@ -621,6 +621,12 @@ function CourseEditForm({
       lessonThumbnails: { ...(p.lessonThumbnails ?? {}), [lessonId]: url },
     }));
 
+  const setLessonProducts = (lessonId: string, products: { name: string; url: string }[]) =>
+    setForm((p) => ({
+      ...p,
+      lessonProducts: { ...(p.lessonProducts ?? {}), [lessonId]: products },
+    }));
+
   const handleHighlightImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
@@ -1024,6 +1030,8 @@ function CourseEditForm({
                 onRemove={() => removeLesson(idx)}
                 thumbnailUrl={form.lessonThumbnails?.[lesson.id]}
                 onThumbnailChange={(url) => setLessonThumbnail(lesson.id, url)}
+                products={form.lessonProducts?.[lesson.id] ?? []}
+                onProductsChange={(prods) => setLessonProducts(lesson.id, prods)}
               />
             ))}
           </div>
@@ -1074,7 +1082,7 @@ function CourseEditForm({
 // ─── Lesson row ───────────────────────────────────────────────────
 
 function LessonRow({
-  lesson, index, total, onChange, onRemove, thumbnailUrl, onThumbnailChange,
+  lesson, index, total, onChange, onRemove, thumbnailUrl, onThumbnailChange, products, onProductsChange,
 }: {
   lesson: CourseLesson;
   index: number;
@@ -1083,6 +1091,8 @@ function LessonRow({
   onRemove: () => void;
   thumbnailUrl?: string;
   onThumbnailChange: (url: string) => void;
+  products: { name: string; url: string }[];
+  onProductsChange: (products: { name: string; url: string }[]) => void;
 }) {
   const videoRef = useRef<HTMLInputElement>(null);
   const thumbFileRef = useRef<HTMLInputElement>(null);
@@ -1202,6 +1212,45 @@ function LessonRow({
         <span className="text-[0.58rem]" style={{ color: "#5A3830" }}>דקות</span>
         <div className="flex-1" />
         <Checkbox checked={lesson.isFree} onChange={(v) => onChange("isFree", v)} label="חינמי" small />
+      </div>
+
+      {/* Products */}
+      <div>
+        <p className="text-[0.52rem] uppercase tracking-wider mb-1.5" style={{ color: "rgba(196,133,122,0.45)" }}>מוצרים מומלצים לשיעור</p>
+        {products.map((prod, i) => (
+          <div key={i} className="flex gap-1.5 items-center mb-1.5">
+            <input
+              className="flex-1 bg-transparent text-[0.62rem] outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.2)] transition-colors"
+              style={{ color: "rgba(255,248,245,0.6)" }}
+              value={prod.name}
+              onChange={(e) => {
+                const next = [...products]; next[i] = { ...next[i], name: e.target.value };
+                onProductsChange(next);
+              }}
+              placeholder="שם מוצר"
+            />
+            <input
+              className="flex-1 bg-transparent text-[0.58rem] outline-none border-b border-transparent focus:border-[rgba(196,133,122,0.2)] transition-colors"
+              style={{ color: "rgba(255,248,245,0.3)", direction: "ltr" }}
+              dir="ltr"
+              value={prod.url}
+              onChange={(e) => {
+                const next = [...products]; next[i] = { ...next[i], url: e.target.value };
+                onProductsChange(next);
+              }}
+              placeholder="https://..."
+            />
+            <button type="button" onClick={() => onProductsChange(products.filter((_, j) => j !== i))} className="p-0.5 hover:opacity-60">
+              <X size={9} style={{ color: "#5A3830" }} />
+            </button>
+          </div>
+        ))}
+        <button type="button"
+          onClick={() => onProductsChange([...products, { name: "", url: "" }])}
+          className="text-[0.5rem] flex items-center gap-1 mt-1 transition-opacity hover:opacity-70"
+          style={{ color: "rgba(196,133,122,0.4)" }}>
+          <Plus size={9} /> הוסיפי מוצר
+        </button>
       </div>
 
       {/* Thumbnail picker */}

@@ -23,6 +23,11 @@ export interface CourseHighlight {
   imageUrl: string;
 }
 
+export interface CourseProduct {
+  name: string;
+  url: string;
+}
+
 export interface CourseData {
   id: string;
   slug: string;
@@ -45,6 +50,7 @@ export interface CourseData {
   videoThumbnailUrl?: string;
   highlights?: CourseHighlight[];
   lessonThumbnails?: Record<string, string>;
+  lessonProducts?: Record<string, CourseProduct[]>;
   price?: number;
   purchaseUrl?: string;
   instructor: CourseInstructor;

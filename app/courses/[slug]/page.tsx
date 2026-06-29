@@ -305,6 +305,26 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
         </div>
       </div>
 
+      {/* ── Lesson Products ── */}
+      {activeLessonId && (() => {
+        const prods = course.lessonProducts?.[activeLessonId];
+        if (!prods || prods.length === 0) return null;
+        return (
+          <div className="px-4 md:px-16 pb-10">
+            <h3 className="text-sm font-bold mb-3" style={{ color: "#FFF8F5" }}>מוצרים מומלצים</h3>
+            <div className="flex flex-wrap gap-2">
+              {prods.map((p, i) => (
+                <a key={i} href={p.url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[0.72rem] font-medium transition-opacity hover:opacity-80"
+                  style={{ background: "rgba(196,133,122,0.08)", border: "1px solid rgba(196,133,122,0.2)", color: "#D4998E" }}>
+                  🛍 {p.name}
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Instructor ── */}
       <div className="px-4 md:px-16 pb-16">
         <InstructorSection course={course} />
