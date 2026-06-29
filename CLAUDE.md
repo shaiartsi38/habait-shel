@@ -536,38 +536,32 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 ### ✅ 0 — Vimeo טיזר מציג "הסרטון לא זמין" בכרטיס בדף הבית
 **תוקן ביוני 2026.** `CourseCard.tsx` היה מוצפן hard-code ל-YouTube בלבד. כשטיזר הוא Vimeo, ה-ID הוחדר לכתובת YouTube → "לא זמין". תוקן: בדיקת `course.videoProvider` ובחירת embed URL מתאים (Vimeo: `background=1&muted=1`, YouTube: כמו קודם).
 
-### 🔴 1 — מנויה מתחילה מהטיזר במקום משיעור 1
-**בעיה:** משתמשת עם מנוי רואה את הטיזר כשיעור ראשון בתוכנית הלמידה.
-**הנדרש:** אם למשתמשת יש `subscription_tier` פעיל — לדלג על שיעורים שמסומנים כ-`is_free_preview` (טיזר) ולהתחיל ישר מהשיעור הראשון שאינו טיזר. ללא מנוי — מציגים טיזר + שאר השיעורים נעולים (כמו היום).
-**קבצים לבדוק:** `app/courses/[slug]/page.tsx`
+### ✅ 1 — מנויה מתחילה מהטיזר במקום משיעור 1
+**תוקן ביוני 2026.** `app/courses/[slug]/page.tsx`: הוספת `firstNonPreviewLesson` ו-`hasAccess`. כש-`hasAccess=true`, כפתור "שיעור הבא" (navNext) מצביע על השיעור הראשון שאינו free preview, במקום lessons[0].
 
-### 🟡 2 — Vimeo לא שומר נקודת עצירה (progress saving)
-**בעיה:** YouTube שומר כל 10 שניות את מיקום הצפייה. Vimeo לא שומר כלל — חוזרים לתחילת הוידאו.
-**הנדרש:** להוסיף Vimeo Player SDK (`@vimeo/player`) לנגן, לשמור `progress_seconds` ל-`user_progress` כל 10 שניות ובהשהייה, ולטעון את הנקודה השמורה בטעינת הוידאו.
-**קבצים לבדוק:** `app/courses/[slug]/page.tsx`, ייתכן קומפוננט נגן נפרד.
+### ✅ 2 — Vimeo לא שומר נקודת עצירה (progress saving)
+**תוקן ביוני 2026.** הוסף `@vimeo/player` SDK. קומפוננט `VimeoEmbed` חדש שומר progress ל-`user_progress` כל 10 שניות בניגון ובהשהייה, וטוען נקודת המשך בפתיחה.
 
-### 🟡 3 — Thumbnail של Vimeo לא נשלף אוטומטית
-**בעיה:** ב-YouTube ה-thumbnail נשלף אוטומטית מה-URL (`img.youtube.com/vi/{id}/hqdefault.jpg`). בוימאו אין מנגנון כזה — בחלק "מה תגלי בקורס" ניתן להעלות ידנית אבל צריך לעבוד אוטומטית.
-**הנדרש:** לקרוא ל-Vimeo oEmbed API (`https://vimeo.com/api/oembed.json?url=...`) כדי לשלוף `thumbnail_url` — בדיוק כמו שמשתמשים ב-YouTube. להחיל בכרטיסי שיעורים ובסקשיין "מה תגלי בקורס".
-**הערה:** לא נדרש API key — oEmbed ציבורי.
+### ✅ 3 — Thumbnail של Vimeo לא נשלף אוטומטית
+**תוקן ביוני 2026.** `useEffect` חדש שולח fetch ל-`vimeo.com/api/oembed.json` עבור כל שיעור Vimeo. Thumbnails נשמרים ב-`vimeoThumbnails` state ומועברים ל-LessonRow ול-SkillsSection.
 
-### 🟡 4 — Thumbnail ישן לא מתעדכן כששינוי לינק YouTube
-**בעיה:** בקורס "מאסטר קלאס כלות" — שיעורים 1 ו-2 מציגים thumbnail של הטיזר הישן לאחר עדכון לינק חדש.
-**הנדרש:** לוודא ש-thumbnail נגזר **תמיד** מהלינק הנוכחי (`video_id`) ולא נשמר/מוקש בנפרד. אם `lessonThumbnails` ב-`description` JSON מכיל URL ישן — לנקות אותו.
-**קבצים לבדוק:** `app/courses/[slug]/page.tsx`, `lib/supabase/courses-db.ts`.
+### ✅ 4 — Thumbnail ישן לא מתעדכן כששינוי לינק YouTube
+**תוקן ביוני 2026.** `thumbSrc` בודק אם `lessonThumbnails[id]` הוא URL של YouTube עם `videoId` שונה מה-`lesson.videoId` הנוכחי — ואם כן מתעלם ממנו ומשתמש ב-`ytThumb` הנגזר מה-ID הנוכחי.
 
-### 🟢 5 — קטגוריות דינמיות באדמין
-**בעיה:** קטגוריות קורסים מוגדרות קבוע בקוד. צריך להוסיף/למחוק קטגוריות (ריסים, שפתיים וכו') מהאדמין.
-**הנדרש:**
-- טבלת `categories` חדשה בSupabase: `id (uuid) · name (text) · slug (text UNIQUE)`
-- ממשק ניהול: הוספה/מחיקה ללא הגבלה
-- כל קורס שמסומן בקטגוריה — מופיע בעמוד `/categories/[slug]`
-- **SQL migration נדרש לפני בנייה**
+### ✅ 5 — קטגוריות דינמיות באדמין
+**הושלם ביוני 2026.**
+- `lib/supabase/categories-db.ts`: CRUD לטבלת categories
+- `app/admin/page.tsx`: טאב "קטגוריות" — הוספה/מחיקה + snippet ה-SQL migration
+- `app/categories/[slug]/page.tsx`: דף SSR מציג קורסים לפי קטגוריה
+- `lib/supabase/courses-db.ts`: `dbFetchCoursesByCategory` מסנן לפי `tags @> ['cat:{name}']`
+- **⚠️ SQL migration — חובה להריץ פעם אחת ב-Supabase** (מוצג בתוך הטאב עצמו באדמין)
 
-### 🟢 6 — מוצרים מומלצים לכל שיעור (אדמין)
-**בעיה:** אין שדה לרשימת מוצרים+לינקים בניהול הקורס.
-**הנדרש:** להוסיף בפאנל האדמין (בפרטי קורס/שיעור) שדה שמאפשר להוסיף שם מוצר + URL. בתצוגת השיעור — מוצג מתחת לנגן, לפני סקשיין המנטורית.
-**מיקום בממשק:** ניהול → קורסים → [קורס] → לפני "מנטורית"
+### ✅ 6 — מוצרים מומלצים לכל שיעור (אדמין)
+**הושלם ביוני 2026.**
+- `lib/courses-data.ts`: סוג `CourseProduct { name, url }` + שדה `lessonProducts?: Record<string, CourseProduct[]>` ב-`CourseData`
+- `lib/supabase/courses-db.ts`: קריאה/כתיבה ב-meta JSON
+- `app/admin/page.tsx`: ממשק עריכת מוצרים בכל `LessonRow`
+- `app/courses/[slug]/page.tsx`: מציג קישורי מוצרים מתחת לנגן כשיש שיעור פעיל
 
 ---
 
