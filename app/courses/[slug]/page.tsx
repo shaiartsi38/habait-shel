@@ -285,7 +285,10 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               ? `https://img.youtube.com/vi/${lesson.videoId}/mqdefault.jpg`
               : null;
             const vimeoThumb  = lesson.videoProvider === "vimeo" ? (vimeoThumbnails[lesson.id] ?? null) : null;
-            const thumbSrc    = course.lessonThumbnails?.[lesson.id] || ytThumb || vimeoThumb || course.image;
+            const savedThumb  = course.lessonThumbnails?.[lesson.id];
+            // Ignore a saved YouTube thumb that belongs to a different video ID (stale after URL change)
+            const isStaleYt   = !!savedThumb && savedThumb.includes("img.youtube.com/vi/") && !!lesson.videoId && !savedThumb.includes(`/vi/${lesson.videoId}/`);
+            const thumbSrc    = (savedThumb && !isStaleYt ? savedThumb : null) || ytThumb || vimeoThumb || course.image;
             return (
               <LessonRow
                 key={lesson.id}
