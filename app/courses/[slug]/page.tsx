@@ -54,15 +54,14 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
 
   useEffect(() => {
     const sb = createClient();
-    Promise.all([
-      sb.auth.getUser(),
-      sb.from("profiles").select("role, subscription_tier").maybeSingle(),
-    ]).then(([{ data: authData }, { data: profile }]) => {
-      if (authData.user) setIsLoggedIn(true);
-      if (profile?.role === "admin") setIsAdmin(true);
-      setUserTier(profile?.subscription_tier ?? null);
+    sb.auth.getUser().then(({ data }) => {
+      if (data.user) setIsLoggedIn(true);
+    });
+    sb.from("profiles").select("role, subscription_tier").then(({ data }) => {
+      if (data?.[0]?.role === "admin") setIsAdmin(true);
+      setUserTier(data?.[0]?.subscription_tier ?? null);
       setAuthLoaded(true);
-    }).catch(() => setAuthLoaded(true));
+    }, () => setAuthLoaded(true));
   }, []);
 
   const course = courses.find((c) => c.slug === slug) ?? COURSES.find((c) => c.slug === slug);
@@ -143,7 +142,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       .finally(() => setVideoFetching(false));
 
     return () => ctrl.abort();
-  }, [activeLessonId, authLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeLessonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeLessonIdRef = useRef(activeLessonId);
   activeLessonIdRef.current = activeLessonId;

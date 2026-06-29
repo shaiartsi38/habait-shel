@@ -585,6 +585,22 @@ function CourseEditForm({
   const photoRef = useRef<HTMLInputElement>(null);
   const highlightFileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // ── Vimeo thumbnails for lesson picker ───────────────────────────
+  const [vimeoThumbsAdmin, setVimeoThumbsAdmin] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const vimeoLessons = form.lessons.filter((l) => l.videoProvider === "vimeo" && l.videoId);
+    if (!vimeoLessons.length) return;
+    vimeoLessons.forEach((l) => {
+      if (vimeoThumbsAdmin[l.id]) return;
+      fetch(`https://vimeo.com/api/oembed.json?url=https://vimeo.com/${l.videoId}`)
+        .then((r) => r.json())
+        .then((d: { thumbnail_url?: string }) => {
+          if (d.thumbnail_url) setVimeoThumbsAdmin((p) => ({ ...p, [l.id]: d.thumbnail_url! }));
+        })
+        .catch(() => {});
+    });
+  }, [form.lessons]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Dynamic categories ────────────────────────────────────────────
   const [dbCategories, setDbCategories] = useState<string[]>([...CATEGORIES.filter((c) => c !== "הכל")]);
   const [showCatManager, setShowCatManager] = useState(false);
@@ -1115,6 +1131,7 @@ function CourseEditForm({
                 onRemove={() => removeLesson(idx)}
                 thumbnailUrl={form.lessonThumbnails?.[lesson.id]}
                 onThumbnailChange={(url) => setLessonThumbnail(lesson.id, url)}
+                vimeoThumbUrl={vimeoThumbsAdmin[lesson.id]}
                 products={form.lessonProducts?.[lesson.id] ?? []}
                 onProductsChange={(prods) => setLessonProducts(lesson.id, prods)}
               />
@@ -1167,7 +1184,7 @@ function CourseEditForm({
 // ─── Lesson row ───────────────────────────────────────────────────
 
 function LessonRow({
-  lesson, index, total, onChange, onRemove, thumbnailUrl, onThumbnailChange, products, onProductsChange,
+  lesson, index, total, onChange, onRemove, thumbnailUrl, onThumbnailChange, vimeoThumbUrl, products, onProductsChange,
 }: {
   lesson: CourseLesson;
   index: number;
@@ -1176,6 +1193,7 @@ function LessonRow({
   onRemove: () => void;
   thumbnailUrl?: string;
   onThumbnailChange: (url: string) => void;
+  vimeoThumbUrl?: string;
   products: { name: string; url: string }[];
   onProductsChange: (products: { name: string; url: string }[]) => void;
 }) {
@@ -1362,6 +1380,23 @@ function LessonRow({
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+            {/* Vimeo auto-thumb */}
+            {lesson.videoProvider === "vimeo" && vimeoThumbUrl && (
+              <div>
+                <p className="text-[0.5rem] mb-1.5 uppercase tracking-wider" style={{ color: "#5A3830" }}>מסרטון ה-Vimeo</p>
+                <button type="button" onClick={() => onThumbnailChange(vimeoThumbUrl)}
+                  className="relative rounded-lg overflow-hidden transition-all"
+                  style={{ width: 96, height: 54, border: `2px solid ${thumbnailUrl === vimeoThumbUrl ? "#C4857A" : "rgba(196,133,122,0.12)"}`, flexShrink: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={vimeoThumbUrl} alt="" className="w-full h-full object-cover" />
+                  {thumbnailUrl === vimeoThumbUrl && (
+                    <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(196,133,122,0.35)" }}>
+                      <Check size={10} style={{ color: "#080608" }} />
+                    </div>
+                  )}
+                </button>
               </div>
             )}
             {/* Custom URL or upload */}
