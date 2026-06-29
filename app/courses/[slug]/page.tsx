@@ -665,12 +665,12 @@ function YouTubeEmbed({ videoId, startAt, onProgress }: {
   return <div ref={divRef} className="absolute inset-0 w-full h-full" />;
 }
 
-// ─── Vimeo embed with Player SDK (progress tracking) ─────────────
+// ─── Vimeo embed — iframe + SDK for progress tracking ────────────
 function VimeoEmbed({ videoId, startAt, onProgress }: {
   videoId: string; startAt: number; onProgress?: (s: number) => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const iframeRef   = useRef<HTMLIFrameElement>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     let player: any = null;
@@ -678,14 +678,10 @@ function VimeoEmbed({ videoId, startAt, onProgress }: {
 
     (async () => {
       const { default: Player } = await import("@vimeo/player");
-      if (!mounted || !containerRef.current) return;
+      if (!mounted || !iframeRef.current) return;
 
-      player = new Player(containerRef.current, {
-        id: Number(videoId),
-        autoplay: true,
-        responsive: true,
-        dnt: true,
-      });
+      // Attach to the existing iframe — does NOT recreate it
+      player = new Player(iframeRef.current);
 
       if (startAt > 0) player.setCurrentTime(startAt).catch(() => {});
 
@@ -711,11 +707,18 @@ function VimeoEmbed({ videoId, startAt, onProgress }: {
     return () => {
       mounted = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
-      player?.destroy().catch(() => {});
     };
   }, [videoId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={containerRef} className="absolute inset-0 w-full h-full" />;
+  return (
+    <iframe
+      ref={iframeRef}
+      src={`https://player.vimeo.com/video/${videoId}?autoplay=1${startAt > 0 ? `&t=${startAt}s` : ""}`}
+      className="absolute inset-0 w-full h-full"
+      allow="autoplay; fullscreen; encrypted-media"
+      style={{ border: "none" }}
+    />
+  );
 }
 
 // ─── Video Player ─────────────────────────────────────────────────
