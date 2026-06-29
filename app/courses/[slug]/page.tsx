@@ -620,6 +620,59 @@ function YouTubeEmbed({ videoId, startAt, onProgress }: {
   return <div ref={divRef} className="absolute inset-0 w-full h-full" />;
 }
 
+// ─── Vimeo embed with Player SDK (progress tracking) ─────────────
+function VimeoEmbed({ videoId, startAt, onProgress }: {
+  videoId: string; startAt: number; onProgress?: (s: number) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let player: any = null;
+    let mounted     = true;
+
+    (async () => {
+      const { default: Player } = await import("@vimeo/player");
+      if (!mounted || !containerRef.current) return;
+
+      player = new Player(containerRef.current, {
+        id: Number(videoId),
+        autoplay: true,
+        responsive: true,
+        dnt: true,
+      });
+
+      if (startAt > 0) player.setCurrentTime(startAt).catch(() => {});
+
+      player.on("play", () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = setInterval(async () => {
+          const t = await player.getCurrentTime().catch(() => 0);
+          if (t > 0) onProgress?.(Math.floor(t));
+        }, 10_000);
+      });
+
+      player.on("pause", async () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        const t = await player.getCurrentTime().catch(() => 0);
+        if (t > 0) onProgress?.(Math.floor(t));
+      });
+
+      player.on("ended", () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+      });
+    })();
+
+    return () => {
+      mounted = false;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      player?.destroy().catch(() => {});
+    };
+  }, [videoId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return <div ref={containerRef} className="absolute inset-0 w-full h-full" />;
+}
+
 // ─── Video Player ─────────────────────────────────────────────────
 function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart = false, startAt = 0, onProgress, playLabel }: {
   videoId: string; provider?: VideoProvider; poster: string; title: string;
@@ -637,11 +690,7 @@ function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart =
       );
     }
     if (provider === "vimeo") {
-      const src = `https://player.vimeo.com/video/${videoId}?autoplay=1${startAt > 0 ? `#t=${startAt}s` : ""}`;
-      return (
-        <iframe src={src} className="absolute inset-0 w-full h-full"
-          allow="autoplay; fullscreen; encrypted-media" style={{ border: "none" }} />
-      );
+      return <VimeoEmbed videoId={videoId} startAt={startAt} onProgress={onProgress} />;
     }
     return <YouTubeEmbed videoId={videoId} startAt={startAt} onProgress={onProgress} />;
   })();
