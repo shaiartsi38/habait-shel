@@ -27,6 +27,19 @@ function ensureYouTubeAPI(): Promise<void> {
   return _ytPromise;
 }
 
+// ─── Vimeo SDK loader — loaded once, reused across all VimeoEmbeds ─
+let _VimeoPlayer: any = null;
+let _vimeoPromise: Promise<void> | null = null;
+function ensureVimeoPlayer(): Promise<void> {
+  if (_VimeoPlayer) return Promise.resolve();
+  if (_vimeoPromise) return _vimeoPromise;
+  _vimeoPromise = import("@vimeo/player").then((m) => { _VimeoPlayer = m.default; });
+  return _vimeoPromise;
+}
+
+// ─── Lesson video cache — avoids re-fetching the same lesson ──────
+const lessonVideoCache = new Map<string, { videoId: string; videoProvider: string }>();
+
 const DIFF_LABEL = { beginner: "מתחילות", intermediate: "בינוני", advanced: "מתקדם" } as const;
 const TIER_LABEL = { basic: "Basic", pro: "Pro", elite: "Elite" } as const;
 const TIER_RANK: Record<string, number> = { basic: 1, pro: 2, elite: 3 };
@@ -100,6 +113,24 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     }).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Pre-fetch first paid lesson as soon as auth is ready — warms the cache before user clicks
+  useEffect(() => {
+    if (!authLoaded || !course) return;
+    if (!isAdmin && !tierCovers(userTier, course.tier)) return;
+    const firstPaid = course.lessons.find((l) => !l.isFree);
+    if (!firstPaid || lessonVideoCache.has(firstPaid.id)) return;
+    fetch(`/api/lesson-video?lessonId=${firstPaid.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.error) {
+          lessonVideoCache.set(firstPaid.id, { videoId: data.videoId, videoProvider: data.videoProvider ?? "youtube" });
+        }
+      })
+      .catch(() => {});
+    // Also pre-load Vimeo SDK if any lesson is Vimeo
+    if (course.lessons.some((l) => l.videoProvider === "vimeo")) ensureVimeoPlayer();
+  }, [authLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!activeLessonId || !activeLesson || !course) return;
     setVideoAccessDenied(false);
@@ -120,6 +151,13 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       return;
     }
 
+    // Serve from cache if already fetched
+    const cached = lessonVideoCache.get(activeLessonId);
+    if (cached) {
+      setLessonVideo(cached);
+      return;
+    }
+
     setLessonVideo(null);
     setVideoFetching(true);
     const ctrl = new AbortController();
@@ -128,7 +166,9 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       .then((r) => r.json())
       .then((data) => {
         if (data.error) { setVideoAccessDenied(true); return; }
-        setLessonVideo({ videoId: data.videoId, videoProvider: data.videoProvider ?? "youtube" });
+        const v = { videoId: data.videoId, videoProvider: data.videoProvider ?? "youtube" };
+        lessonVideoCache.set(activeLessonId, v);
+        setLessonVideo(v);
       })
       .catch(() => {})
       .finally(() => setVideoFetching(false));
@@ -726,11 +766,11 @@ function VimeoEmbed({ videoId, startAt, onProgress, onEnded }: {
     let mounted     = true;
 
     (async () => {
-      const { default: Player } = await import("@vimeo/player");
+      await ensureVimeoPlayer();
       if (!mounted || !iframeRef.current) return;
 
       // Attach to the existing iframe — does NOT recreate it
-      player = new Player(iframeRef.current);
+      player = new _VimeoPlayer(iframeRef.current);
 
       if (startAt > 0) player.setCurrentTime(startAt).catch(() => {});
 

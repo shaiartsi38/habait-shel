@@ -1088,6 +1088,42 @@ function CourseEditForm({
                     </div>
                   );
                 })()}
+                {/* Vimeo thumbnail picker — first 4 lessons with fetched thumbnails */}
+                {(() => {
+                  const vmSources = form.lessons
+                    .filter((l) => l.videoProvider === "vimeo" && l.videoId && vimeoThumbsAdmin[l.id])
+                    .slice(0, 4)
+                    .map((l, li) => ({ label: l.title ? l.title.slice(0, 10) : `ש׳ ${li + 1}`, lessonId: l.id }));
+                  if (vmSources.length === 0) return null;
+                  return (
+                    <div>
+                      <p className="text-[0.52rem] mb-1.5 uppercase tracking-wider" style={{ color: "#5A3830" }}>בחרי מסרטוני הקורס</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {vmSources.map((src) => {
+                          const url = vimeoThumbsAdmin[src.lessonId];
+                          return (
+                            <div key={src.lessonId} className="flex flex-col items-center gap-0.5">
+                              <button type="button" onClick={() => setHighlight(idx, "imageUrl", url)}
+                                className="relative rounded-lg overflow-hidden transition-all"
+                                style={{ width: 72, height: 54, border: `2px solid ${h.imageUrl === url ? "#C4857A" : "rgba(196,133,122,0.15)"}`, flexShrink: 0 }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={url} alt="" className="w-full h-full object-cover" />
+                                {h.imageUrl === url && (
+                                  <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(196,133,122,0.3)" }}>
+                                    <Check size={12} style={{ color: "#080608" }} />
+                                  </div>
+                                )}
+                              </button>
+                              <span className="text-[0.45rem]" style={{ color: "#5A3830", maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {src.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
                 {/* Custom upload / URL */}
                 <div className="flex gap-2 items-center">
                   <input
