@@ -263,6 +263,8 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 5. יצירת `profiles` אוטומטית בעת Signup עדיין לא יציבה — **בעיה פתוחה**.
 6. `??` לא מתמודד עם string ריק — להשתמש ב-`||` כשיש fallback על strings.
 7. Storage RLS חייב policies מפורשות לכל נתיב — bucket פרטי = 403 ללא policy.
+8. **React hooks — חוק ברזל:** ב-`"use client"` component — כל `useState`/`useEffect`/`useRef`/`useCallback` חייבים לבוא לפני כל `return` מוקדם (skeleton/guard). hooks-ים שתלויים ב-`course` משתמשים ב-`if (!course) return` **בתוך** הפונקציה, לא לפניה.
+9. **Auth + dependency array:** הוספת משתנה auth (`authLoaded`, `isAdmin`) למערך תלויות של useEffect שמשתמש בהם כ-condition → גורם לריצה מחדש כשהאות-state משתנה → עלול לנעול מסכים. בדוק תמיד: "מה קורה כשהאפקט רץ שנית אחרי שה-auth נטען?"
 
 ---
 
@@ -568,8 +570,13 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 ### ✅ 8 — דקות קורס אוטומטי
 עורך הקורס באדמין: `useEffect` שסוכם `lesson.durationMin` → מעדכן `durationMinutes` אוטומטית.
 
-### ✅ 9 — 404 על רפרש דף קורס
-`app/courses/[slug]/page.tsx`: SSR מחזיר skeleton (לא 404) עד שה-courses context נטען. `mounted + loading` guard — `notFound()` נקרא רק אחרי שהנתונים זמינים.
+### ✅ 9 — 404 על רפרש דף קורס + crash שחור
+`app/courses/[slug]/page.tsx`:
+- **שורש הבעיה:** SSR רץ ללא localStorage → `courses = COURSES` סטטי → קורסי Supabase לא נמצאים → `notFound()` מיידי.
+- **תיקון:** `mounted + loading` guard — מציג skeleton עד שה-context טעון; `notFound()` רק אחרי שהנתונים זמינים.
+- **באג שנגרם מהתיקון:** early `return` (skeleton) נכנס לפני `useEffect`/`useRef`/`useCallback` → הפרת חוקי React hooks → crash שחור.
+- **תיקון סופי:** כל ה-hooks הועברו לפני ה-`return`. `course`-dependent hooks עם null guard בתוך הפונקציה. `notFound()` וחישובים שדורשים `course!` אחרי כל ה-hooks.
+- **כלל קבוע:** ב-`"use client"` component — **כל** `useState`/`useEffect`/`useRef`/`useCallback` חייבים לבוא לפני כל `return` מוקדם, ללא יוצא מן הכלל.
 
 ---
 
