@@ -64,7 +64,9 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const course = courses.find((c) => c.slug === slug) ?? COURSES.find((c) => c.slug === slug);
   if (!course) notFound();
 
-  const firstLesson       = course.lessons[0];
+  const firstLesson           = course.lessons[0];
+  const firstNonPreviewLesson = course.lessons.find((l) => !l.isFree) ?? firstLesson;
+  const hasAccess             = isAdmin || tierCovers(userTier, course.tier);
   const activeLesson      = activeLessonId ? course.lessons.find((l) => l.id === activeLessonId) : null;
   const activeLessonIndex = activeLessonId ? course.lessons.findIndex((l) => l.id === activeLessonId) : -1;
   const prevLesson = activeLessonIndex > 0 ? course.lessons[activeLessonIndex - 1] : null;
@@ -73,8 +75,8 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       ? course.lessons[activeLessonIndex + 1]
       : null;
 
-  // nav always visible: before any selection "next" = first lesson
-  const navNext = activeLessonId ? nextLesson : (course.lessons[0] ?? null);
+  // nav always visible: before any selection, subscribers skip the free preview (teaser)
+  const navNext = activeLessonId ? nextLesson : ((hasAccess ? firstNonPreviewLesson : firstLesson) ?? null);
   const navPrev = activeLessonId ? prevLesson : null;
   const navNextLabel = navNext ? (navNext.title || `שיעור ${activeLessonId ? activeLessonIndex + 2 : 1}`) : "סוף הקורס";
   const navPrevLabel = navPrev ? (navPrev.title || `שיעור ${activeLessonIndex}`) : "תחילת הקורס";
