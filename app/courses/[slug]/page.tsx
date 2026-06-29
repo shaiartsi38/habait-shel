@@ -47,7 +47,8 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const [videoFetching, setVideoFetching]   = useState(false);
   const [videoAccessDenied, setVideoAccessDenied] = useState(false);
   const [startAt, setStartAt]               = useState(0);
-  const [courseProgress, setCourseProgress] = useState<Record<string, number>>({});
+  const [courseProgress, setCourseProgress]     = useState<Record<string, number>>({});
+  const [vimeoThumbnails, setVimeoThumbnails]   = useState<Record<string, string>>({});
   const playerSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -85,6 +86,23 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     if (!isLoggedIn || !course) return;
     dbGetCourseProgress(course.id).then(setCourseProgress).catch(() => {});
   }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const vimeoLessons = course.lessons.filter((l) => l.videoProvider === "vimeo" && l.videoId);
+    if (vimeoLessons.length === 0) return;
+    Promise.all(
+      vimeoLessons.map((l) =>
+        fetch(`https://vimeo.com/api/oembed.json?url=https://vimeo.com/${l.videoId}`)
+          .then((r) => r.json())
+          .then((d: { thumbnail_url?: string }) => [l.id, d.thumbnail_url ?? ""] as const)
+          .catch(() => [l.id, ""] as const)
+      )
+    ).then((pairs) => {
+      const map: Record<string, string> = {};
+      for (const [id, url] of pairs) if (url) map[id] = url;
+      setVimeoThumbnails(map);
+    }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!activeLessonId || !activeLesson) return;
@@ -155,7 +173,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       </div>
 
       {/* ── Skills Section ── */}
-      {course.lessons.length > 0 && <SkillsSection course={course} />}
+      {course.lessons.length > 0 && <SkillsSection course={course} vimeoThumbnails={vimeoThumbnails} />}
 
       {/* ── Video Player ── */}
       <div ref={playerSectionRef} className="px-4 md:px-16 py-8">
@@ -263,10 +281,11 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
         </div>
         <div className="mt-4">
           {course.lessons.map((lesson, i) => {
-            const ytThumb = lesson.videoProvider === "youtube" && lesson.videoId
+            const ytThumb     = lesson.videoProvider === "youtube" && lesson.videoId
               ? `https://img.youtube.com/vi/${lesson.videoId}/mqdefault.jpg`
               : null;
-            const thumbSrc = course.lessonThumbnails?.[lesson.id] || ytThumb || course.image;
+            const vimeoThumb  = lesson.videoProvider === "vimeo" ? (vimeoThumbnails[lesson.id] ?? null) : null;
+            const thumbSrc    = course.lessonThumbnails?.[lesson.id] || ytThumb || vimeoThumb || course.image;
             return (
               <LessonRow
                 key={lesson.id}
@@ -462,12 +481,15 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
 }
 
 // ─── Skills Section ───────────────────────────────────────────────
-function SkillsSection({ course }: { course: CourseData }) {
+function SkillsSection({ course, vimeoThumbnails }: { course: CourseData; vimeoThumbnails: Record<string, string> }) {
   // Use admin-defined highlights if they exist, else fall back to first 4 lessons
   const hasHighlights = course.highlights && course.highlights.length > 0;
   const cards = hasHighlights
     ? course.highlights!.map((h) => ({ id: h.id, text: h.text, imageUrl: h.imageUrl || course.image }))
-    : course.lessons.slice(0, 4).map((l) => ({ id: l.id, text: l.title || "", imageUrl: course.image }));
+    : course.lessons.slice(0, 4).map((l) => ({
+        id: l.id, text: l.title || "",
+        imageUrl: course.lessonThumbnails?.[l.id] || vimeoThumbnails[l.id] || course.image,
+      }));
 
   if (cards.length === 0) return null;
 
