@@ -604,6 +604,12 @@ function CourseEditForm({
     setSavingCats(false);
   };
 
+  // Auto-calculate total duration from lesson sum
+  useEffect(() => {
+    const total = form.lessons.reduce((sum, l) => sum + (l.durationMin || 0), 0);
+    if (total > 0) setForm((p) => ({ ...p, durationMinutes: total }));
+  }, [form.lessons]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const set = <K extends keyof CourseData>(key: K, val: CourseData[K]) =>
     setForm((p) => ({ ...p, [key]: val }));
 

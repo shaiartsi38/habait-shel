@@ -42,6 +42,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin]       = useState(false);
   const [userTier, setUserTier]     = useState<string | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [lessonVideo, setLessonVideo]       = useState<{ videoId: string; videoProvider: string } | null>(null);
   const [videoFetching, setVideoFetching]   = useState(false);
@@ -53,13 +54,15 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
 
   useEffect(() => {
     const sb = createClient();
-    sb.auth.getUser().then(({ data }) => {
-      if (data.user) setIsLoggedIn(true);
-    });
-    sb.from("profiles").select("role, subscription_tier").then(({ data }) => {
-      if (data?.[0]?.role === "admin") setIsAdmin(true);
-      setUserTier(data?.[0]?.subscription_tier ?? null);
-    });
+    Promise.all([
+      sb.auth.getUser(),
+      sb.from("profiles").select("role, subscription_tier").maybeSingle(),
+    ]).then(([{ data: authData }, { data: profile }]) => {
+      if (authData.user) setIsLoggedIn(true);
+      if (profile?.role === "admin") setIsAdmin(true);
+      setUserTier(profile?.subscription_tier ?? null);
+      setAuthLoaded(true);
+    }).catch(() => setAuthLoaded(true));
   }, []);
 
   const course = courses.find((c) => c.slug === slug) ?? COURSES.find((c) => c.slug === slug);
@@ -119,6 +122,15 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       return;
     }
 
+    // Once auth is known, skip the API round-trip — check tier client-side
+    if (authLoaded) {
+      const hasTierAccess = isAdmin || tierCovers(userTier, course.tier);
+      if (!hasTierAccess) { setVideoAccessDenied(true); setLessonVideo(null); setVideoFetching(false); return; }
+      setLessonVideo({ videoId: activeLesson.videoId, videoProvider: activeLesson.videoProvider ?? "youtube" });
+      return;
+    }
+
+    // Auth not yet loaded — fall back to API (rare: user clicked very fast on page load)
     setLessonVideo(null);
     setVideoFetching(true);
     const ctrl = new AbortController();
@@ -133,12 +145,14 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       .finally(() => setVideoFetching(false));
 
     return () => ctrl.abort();
-  }, [activeLessonId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeLessonId, authLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeLessonIdRef = useRef(activeLessonId);
   activeLessonIdRef.current = activeLessonId;
   const courseIdRef = useRef(course.id);
   courseIdRef.current = course.id;
+  const nextLessonRef = useRef(nextLesson);
+  nextLessonRef.current = nextLesson;
 
   const handleProgress = useCallback((seconds: number) => {
     const lid = activeLessonIdRef.current;
@@ -146,6 +160,11 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     if (!lid) return;
     dbSaveProgress(lid, cid, seconds).catch(() => {});
     setCourseProgress((prev) => ({ ...prev, [lid]: seconds }));
+  }, []);
+
+  const handleEnded = useCallback(() => {
+    const next = nextLessonRef.current;
+    if (next) setActiveLessonId(next.id);
   }, []);
 
   const displayVideoId = activeLessonId
@@ -156,6 +175,17 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     : (course.videoId ? (course.videoProvider ?? "youtube") : (firstLesson?.videoProvider ?? "youtube"))
   ) as VideoProvider ?? "youtube";
   const displayTitle = activeLesson?.title || course.title;
+
+  // Thumbnail for the active lesson — shown as poster during loading
+  const activeLessonPoster = activeLesson
+    ? (() => {
+        const yt = activeLesson.videoProvider === "youtube" && activeLesson.videoId
+          ? `https://img.youtube.com/vi/${activeLesson.videoId}/mqdefault.jpg` : null;
+        const vm = activeLesson.videoProvider === "vimeo" ? (vimeoThumbnails[activeLesson.id] ?? null) : null;
+        const saved = course.lessonThumbnails?.[activeLesson.id];
+        return saved || yt || vm || course.image;
+      })()
+    : (course.videoThumbnailUrl || course.image);
 
   const auth: AuthState = { isLoggedIn, isAdmin, userTier };
 
@@ -190,12 +220,14 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
           transition={{ duration: 0.45, delay: 0.1 }}
         >
           {videoFetching ? (
-            <div className="relative w-full rounded-2xl flex items-center justify-center"
+            <div className="relative w-full rounded-2xl overflow-hidden"
               style={{ aspectRatio: "16/9", background: "#0f0b0e", boxShadow: "0 12px 40px rgba(0,0,0,0.55)" }}>
-              <div className="flex flex-col items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={activeLessonPoster} alt="" className="absolute inset-0 w-full h-full object-cover"
+                style={{ filter: "brightness(0.45)" }} />
+              <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
                   style={{ borderColor: "rgba(196,133,122,0.4)", borderTopColor: "#C4857A" }} />
-                <span className="text-[0.65rem]" style={{ color: "rgba(196,133,122,0.6)" }}>טוען שיעור...</span>
               </div>
             </div>
           ) : videoAccessDenied ? (
@@ -217,11 +249,12 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               key={activeLessonId ?? "trailer"}
               videoId={displayVideoId}
               provider={displayProvider}
-              poster={course.videoThumbnailUrl || course.image}
+              poster={activeLessonPoster}
               title={displayTitle}
               autoStart={!!activeLessonId}
               startAt={startAt}
               onProgress={activeLessonId ? handleProgress : undefined}
+              onEnded={activeLessonId ? handleEnded : undefined}
               playLabel={!activeLessonId && (isLoggedIn || isAdmin) ? "צפי בפרק הראשון" : undefined}
             />
           ) : null}
@@ -617,8 +650,8 @@ function InstructorSection({ course }: { course: CourseData }) {
 }
 
 // ─── YouTube embed with IFrame API ────────────────────────────────
-function YouTubeEmbed({ videoId, startAt, onProgress }: {
-  videoId: string; startAt: number; onProgress?: (s: number) => void;
+function YouTubeEmbed({ videoId, startAt, onProgress, onEnded }: {
+  videoId: string; startAt: number; onProgress?: (s: number) => void; onEnded?: () => void;
 }) {
   const divRef     = useRef<HTMLDivElement>(null);
   const playerRef  = useRef<any>(null);
@@ -650,6 +683,7 @@ function YouTubeEmbed({ videoId, startAt, onProgress }: {
                 const t = playerRef.current?.getCurrentTime?.() ?? 0;
                 if (t > 0) onProgress?.(Math.floor(t));
               }
+              if (e.data === 0) onEnded?.();
             }
           },
         },
@@ -666,8 +700,8 @@ function YouTubeEmbed({ videoId, startAt, onProgress }: {
 }
 
 // ─── Vimeo embed — iframe + SDK for progress tracking ────────────
-function VimeoEmbed({ videoId, startAt, onProgress }: {
-  videoId: string; startAt: number; onProgress?: (s: number) => void;
+function VimeoEmbed({ videoId, startAt, onProgress, onEnded }: {
+  videoId: string; startAt: number; onProgress?: (s: number) => void; onEnded?: () => void;
 }) {
   const iframeRef   = useRef<HTMLIFrameElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -701,6 +735,7 @@ function VimeoEmbed({ videoId, startAt, onProgress }: {
 
       player.on("ended", () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
+        onEnded?.();
       });
     })();
 
@@ -722,9 +757,9 @@ function VimeoEmbed({ videoId, startAt, onProgress }: {
 }
 
 // ─── Video Player ─────────────────────────────────────────────────
-function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart = false, startAt = 0, onProgress, playLabel }: {
+function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart = false, startAt = 0, onProgress, onEnded, playLabel }: {
   videoId: string; provider?: VideoProvider; poster: string; title: string;
-  autoStart?: boolean; startAt?: number; onProgress?: (s: number) => void; playLabel?: string;
+  autoStart?: boolean; startAt?: number; onProgress?: (s: number) => void; onEnded?: () => void; playLabel?: string;
 }) {
   const [playing, setPlaying] = useState(autoStart);
 
@@ -734,13 +769,14 @@ function VideoPlayer({ videoId, provider = "youtube", poster, title, autoStart =
         <video src={videoId} className="absolute inset-0 w-full h-full" controls autoPlay
           style={{ objectFit: "cover" }}
           onTimeUpdate={(e) => onProgress?.(Math.floor(e.currentTarget.currentTime))}
+          onEnded={onEnded}
         />
       );
     }
     if (provider === "vimeo") {
-      return <VimeoEmbed videoId={videoId} startAt={startAt} onProgress={onProgress} />;
+      return <VimeoEmbed videoId={videoId} startAt={startAt} onProgress={onProgress} onEnded={onEnded} />;
     }
-    return <YouTubeEmbed videoId={videoId} startAt={startAt} onProgress={onProgress} />;
+    return <YouTubeEmbed videoId={videoId} startAt={startAt} onProgress={onProgress} onEnded={onEnded} />;
   })();
 
   return (
