@@ -73,11 +73,15 @@ export function CourseCard({ course, hidePurchase = false }: CourseCardProps) {
           sizes="(max-width: 768px) 50vw, 25vw"
         />
 
-        {/* Netflix YouTube teaser — covers card, video fills via scale */}
+        {/* Teaser — YouTube or Vimeo, covers card on hover */}
         {showVideo && course.videoId && (
           <div className="absolute inset-0 z-10 overflow-hidden" style={{ animation: "fadeIn 0.3s ease" }}>
             <iframe
-              src={`https://www.youtube.com/embed/${course.videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${course.videoId}&modestbranding=1&rel=0&playsinline=1`}
+              src={
+                course.videoProvider === "vimeo"
+                  ? `https://player.vimeo.com/video/${course.videoId}?autoplay=1&muted=1&loop=1&controls=0&background=1`
+                  : `https://www.youtube.com/embed/${course.videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${course.videoId}&modestbranding=1&rel=0&playsinline=1`
+              }
               allow="autoplay; encrypted-media"
               style={{
                 position: "absolute",
