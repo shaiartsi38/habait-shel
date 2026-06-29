@@ -3,6 +3,7 @@
 ## כללי עבודה מחייבים
 
 1. **אסור לשנות** קוד, עיצוב, לוגיקה, סקשיינים או כל דבר — ללא אישור מפורש משי. ספק = שואלים קודם.
+2. **כלל אבטחה קריטי:** שינוי שמחליש אבטחה (מעקף auth, חשיפת data, דילוג על API route) — מבקשים אישור בעברית **לפני** ביצוע, ללא יוצא מן הכלל. כל שינוי ב-auth/access logic → לבדוק סצנריו admin ("מה קורה אם `isAdmin=false` ברגע ה-effect?") לפני push.
 2. **עדכון קובץ זה:** אחרי כל שינוי מהותי — לשאול את שי האם להוסיף לכאן לפני הסגירה.
 3. **קוד מודולרי.** כל שינוי ב-Schema של Supabase מחייב עדכון מקביל ב-TypeScript interfaces.
 4. **Supabase הוא מקור האמת.** `courses-data.ts` הוא fallback בלבד בסביבת dev ללא env keys.
@@ -529,39 +530,46 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 
 ---
 
-## ⬜ משימות פתוחות — יוני 2026 (לפי סדר עדיפויות)
+## ✅ תיקוני יוני 2026 (הושלמו)
 
-> **כלל עבודה:** לפני כל תיקון — git commit. לגעת רק בקבצים הרלוונטיים לאותה משימה בלבד.
+> **כלל עבודה:** לפני כל תיקון — git commit. לגעת רק בקבצים הרלוונטיים.
+> **כלל אבטחה:** כל שינוי שנוגע ב-auth/access logic → לבדוק סצנריו admin לפני push. לעולם לא לשנות הגנת אבטחה ללא אישור מפורש בעברית מהמשתמש.
 
-### ✅ 0 — Vimeo טיזר מציג "הסרטון לא זמין" בכרטיס בדף הבית
-**תוקן ביוני 2026.** `CourseCard.tsx` היה מוצפן hard-code ל-YouTube בלבד. כשטיזר הוא Vimeo, ה-ID הוחדר לכתובת YouTube → "לא זמין". תוקן: בדיקת `course.videoProvider` ובחירת embed URL מתאים (Vimeo: `background=1&muted=1`, YouTube: כמו קודם).
+### ✅ 0 — Vimeo טיזר "הסרטון לא זמין" בכרטיס דף הבית
+`CourseCard.tsx`: תוקן hard-code ל-YouTube. עכשיו בודק `course.videoProvider` ובונה URL מתאים.
 
-### ✅ 1 — מנויה מתחילה מהטיזר במקום משיעור 1
-**תוקן ביוני 2026.** `app/courses/[slug]/page.tsx`: הוספת `firstNonPreviewLesson` ו-`hasAccess`. כש-`hasAccess=true`, כפתור "שיעור הבא" (navNext) מצביע על השיעור הראשון שאינו free preview, במקום lessons[0].
+### ✅ 1 — מנויה מתחילה מהטיזר במקום שיעור 1
+`app/courses/[slug]/page.tsx`: `navNext` כשאין שיעור פעיל → מצביע על `firstNonPreviewLesson` (לא `lessons[0]`) למשתמשות עם גישה.
 
-### ✅ 2 — Vimeo לא שומר נקודת עצירה (progress saving)
-**תוקן ביוני 2026.** הוסף `@vimeo/player` SDK. קומפוננט `VimeoEmbed` חדש שומר progress ל-`user_progress` כל 10 שניות בניגון ובהשהייה, וטוען נקודת המשך בפתיחה.
+### ✅ 2 — Vimeo progress saving
+`VimeoEmbed` + `@vimeo/player` SDK: שמירה כל 10 שניות + בהשהייה. iframe ישיר (לא div+SDK) כדי לא לשבור את הלייאאוט.
 
-### ✅ 3 — Thumbnail של Vimeo לא נשלף אוטומטית
-**תוקן ביוני 2026.** `useEffect` חדש שולח fetch ל-`vimeo.com/api/oembed.json` עבור כל שיעור Vimeo. Thumbnails נשמרים ב-`vimeoThumbnails` state ומועברים ל-LessonRow ול-SkillsSection.
+### ✅ 3 — Vimeo thumbnails אוטומטיות
+`useEffect` ב-CoursePage שולח `vimeo.com/api/oembed.json` לכל שיעור Vimeo. Thumbnails מועברים ל-LessonRow, SkillsSection, ואדמין (picker).
 
-### ✅ 4 — Thumbnail ישן לא מתעדכן כששינוי לינק YouTube
-**תוקן ביוני 2026.** `thumbSrc` בודק אם `lessonThumbnails[id]` הוא URL של YouTube עם `videoId` שונה מה-`lesson.videoId` הנוכחי — ואם כן מתעלם ממנו ומשתמש ב-`ytThumb` הנגזר מה-ID הנוכחי.
+### ✅ 4 — Thumbnail ישן YouTube אחרי עדכון לינק
+`thumbSrc` בודק `isStaleYt` — URL של YouTube עם `videoId` שונה מה-נוכחי → מוחלף ב-thumbnail נגזר מה-ID הנוכחי.
 
-### ✅ 5 — קטגוריות דינמיות באדמין
-**הושלם ביוני 2026.**
-- `lib/supabase/categories-db.ts`: CRUD לטבלת categories
-- `app/admin/page.tsx`: טאב "קטגוריות" — הוספה/מחיקה + snippet ה-SQL migration
-- `app/categories/[slug]/page.tsx`: דף SSR מציג קורסים לפי קטגוריה
-- `lib/supabase/courses-db.ts`: `dbFetchCoursesByCategory` מסנן לפי `tags @> ['cat:{name}']`
-- **⚠️ SQL migration — חובה להריץ פעם אחת ב-Supabase** (מוצג בתוך הטאב עצמו באדמין)
+### ✅ 5 — קטגוריות דינמיות
+- מאוחסנות ב-`site_content` (key: `course_categories`) — **ללא migration SQL**
+- `lib/supabase/content-db.ts`: `dbGetCourseCategories` / `dbSetCourseCategories`
+- ניהול inline בתוך עורך הקורס באדמין (לא טאב נפרד): dropdown + פאנל הוספה/עריכה/מחיקה
+- `app/categories/[slug]/page.tsx`: דף SSR לפי שם קטגוריה (decode slug)
+- **אין SQL migration — עובד מיידית**
 
-### ✅ 6 — מוצרים מומלצים לכל שיעור (אדמין)
-**הושלם ביוני 2026.**
-- `lib/courses-data.ts`: סוג `CourseProduct { name, url }` + שדה `lessonProducts?: Record<string, CourseProduct[]>` ב-`CourseData`
-- `lib/supabase/courses-db.ts`: קריאה/כתיבה ב-meta JSON
-- `app/admin/page.tsx`: ממשק עריכת מוצרים בכל `LessonRow`
-- `app/courses/[slug]/page.tsx`: מציג קישורי מוצרים מתחת לנגן כשיש שיעור פעיל
+### ✅ 6 — מוצרים/קישורים לכל שיעור
+- `lib/courses-data.ts`: `CourseProduct { name, url }` + `lessonProducts?: Record<string, CourseProduct[]>`
+- `app/admin/page.tsx`: ממשק 🛍 עם border בכל `LessonRow`
+- `app/courses/[slug]/page.tsx`: מוצג מתחת לנגן כשיש שיעור פעיל
+
+### ✅ 7 — מעבר אוטומטי לשיעור הבא
+`onEnded` callback: YouTube (state=0) + Vimeo (ended event) → `setActiveLessonId(nextLesson.id)`
+
+### ✅ 8 — דקות קורס אוטומטי
+עורך הקורס באדמין: `useEffect` שסוכם `lesson.durationMin` → מעדכן `durationMinutes` אוטומטית.
+
+### ✅ 9 — 404 על רפרש דף קורס
+`app/courses/[slug]/page.tsx`: SSR מחזיר skeleton (לא 404) עד שה-courses context נטען. `mounted + loading` guard — `notFound()` נקרא רק אחרי שהנתונים זמינים.
 
 ---
 
