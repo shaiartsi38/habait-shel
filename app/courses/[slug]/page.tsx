@@ -122,15 +122,13 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       return;
     }
 
-    // Once auth is known, skip the API round-trip — check tier client-side
-    if (authLoaded) {
-      const hasTierAccess = isAdmin || tierCovers(userTier, course.tier);
-      if (!hasTierAccess) { setVideoAccessDenied(true); setLessonVideo(null); setVideoFetching(false); return; }
-      setLessonVideo({ videoId: activeLesson.videoId, videoProvider: activeLesson.videoProvider ?? "youtube" });
+    // Fast UX: if auth is loaded and user clearly has no access, show lock immediately
+    if (authLoaded && !isAdmin && !tierCovers(userTier, course.tier)) {
+      setVideoAccessDenied(true);
       return;
     }
 
-    // Auth not yet loaded — fall back to API (rare: user clicked very fast on page load)
+    // Server-side auth gate — all gated video access goes through the API
     setLessonVideo(null);
     setVideoFetching(true);
     const ctrl = new AbortController();
