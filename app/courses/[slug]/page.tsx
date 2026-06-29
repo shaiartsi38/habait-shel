@@ -67,46 +67,23 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     }, () => setAuthLoaded(true));
   }, []);
 
+  // Compute course — may be undefined while loading
   const course = courses.find((c) => c.slug === slug) ?? COURSES.find((c) => c.slug === slug);
 
-  // During SSR and initial client hydration — show skeleton, never 404 prematurely
-  if (!mounted || loading) {
-    return (
-      <div className="min-h-screen sidebar-safe" style={{ background: "#080608" }}>
-        <div className="h-screen md:h-[88vh] animate-pulse" style={{ background: "linear-gradient(180deg,#140e12 0%,#080608 100%)" }} />
-        <div className="px-4 md:px-16 py-10 space-y-4">
-          {[1,2,3].map((i) => (
-            <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "#140e12" }} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-  if (!course) notFound();
+  // Computed values needed by hooks below — safe with undefined course
+  const activeLesson      = activeLessonId && course ? course.lessons.find((l) => l.id === activeLessonId) ?? null : null;
+  const activeLessonIndex = activeLessonId && course ? course.lessons.findIndex((l) => l.id === activeLessonId) : -1;
+  const nextLesson        = activeLessonIndex >= 0 && course && activeLessonIndex < course.lessons.length - 1
+    ? course.lessons[activeLessonIndex + 1] : null;
 
-  const firstLesson           = course.lessons[0];
-  const firstNonPreviewLesson = course.lessons.find((l) => !l.isFree) ?? firstLesson;
-  const hasAccess             = isAdmin || tierCovers(userTier, course.tier);
-  const activeLesson      = activeLessonId ? course.lessons.find((l) => l.id === activeLessonId) : null;
-  const activeLessonIndex = activeLessonId ? course.lessons.findIndex((l) => l.id === activeLessonId) : -1;
-  const prevLesson = activeLessonIndex > 0 ? course.lessons[activeLessonIndex - 1] : null;
-  const nextLesson =
-    activeLessonIndex >= 0 && activeLessonIndex < course.lessons.length - 1
-      ? course.lessons[activeLessonIndex + 1]
-      : null;
-
-  // nav always visible: before any selection, subscribers skip the free preview (teaser)
-  const navNext = activeLessonId ? nextLesson : ((hasAccess ? firstNonPreviewLesson : firstLesson) ?? null);
-  const navPrev = activeLessonId ? prevLesson : null;
-  const navNextLabel = navNext ? (navNext.title || `שיעור ${activeLessonId ? activeLessonIndex + 2 : 1}`) : "סוף הקורס";
-  const navPrevLabel = navPrev ? (navPrev.title || `שיעור ${activeLessonIndex}`) : "תחילת הקורס";
-
+  // ── All hooks must come before any early return ────────────────────
   useEffect(() => {
     if (!isLoggedIn || !course) return;
     dbGetCourseProgress(course.id).then(setCourseProgress).catch(() => {});
   }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!course) return;
     const vimeoLessons = course.lessons.filter((l) => l.videoProvider === "vimeo" && l.videoId);
     if (vimeoLessons.length === 0) return;
     Promise.all(
@@ -124,7 +101,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!activeLessonId || !activeLesson) return;
+    if (!activeLessonId || !activeLesson || !course) return;
     setVideoAccessDenied(false);
     setStartAt(0);
     playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -138,13 +115,11 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       return;
     }
 
-    // Fast UX: if auth is loaded and user clearly has no access, show lock immediately
     if (authLoaded && !isAdmin && !tierCovers(userTier, course.tier)) {
       setVideoAccessDenied(true);
       return;
     }
 
-    // Server-side auth gate — all gated video access goes through the API
     setLessonVideo(null);
     setVideoFetching(true);
     const ctrl = new AbortController();
@@ -163,8 +138,8 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
 
   const activeLessonIdRef = useRef(activeLessonId);
   activeLessonIdRef.current = activeLessonId;
-  const courseIdRef = useRef(course.id);
-  courseIdRef.current = course.id;
+  const courseIdRef = useRef(course?.id ?? "");
+  courseIdRef.current = course?.id ?? "";
   const nextLessonRef = useRef(nextLesson);
   nextLessonRef.current = nextLesson;
 
@@ -180,6 +155,32 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
     const next = nextLessonRef.current;
     if (next) setActiveLessonId(next.id);
   }, []);
+
+  // ── Early returns (after ALL hooks) ───────────────────────────────
+  if (!mounted || loading) {
+    return (
+      <div className="min-h-screen sidebar-safe" style={{ background: "#080608" }}>
+        <div className="h-screen md:h-[88vh] animate-pulse" style={{ background: "linear-gradient(180deg,#140e12 0%,#080608 100%)" }} />
+        <div className="px-4 md:px-16 py-10 space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "#140e12" }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (!course) notFound();
+
+  // From here, course is guaranteed to be defined
+  const firstLesson           = course!.lessons[0];
+  const firstNonPreviewLesson = course!.lessons.find((l) => !l.isFree) ?? firstLesson;
+  const hasAccess             = isAdmin || tierCovers(userTier, course!.tier);
+  const prevLesson = activeLessonIndex > 0 ? course!.lessons[activeLessonIndex - 1] : null;
+
+  const navNext = activeLessonId ? nextLesson : ((hasAccess ? firstNonPreviewLesson : firstLesson) ?? null);
+  const navPrev = activeLessonId ? prevLesson : null;
+  const navNextLabel = navNext ? (navNext.title || `שיעור ${activeLessonId ? activeLessonIndex + 2 : 1}`) : "סוף הקורס";
+  const navPrevLabel = navPrev ? (navPrev.title || `שיעור ${activeLessonIndex}`) : "תחילת הקורס";
 
   const displayVideoId = activeLessonId
     ? (lessonVideo?.videoId || "")
