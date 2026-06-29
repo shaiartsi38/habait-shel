@@ -38,7 +38,8 @@ type AuthState = { isLoggedIn: boolean; isAdmin: boolean; userTier: string | nul
 // ─── Page ────────────────────────────────────────────────────────
 export default function CoursePage({ params }: { params: { slug: string } }) {
   const { slug } = params;
-  const { courses } = useCourses();
+  const { courses, loading } = useCourses();
+  const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin]       = useState(false);
   const [userTier, setUserTier]     = useState<string | null>(null);
@@ -51,6 +52,8 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   const [courseProgress, setCourseProgress]     = useState<Record<string, number>>({});
   const [vimeoThumbnails, setVimeoThumbnails]   = useState<Record<string, string>>({});
   const playerSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const sb = createClient();
@@ -65,6 +68,20 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
   }, []);
 
   const course = courses.find((c) => c.slug === slug) ?? COURSES.find((c) => c.slug === slug);
+
+  // During SSR and initial client hydration — show skeleton, never 404 prematurely
+  if (!mounted || loading) {
+    return (
+      <div className="min-h-screen sidebar-safe" style={{ background: "#080608" }}>
+        <div className="h-screen md:h-[88vh] animate-pulse" style={{ background: "linear-gradient(180deg,#140e12 0%,#080608 100%)" }} />
+        <div className="px-4 md:px-16 py-10 space-y-4">
+          {[1,2,3].map((i) => (
+            <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "#140e12" }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (!course) notFound();
 
   const firstLesson           = course.lessons[0];
