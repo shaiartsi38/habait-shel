@@ -403,7 +403,10 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 
 **גריד קורסים בדף הבית (דסקטופ)** — 4 עמודות × 3 שורות (0-4 / 4-8 / 8-12), `gap-5`. הוסרה "כרטיס קולקציה" (symmetry breaker).
 
-**HeroSection (דף הבית)** — תמונת הרקע `heroBg` **תמיד** מוצגת. וידאו (כשמוגדר `heroType: "video"`) מוצג כ-overlay מעל התמונה. כך אם הוידאו נכשל בטעינה — התמונה נראית. **אסור לחזור למבנה ישן (תמונה OR וידאו) — גורם להירו שחור לחלוטין כשהוידאו שבור.**
+**HeroSection (דף הבית)** — תמונת הרקע `heroBg` **תמיד** מוצגת. וידאו (כשמוגדר `heroType: "video"`) מוצג כ-overlay מעל התמונה עם fade-in אחרי `onCanPlay`. **אסור לחזור למבנה ישן (תמונה OR וידאו) — גורם להירו שחור לחלוטין כשהוידאו שבור.**
+
+- **Layout נוכחי (יולי 2026):** כותרת **מרכזית** אנכית ואופקית (`justify-center items-center text-center`), font-size `clamp(3.5rem, 11.5vw, 10rem)`. **אסור לחזור ל-`justify-end` / `text-right`** ללא אישור.
+- **וידאו מובייל:** `poster={bgSrc}` למניעת flash שחור, `preload="auto"` לטעינה מהירה, `playsInline` + `muted` חובה ל-autoplay בכל דפדפן. אם יהיה צורך בשני קבצים (מובייל/דסקטופ) — להוסיף `heroVideoMobileUrl` ל-`HeroContent` ולבחור ב-JS לפי viewport.
 
 **`courses-context.tsx`** — localStorage key עלה ל-`hbm-courses-v4` (ניקה cache ישן).
 
@@ -600,7 +603,7 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 
 ### דף הבית — תיקוני מובייל
 
-- **Hero title:** `text-5xl` במובייל (היה `text-4xl`) + overlay כהה יותר (62%, היה 42%) + `text-shadow`
+- **Hero title:** `font-size: clamp(3.5rem, 11.5vw, 10rem)` — מרכזי אנכית ואופקית (`justify-center items-center text-center`). **שינוי יולי 2026: הוסר bottom-right layout, הוסר right-side fade overlay, overlay כהה קצת יותר (70%/78%) לנגישות טקסט מרכזי.**
 - **גריד קורסים:** גריד שטוח `grid-cols-2` אחד למובייל (`md:hidden`) — ללא "יתומים". דסקטופ שומר מבנה row1/row2/rest עם מחיצת נטלי (`hidden md:grid`).
 - **תמונות — fallback:** `onError` handlers על תמונת נטלי ובקארדים "בקרוב" — מציג placeholder ורדרד בעת כישלון טעינה. שורש הבעיה: `i.imghippo.com` לא אמין — **לטפל: להעלות את תמונת נטלי לSupabase Storage** ולעדכן `NATALIE_PROFILE` בשורה 18 של `app/(marketing)/page.tsx`.
 
