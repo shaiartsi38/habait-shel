@@ -144,39 +144,36 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
             muted
             loop
             playsInline
+            preload="auto"
+            poster={bgSrc}
             className="w-full h-full object-cover object-center"
             onCanPlay={() => setVideoReady(true)}
           />
         </div>
       )}
 
-      {/* Overlay — קל יותר במובייל */}
-      <div className="md:hidden absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.62)" }} />
-      <div className="hidden md:block absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.72)" }} />
+      {/* Overlay — מרכזי, צריך קצת יותר כהה לטקסט מרכזי */}
+      <div className="md:hidden absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.7)" }} />
+      <div className="hidden md:block absolute inset-0 z-[1]" style={{ background: "rgba(8,6,8,0.78)" }} />
       {/* Bottom vignette */}
       <div
         className="absolute inset-0 z-[2]"
         style={{
           background:
-            "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.88) 16%, rgba(8,6,8,0.3) 55%, transparent 100%)",
+            "linear-gradient(to top, #080608 0%, rgba(8,6,8,0.7) 14%, rgba(8,6,8,0.15) 50%, transparent 100%)",
         }}
       />
-      {/* Sidebar right fade */}
-      <div
-        className="absolute inset-0 z-[2]"
-        style={{ background: "linear-gradient(to right, transparent 32%, rgba(8,6,8,0.5) 100%)" }}
-      />
 
-      {/* Content — bottom-aligned, right-aligned */}
-      <div className="relative z-10 flex flex-col justify-end flex-1 px-6 pb-16 sidebar-safe md:px-14 md:pb-24 text-right">
+      {/* Content — centered */}
+      <div className="relative z-10 flex flex-col justify-center items-center flex-1 px-6 py-16 sidebar-safe md:px-14 text-center">
         {/* Main headline */}
         <div className="overflow-hidden mb-5">
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className="font-black leading-[0.9] tracking-tight text-5xl md:text-7xl"
-            style={{ textShadow: "0 2px 24px rgba(0,0,0,0.7)" }}
+            className="font-black leading-[0.9] tracking-tight"
+            style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)", textShadow: "0 2px 32px rgba(0,0,0,0.8)" }}
           >
             <span style={{ color: "#FFF8F5" }}>{hero.title1}</span>
             <br />
@@ -199,7 +196,7 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.38, delay: 0.26 }}
-          className="text-base md:text-xl font-light mb-7 max-w-xl leading-relaxed mr-0"
+          className="text-base md:text-xl font-light mb-7 max-w-xl leading-relaxed mx-auto"
           style={{ color: "rgba(255,248,245,0.6)" }}
         >
           {hero.subtitle}
@@ -210,9 +207,9 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.38, delay: 0.34 }}
-          className="flex flex-col items-start gap-4"
+          className="flex flex-col items-center gap-4"
         >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
             {!isLoggedIn && (
               <motion.button
                 onClick={scrollToSub}
@@ -240,7 +237,7 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
 
           {/* Social proof — ישירות מתחת לכפתורים */}
           <div
-            className="flex items-center gap-3 text-[0.65rem]"
+            className="flex items-center justify-center gap-3 text-[0.65rem]"
             style={{ color: "rgba(255,248,245,0.32)" }}
           >
             <span style={{ color: "#C4857A" }}>⭐⭐⭐⭐⭐</span>
