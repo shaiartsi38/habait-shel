@@ -607,7 +607,7 @@ function SkillsSection({ course, vimeoThumbnails }: { course: CourseData; vimeoT
   return (
     <div className="px-4 md:px-16 py-10">
       <h2 className="text-lg font-black mb-5" style={{ color: "#FFF8F5" }}>מה תגלי בקורס זה</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3" style={{ maxWidth: 560 }}>
         {cards.map((card, i) => (
           <div key={card.id} className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "4/3" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -585,21 +585,27 @@ function CourseEditForm({
   const photoRef = useRef<HTMLInputElement>(null);
   const highlightFileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // ── Vimeo thumbnails for lesson picker ───────────────────────────
+  // ── Vimeo thumbnails for lesson picker (includes trailer) ────────
   const [vimeoThumbsAdmin, setVimeoThumbsAdmin] = useState<Record<string, string>>({});
   useEffect(() => {
-    const vimeoLessons = form.lessons.filter((l) => l.videoProvider === "vimeo" && l.videoId);
-    if (!vimeoLessons.length) return;
-    vimeoLessons.forEach((l) => {
-      if (vimeoThumbsAdmin[l.id]) return;
-      fetch(`https://vimeo.com/api/oembed.json?url=https://vimeo.com/${l.videoId}`)
+    const sources: { key: string; videoId: string }[] = [
+      ...form.lessons
+        .filter((l) => l.videoProvider === "vimeo" && l.videoId)
+        .map((l) => ({ key: l.id, videoId: l.videoId })),
+      ...(form.videoProvider === "vimeo" && form.videoId
+        ? [{ key: "trailer", videoId: form.videoId }]
+        : []),
+    ];
+    sources.forEach(({ key, videoId }) => {
+      if (vimeoThumbsAdmin[key]) return;
+      fetch(`https://vimeo.com/api/oembed.json?url=https://vimeo.com/${videoId}`)
         .then((r) => r.json())
         .then((d: { thumbnail_url?: string }) => {
-          if (d.thumbnail_url) setVimeoThumbsAdmin((p) => ({ ...p, [l.id]: d.thumbnail_url! }));
+          if (d.thumbnail_url) setVimeoThumbsAdmin((p) => ({ ...p, [key]: d.thumbnail_url! }));
         })
         .catch(() => {});
     });
-  }, [form.lessons]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.lessons, form.videoId, form.videoProvider]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Dynamic categories ────────────────────────────────────────────
   const [dbCategories, setDbCategories] = useState<string[]>([...CATEGORIES.filter((c) => c !== "הכל")]);
@@ -1088,12 +1094,17 @@ function CourseEditForm({
                     </div>
                   );
                 })()}
-                {/* Vimeo thumbnail picker — first 4 lessons with fetched thumbnails */}
+                {/* Vimeo thumbnail picker — trailer + first 4 lessons with fetched thumbnails */}
                 {(() => {
-                  const vmSources = form.lessons
-                    .filter((l) => l.videoProvider === "vimeo" && l.videoId && vimeoThumbsAdmin[l.id])
-                    .slice(0, 4)
-                    .map((l, li) => ({ label: l.title ? l.title.slice(0, 10) : `ש׳ ${li + 1}`, lessonId: l.id }));
+                  const vmSources = [
+                    ...(form.videoProvider === "vimeo" && vimeoThumbsAdmin["trailer"]
+                      ? [{ label: "טיזר", lessonId: "trailer" }]
+                      : []),
+                    ...form.lessons
+                      .filter((l) => l.videoProvider === "vimeo" && l.videoId && vimeoThumbsAdmin[l.id])
+                      .slice(0, 4)
+                      .map((l, li) => ({ label: l.title ? l.title.slice(0, 10) : `ש׳ ${li + 1}`, lessonId: l.id })),
+                  ];
                   if (vmSources.length === 0) return null;
                   return (
                     <div>
