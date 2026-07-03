@@ -226,13 +226,6 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
                 {hero.ctaText}
               </motion.button>
             )}
-            <Link
-              href="/courses"
-              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl text-sm font-medium border transition-all hover:bg-white/[0.04]"
-              style={{ color: "rgba(255,248,245,0.48)", borderColor: "rgba(255,255,255,0.09)" }}
-            >
-              גלי את הקורסים
-            </Link>
           </div>
 
           {/* Social proof — ישירות מתחת לכפתורים */}
