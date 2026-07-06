@@ -405,54 +405,58 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 
 ---
 
-## ⬜ עיצוב מחדש דף הבית — Layout חדש (סוכם יולי 2026, טרם יושם)
+## ✅ עיצוב מחדש דף הבית — יושם יולי 2026
 
-### ההחלטות שסוכמו (ממתינות לביצוע בקוד)
+### Layout שיושם ב-`app/(marketing)/page.tsx` — `CoursesSection`
 
 **Layout דסקטופ:**
 ```
-Hero (מרכזי, כבר קיים)
+Hero (מרכזי, קיים)
 ┌─────────────────────────────────────────────┐
-│ כותרת סקשן + eyebrow + קו ורוד (72px padding)│
-│ שורה 1: 5 קארדים פורטרט — CSS grid, ללא scroll│
+│ CategoryFilter (pills)                       │
+│ כותרת 1 + eyebrow + קו ורוד — text-center   │
+│ שורה 1: 5 קארדים פורטרט — grid-cols-5       │
 │ מחיצת נטלי                                   │
-│ כותרת סקשן שניה                               │
-│ שורה 2: 4 קארדים פורטרט — CSS grid, ללא scroll│
-│ Text Break (כותרת גדולה + subtitle)           │
-│ כותרת סקשן שלישית ("חדש")                    │
-│ שורה 3: 4 קארדים landscape — 4-col grid       │
+│ כותרת 2 + eyebrow + קו ורוד — text-center   │
+│ שורה 2: 4 קארדים פורטרט — grid-cols-4       │
+│ Text Break (gradient title + subtitle)       │
+│ כותרת 3 + eyebrow + קו ורוד — text-center   │
+│ שורה 3: 4 קארדים landscape — grid-cols-4    │
 └─────────────────────────────────────────────┘
 ```
 
+**פדינג קארד-rows ב-`CoursesSection`:** `px-10` (40px כל צד) — ללא `sidebar-safe`. תואם לדמו המאושר.
+
 **Layout מובייל:**
-- שורות 1+2: `display: flex; overflow-x: auto; scroll-snap-type: x mandatory` — 2 קארדים נראים + ~30% peek של שלישי
-- שורה 3 (landscape): `grid-template-columns: repeat(2, 1fr)` — 2×2 grid, כולם נראים בבת אחת
+- שורות 1+2: `flex overflow-x-auto scroll-snap-type-x` — 2 קארדים + peek של שלישי (`width: calc((100vw - 42px) / 2.3)`)
+- שורה 3 (landscape): `grid-cols-2` — 2×2 grid
 
-**עיצוב קארד פורטרט (MasterClass style):**
-- `aspect-ratio: 5/8` לאזור התמונה
-- כותרת + קטגוריה ON the image (overlay gradient חזק מלמטה)
-- `tier badge` top-left, `חדש badge` top-right
-- Footer מתחת לתמונה: שורת מטא בלבד (נטלי ארצי · X שיעורים · Y שעות)
-- **ללא "צפי בטיזר"** — הכרטיס כולו לחיץ, הכפתור מיותר
+**`PortraitCard` (inline ב-page.tsx):**
+- `aspect-ratio: 5/8` על אזור התמונה
+- כותרת + קטגוריה ON the image (overlay gradient מלמטה)
+- `tier badge` top-left z-30, `חדש badge` top-right z-30, ♡ לב z-30
+- **Hover teaser video**: 380ms delay → YouTube/Vimeo iframe (z-10). width 284%, left -92% — מכסה 5:8 container עם 16:9 iframe. תמונה fade-out ב-opacity:0 כשוידאו פעיל. גרדיאנט+badges z-20/z-30 גלויים מעל הוידאו.
+- Footer מתחת לתמונה: `נטלי ארצי · X שיעורים · Y שעות`
+- **ללא "צפי בטיזר"** כפתור — כרטיס כולו לחיץ
 
-**עיצוב קארד landscape:**
-- `aspect-ratio: 3/2`
-- כותרת + מטא + תגיות מתחת לתמונה (לא על התמונה)
-- desktop: 4-col grid / mobile: 2×2 grid
+**`LandscapeCard` (inline ב-page.tsx):**
+- `aspect-ratio: 3/2`, tier badge top-left, חדש badge top-right
+- body מתחת: כותרת + מטא + עד 2 תגיות
 
-**Text Break סקשן (בין שורה 2 לשורה 3):**
-- כותרת גדולה עם gradient (clamp(2rem, 5vw, 4rem))
-- subtitle קצר
-- קו אנכי דקורטיבי מתחת
+**`CoursesSectionHeader` (inline ב-page.tsx):**
+- eyebrow + כותרת + קו ורוד 34px, `text-center` על desktop
 
-### Admin — עריכת כותרות הסקשן (לממש ביחד עם ה-layout)
-הכותרות הבאות יהיו עריכות מאדמין (להוסיף ל-`HeroContent` ב-`site_content`):
+**Admin — 4 שדות חדשים ב-`HeroContent` (כבר יושמו):**
 - `sectionTitle1` — "מה מחכה לך בפנים" (שורה 1)
-- `sectionTitle2` — "עוד קורסים שתאהבי" (שורה 2)  
-- `textBreakTitle` — "תוכן חדש בכל שבוע" (text break כותרת)
+- `sectionTitle2` — "עוד קורסים שתאהבי" (שורה 2)
+- `textBreakTitle` — "תוכן חדש בכל שבוע"
 - `textBreakSub` — subtitle של ה-text break
+- נמצאים בטאב "הירו" → "כותרות סקשן קורסים" ב-`HomepageEditor`
 
-### קבצי דמו (לעיון בלבד — לא לייבא לקוד)
+**`loading` guard — מניעת flash:**
+`const published = loading ? [] : courses.filter(...)` — כשה-SWR cache ישן מהlocalStorage, קארדים לא מוצגים עד שSupabase מחזיר נתונים חיים.
+
+### קבצי דמו (לעיון בלבד)
 - `/Users/shaiartsi/rows-demo-v4.html` — הדמו הסופי שאושר
 
 ---
