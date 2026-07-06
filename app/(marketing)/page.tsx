@@ -442,14 +442,14 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
 // ─── Section header helper ────────────────────────────────────────
 function CoursesSectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
-    <motion.div className="pt-14 pb-5 px-4 md:px-10 sidebar-safe" {...FI}>
+    <motion.div className="pt-14 pb-5 px-4 md:px-10 sidebar-safe text-right md:text-center" {...FI}>
       <p className="text-[0.5rem] font-bold tracking-[0.44em] uppercase mb-3" style={{ color: "rgba(196,133,122,0.5)" }}>
         {eyebrow}
       </p>
       <h2 className="text-2xl md:text-3xl font-black" style={{ color: "#FFF8F5" }}>
         {title}
       </h2>
-      <div style={{ width: 34, height: 3, background: "linear-gradient(to left, transparent, #C4857A)", borderRadius: 2, marginTop: 12 }} />
+      <div style={{ width: 34, height: 3, background: "linear-gradient(to left, transparent, #C4857A)", borderRadius: 2, marginTop: 12, marginLeft: "auto", marginRight: "auto" }} />
     </motion.div>
   );
 }
