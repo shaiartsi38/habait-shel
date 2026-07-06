@@ -312,6 +312,27 @@ export function HomepageEditor() {
               <p className="text-[0.56rem] mt-1" style={{ color: "#3A2020" }}>הוידאו ירוץ אוטומטית, ב-loop ובלי קול</p>
             </div>
           )}
+
+          {/* ── Course section titles ── */}
+          <div className="pt-4 space-y-4" style={{ borderTop: "1px solid rgba(196,133,122,0.07)" }}>
+            <p className="text-[0.6rem] font-bold tracking-wider uppercase" style={{ color: "#5A3830" }}>כותרות סקשן קורסים</p>
+            <div>
+              <FieldLabel>כותרת שורה 1</FieldLabel>
+              <Input value={hero.sectionTitle1 ?? ""} onChange={(v) => setHero({ ...hero, sectionTitle1: v })} placeholder="מה מחכה לך בפנים" />
+            </div>
+            <div>
+              <FieldLabel>כותרת שורה 2</FieldLabel>
+              <Input value={hero.sectionTitle2 ?? ""} onChange={(v) => setHero({ ...hero, sectionTitle2: v })} placeholder="עוד קורסים שתאהבי" />
+            </div>
+            <div>
+              <FieldLabel>Text Break — כותרת</FieldLabel>
+              <Input value={hero.textBreakTitle ?? ""} onChange={(v) => setHero({ ...hero, textBreakTitle: v })} placeholder="תוכן חדש בכל שבוע" />
+            </div>
+            <div>
+              <FieldLabel>Text Break — תת-כותרת</FieldLabel>
+              <Textarea value={hero.textBreakSub ?? ""} onChange={(v) => setHero({ ...hero, textBreakSub: v })} placeholder="נטלי מצלמת ומעלה תוכן חדש כל שבוע..." rows={2} />
+            </div>
+          </div>
         </div>
       )}
 

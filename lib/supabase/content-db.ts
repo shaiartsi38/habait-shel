@@ -15,6 +15,10 @@ export type HeroContent = {
   heroBg: string;
   heroType?: "image" | "video";
   heroVideoUrl?: string;
+  sectionTitle1?: string;
+  sectionTitle2?: string;
+  textBreakTitle?: string;
+  textBreakSub?: string;
 };
 
 export type ComingSoonItem = {

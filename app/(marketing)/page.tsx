@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Lock, Check, Star, ChevronDown } from "lucide-react";
-import { type Category } from "@/lib/courses-data";
+import { Lock, Check, Star, ChevronDown, Heart } from "lucide-react";
+import { type Category, type CourseData } from "@/lib/courses-data";
+import { useFavorites } from "@/lib/favorites-context";
 import { useCourses } from "@/lib/courses-context";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { createClient } from "@/lib/supabase/client";
@@ -65,7 +66,7 @@ export default function HomePage() {
     <div style={{ background: "var(--black)" }}>
       {!isLoggedIn && <JoinClubButton />}
       <HeroSection hero={hero} isLoggedIn={isLoggedIn} />
-      <CoursesSection comingSoon={comingSoon} hasSubscription={hasSubscription} />
+      <CoursesSection comingSoon={comingSoon} hasSubscription={hasSubscription} hero={hero} />
       <TestimonialsSection testimonials={testimonials} />
       <NatalieSection natalie={natalie} />
       <ExtraContentSections sections={extraSections} />
@@ -246,7 +247,11 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
 }
 
 // ─── Courses Section ──────────────────────────────────────────────
-function CoursesSection({ comingSoon, hasSubscription }: { comingSoon: ComingSoonItem[]; hasSubscription: boolean }) {
+function CoursesSection({ comingSoon, hasSubscription, hero }: {
+  comingSoon: ComingSoonItem[];
+  hasSubscription: boolean;
+  hero: HeroContent;
+}) {
   const [activeCategory, setActiveCategory] = useState<Category>("הכל");
   const { courses } = useCourses();
   const published = courses.filter((c) => c.isPublished && c.showOnHome !== false);
@@ -255,161 +260,177 @@ function CoursesSection({ comingSoon, hasSubscription }: { comingSoon: ComingSoo
       ? published
       : published.filter((c) => c.category === activeCategory);
 
-  const row1 = visible.slice(0, 4);
-  const row2 = visible.slice(4, 8);
-  const row3 = visible.slice(8, 12);
+  const sectionTitle1  = hero.sectionTitle1  || "מה מחכה לך בפנים";
+  const sectionTitle2  = hero.sectionTitle2  || "עוד קורסים שתאהבי";
+  const textBreakTitle = hero.textBreakTitle || "תוכן חדש בכל שבוע";
+  const textBreakSub   = hero.textBreakSub   || "נטלי מצלמת ומעלה תוכן חדש כל שבוע — כי מאפרת שרוצה להיות בפנים לא מפסיקה ללמוד.";
+
+  const isFiltered = activeCategory !== "הכל";
+  const row1 = visible.slice(0, 5);
+  const row2 = visible.slice(5, 9);
+  const row3 = visible.slice(9, 13);
 
   return (
-    <section className="py-16 px-4 sidebar-safe md:px-10 text-right">
-      {/* Heading */}
-      <motion.div className="mb-2" {...FI}>
-        <p className="text-[0.56rem] tracking-[0.34em] uppercase font-semibold mb-2" style={{ color: "#C4857A" }}>
-          מאסטרקלאסים
-        </p>
-        <h2 className="text-2xl md:text-4xl font-extrabold" style={{ color: "#FFF8F5" }}>
-          מה מחכה לך בפנים
-        </h2>
-      </motion.div>
-
-      {/* Decorative line */}
-      <motion.div
-        className="mb-8 h-px"
-        style={{ background: "linear-gradient(to left, transparent, rgba(196,133,122,0.28), transparent)" }}
-        initial={{ opacity: 0, scaleX: 0 }}
-        whileInView={{ opacity: 1, scaleX: 1 }}
-        viewport={{ once: true, amount: 0.15 }}
-        transition={{ duration: 0.65 }}
-      />
-
+    <section className="text-right" style={{ paddingBottom: 56 }}>
       {/* Category filter */}
-      <motion.div
-        className="mb-8"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.35 }}
-      >
+      <div className="pt-12 pb-6 px-4 sidebar-safe md:px-10">
         <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
-      </motion.div>
+      </div>
 
-      {/* Mobile: flat 2-col grid — prevents orphan cards */}
-      {visible.length > 0 && (
-        <div className="md:hidden grid grid-cols-2 gap-0 mb-4">
-          {visible.map((course, i) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.45, ease: "easeOut", delay: (i % 4) * 0.07 }}
-            >
-              <BreathingCard>
-                <CourseCard course={course} hidePurchase={hasSubscription} />
-              </BreathingCard>
-            </motion.div>
-          ))}
+      {isFiltered ? (
+        /* Filtered view: simple flat grid */
+        <div className="px-4 sidebar-safe md:px-10">
+          {visible.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {visible.map((course, i) => (
+                <motion.div
+                  key={course.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: (i % 4) * 0.06 }}
+                >
+                  <PortraitCard course={course} />
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center py-12 text-sm" style={{ color: "rgba(255,248,245,0.3)" }}>
+              אין קורסים בקטגוריה זו
+            </p>
+          )}
         </div>
+      ) : (
+        <>
+          {/* ── Section 1: 5 portrait cards ── */}
+          {row1.length > 0 && (
+            <>
+              <CoursesSectionHeader eyebrow="מאסטרקלאסים" title={sectionTitle1} />
+              {/* Mobile: horizontal scroll */}
+              <div
+                className="md:hidden flex gap-2.5"
+                style={{ overflowX: "auto", scrollSnapType: "x mandatory", padding: "0 16px 20px", scrollbarWidth: "none" }}
+              >
+                {row1.map((course) => (
+                  <div key={course.id} style={{ flexShrink: 0, scrollSnapAlign: "start", width: "calc((100vw - 42px) / 2.3)", minWidth: 130 }}>
+                    <PortraitCard course={course} />
+                  </div>
+                ))}
+              </div>
+              {/* Desktop: 5-col grid */}
+              <div className="hidden md:grid grid-cols-5 gap-3 px-10 sidebar-safe">
+                {row1.map((course, i) => (
+                  <motion.div key={course.id} {...FI} transition={{ ...FI.transition, delay: i * 0.06 }}>
+                    <PortraitCard course={course} />
+                  </motion.div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* ── Natalie divider ── */}
+          <motion.div
+            className="mx-4 md:mx-10 sidebar-safe mt-5 px-5 py-4 rounded-2xl flex items-center gap-5"
+            style={{ background: "rgba(196,133,122,0.03)", border: "1px solid rgba(196,133,122,0.08)" }}
+            {...FI}
+          >
+            <p className="hidden md:block text-[0.42rem] font-bold tracking-[0.4em] uppercase shrink-0" style={{ color: "rgba(196,133,122,0.32)" }}>המדריכה</p>
+            <h3
+              className="text-lg md:text-2xl font-black flex-1 leading-tight"
+              style={{
+                backgroundImage: "linear-gradient(135deg, #FFF8F5, #D4998E, #C4857A)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              מה שמפריד בין עוד מאפרת לאמנית
+            </h3>
+            <Link
+              href="/natalie"
+              className="shrink-0 text-[0.65rem] font-bold transition-all hover:opacity-70"
+              style={{ color: "#C4857A", borderBottom: "1px solid rgba(196,133,122,0.28)", paddingBottom: 2 }}
+            >
+              הכירי אותה ←
+            </Link>
+          </motion.div>
+
+          {/* ── Section 2: 4 portrait cards ── */}
+          {row2.length > 0 && (
+            <>
+              <CoursesSectionHeader eyebrow="קורסים נוספים" title={sectionTitle2} />
+              {/* Mobile: horizontal scroll */}
+              <div
+                className="md:hidden flex gap-2.5"
+                style={{ overflowX: "auto", scrollSnapType: "x mandatory", padding: "0 16px 20px", scrollbarWidth: "none" }}
+              >
+                {row2.map((course) => (
+                  <div key={course.id} style={{ flexShrink: 0, scrollSnapAlign: "start", width: "calc((100vw - 42px) / 2.3)", minWidth: 130 }}>
+                    <PortraitCard course={course} />
+                  </div>
+                ))}
+              </div>
+              {/* Desktop: 4-col grid */}
+              <div className="hidden md:grid grid-cols-4 gap-3 px-10 sidebar-safe">
+                {row2.map((course, i) => (
+                  <motion.div key={course.id} {...FI} transition={{ ...FI.transition, delay: i * 0.06 }}>
+                    <PortraitCard course={course} />
+                  </motion.div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* ── Text break ── */}
+          {(row1.length > 0 || row2.length > 0) && (
+            <div className="mx-4 md:mx-10 sidebar-safe text-center" style={{ paddingTop: 72 }}>
+              <motion.div {...FI}>
+                <p className="text-[0.5rem] font-bold tracking-[0.44em] uppercase mb-4" style={{ color: "rgba(196,133,122,0.45)" }}>
+                  NATALIE ARTSI ACADEMY
+                </p>
+                <h2
+                  className="font-black leading-[1.04] tracking-tight mb-4"
+                  style={{
+                    fontSize: "clamp(2rem, 5vw, 4rem)",
+                    backgroundImage: "linear-gradient(135deg, #FFF8F5 0%, #D4998E 55%, #C4857A 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  {textBreakTitle}
+                </h2>
+                <p
+                  className="font-light leading-relaxed max-w-md mx-auto mb-10"
+                  style={{ fontSize: "clamp(0.78rem, 1.4vw, 0.92rem)", color: "rgba(255,248,245,0.36)" }}
+                >
+                  {textBreakSub}
+                </p>
+                <div className="w-px h-14 mx-auto" style={{ background: "linear-gradient(to bottom, rgba(196,133,122,0.4), transparent)" }} />
+              </motion.div>
+            </div>
+          )}
+
+          {/* ── Section 3: 4 landscape cards ── */}
+          {row3.length > 0 && (
+            <>
+              <CoursesSectionHeader eyebrow="חדש באקדמיה" title="הכי חדש — עכשיו זמין" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4 md:px-10 sidebar-safe">
+                {row3.map((course, i) => (
+                  <motion.div key={course.id} {...FI} transition={{ ...FI.transition, delay: i * 0.06 }}>
+                    <LandscapeCard course={course} />
+                  </motion.div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
       )}
 
-      {/* Row 1 — desktop only */}
-      {row1.length > 0 && (
-        <div className="hidden md:grid md:grid-cols-4 gap-5 mb-2">
-          {row1.map((course, i) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.45, ease: "easeOut", delay: i * 0.07 }}
-            >
-              <BreathingCard>
-                <CourseCard course={course} hidePurchase={hasSubscription} />
-              </BreathingCard>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {/* Natalie luxury divider */}
-      <motion.div
-        className="mb-3 overflow-hidden rounded-2xl hidden md:flex items-center gap-8 px-10 py-5"
-        style={{
-          background: "linear-gradient(135deg, rgba(196,133,122,0.05) 0%, rgba(212,153,142,0.03) 100%)",
-          border: "1px solid rgba(196,133,122,0.08)",
-          minHeight: 80,
-        }}
-        {...FI}
-      >
-        <p className="text-[0.48rem] tracking-[0.38em] uppercase font-semibold shrink-0" style={{ color: "rgba(196,133,122,0.45)" }}>
-          המדריכה
-        </p>
-        <h3
-          className="text-3xl md:text-4xl font-black leading-none shrink-0"
-          style={{
-            backgroundImage: "linear-gradient(135deg, #FFF8F5 0%, #D4998E 45%, #C4857A 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
-          מה שמפריד בין עוד מאפרת לאמנית
-        </h3>
-        <div className="w-px h-8 mx-2 shrink-0" style={{ background: "rgba(196,133,122,0.13)" }} />
-        <p className="text-[0.66rem] leading-relaxed flex-1" style={{ color: "rgba(255,248,245,0.26)" }}>
-          מאפרת מקצועית · 100K+ עוקבות · מיליוני צפיות
-        </p>
-        <Link
-          href="/natalie"
-          className="shrink-0 text-[0.65rem] font-semibold transition-all hover:opacity-70"
-          style={{ color: "#C4857A" }}
-        >
-          הכירי אותה ←
-        </Link>
-      </motion.div>
-
-      {/* Row 2 — desktop only */}
-      {row2.length > 0 && (
-        <div className="hidden md:grid md:grid-cols-4 gap-5 mb-2">
-          {row2.map((course, i) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.45, ease: "easeOut", delay: i * 0.07 }}
-            >
-              <BreathingCard>
-                <CourseCard course={course} hidePurchase={hasSubscription} />
-              </BreathingCard>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {/* Row 3 — desktop only */}
-      {row3.length > 0 && (
-        <div className="hidden md:grid md:grid-cols-4 gap-5 mb-8">
-          {row3.map((course, i) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.45, ease: "easeOut", delay: i * 0.07 }}
-            >
-              <BreathingCard>
-                <CourseCard course={course} hidePurchase={hasSubscription} />
-              </BreathingCard>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {/* Coming Soon */}
+      {/* ── Coming Soon ── */}
       <ComingSoonSection items={comingSoon} />
 
-      {/* All courses link */}
-      <motion.div className="mt-8 flex justify-end" {...FI}>
+      {/* ── All courses link ── */}
+      <motion.div className="mt-8 flex justify-end px-4 md:px-10 sidebar-safe" {...FI}>
         <Link href="/courses" className="inline-flex items-center gap-2 text-sm font-semibold transition-all hover:gap-3" style={{ color: "#C4857A" }}>
           כל הקורסים ←
         </Link>
@@ -418,26 +439,174 @@ function CoursesSection({ comingSoon, hasSubscription }: { comingSoon: ComingSoo
   );
 }
 
-// ─── Breathing card wrapper ───────────────────────────────────────
-function BreathingCard({ children }: { children: React.ReactNode }) {
+// ─── Section header helper ────────────────────────────────────────
+function CoursesSectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <motion.div className="pt-14 pb-5 px-4 md:px-10 sidebar-safe" {...FI}>
+      <p className="text-[0.5rem] font-bold tracking-[0.44em] uppercase mb-3" style={{ color: "rgba(196,133,122,0.5)" }}>
+        {eyebrow}
+      </p>
+      <h2 className="text-2xl md:text-3xl font-black" style={{ color: "#FFF8F5" }}>
+        {title}
+      </h2>
+      <div style={{ width: 34, height: 3, background: "linear-gradient(to left, transparent, #C4857A)", borderRadius: 2, marginTop: 12 }} />
+    </motion.div>
+  );
+}
+
+// ─── Portrait card (MasterClass style, no teaser button) ──────────
+function PortraitCard({ course }: { course: CourseData }) {
   const [hovered, setHovered] = useState(false);
+  const { favorites, isLoggedIn, toggle } = useFavorites();
+  const isFav = favorites.has(course.id);
+
   return (
     <motion.div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      animate={
-        hovered
-          ? { scale: [1, 1.022, 1], opacity: [0.88, 1, 0.88] }
-          : { scale: 1, opacity: 1 }
-      }
-      transition={
-        hovered
-          ? { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
-          : { duration: 0.35, ease: "easeOut" }
-      }
-      style={{ willChange: "transform, opacity" }}
+      whileHover={{ y: -6 }}
+      transition={{ type: "spring", stiffness: 400, damping: 28 }}
+      style={{
+        borderWidth: "1px", borderStyle: "solid",
+        borderColor: hovered ? "rgba(196,133,122,0.42)" : "rgba(196,133,122,0.1)",
+        borderRadius: 13, overflow: "hidden", background: "#110810",
+        boxShadow: hovered ? "0 18px 48px rgba(0,0,0,0.65)" : "none",
+        transition: "border-color 0.32s, box-shadow 0.32s",
+      }}
     >
-      {children}
+      <Link href={`/courses/${course.slug}`} className="block">
+        {/* Image — aspect 5/8 */}
+        <div className="relative overflow-hidden" style={{ aspectRatio: "5/8" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={course.image}
+            alt={course.title}
+            className="w-full h-full object-cover"
+            style={{ objectPosition: "center 10%", transform: hovered ? "scale(1.04)" : "scale(1)", transition: "transform 0.55s ease" }}
+          />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,6,8,0.96) 0%, rgba(8,6,8,0.6) 28%, rgba(8,6,8,0.1) 60%, transparent 80%)" }} />
+          {/* Tier badge — top left */}
+          <div
+            className="absolute top-2.5 left-2.5 z-10 px-1.5 py-[2px] rounded-[5px] text-[0.44rem] font-black tracking-[0.16em] uppercase"
+            style={{ color: "#C4857A", background: "rgba(8,6,8,0.82)", border: "1px solid rgba(196,133,122,0.28)", backdropFilter: "blur(4px)" }}
+          >
+            {course.tier}
+          </div>
+          {/* New badge — top right */}
+          {course.isNew && (
+            <div
+              className="absolute top-2.5 right-2.5 z-10 px-1.5 py-[2px] rounded-[5px] text-[0.46rem] font-black"
+              style={{ color: "#080608", background: "#C4857A" }}
+            >
+              חדש
+            </div>
+          )}
+          {/* Favorite heart */}
+          {isLoggedIn && (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(course.id); }}
+              className="absolute bottom-14 left-2.5 z-20 p-1.5 rounded-full transition-transform active:scale-90"
+              style={{ background: "rgba(8,6,8,0.55)", backdropFilter: "blur(8px)" }}
+              aria-label={isFav ? "הסר ממועדפים" : "הוסף למועדפים"}
+            >
+              <Heart size={12} fill={isFav ? "#C4857A" : "none"} style={{ color: isFav ? "#C4857A" : "rgba(255,248,245,0.5)", transition: "color 0.18s, fill 0.18s" }} />
+            </button>
+          )}
+          {/* Category + title on image */}
+          <div className="absolute inset-x-0 bottom-0 z-10 px-3 pb-3">
+            {course.category && (
+              <p className="text-[0.42rem] font-bold tracking-[0.28em] uppercase mb-1.5" style={{ color: "rgba(196,133,122,0.65)" }}>
+                {course.category}
+              </p>
+            )}
+            <h3
+              className="font-black leading-[1.2]"
+              style={{ fontSize: "clamp(0.78rem, 1.4vw, 0.9rem)", color: "#FFF8F5", textShadow: "0 1px 12px rgba(0,0,0,0.9)" }}
+            >
+              {course.title}
+            </h3>
+          </div>
+        </div>
+        {/* Footer */}
+        <div className="px-3 py-2.5">
+          <p className="text-[0.54rem]" style={{ color: "rgba(255,248,245,0.28)" }}>
+            {course.instructor.name} · {course.lessons.length} שיעורים · {course.duration}
+          </p>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+// ─── Landscape card ────────────────────────────────────────────────
+function LandscapeCard({ course }: { course: CourseData }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      whileHover={{ y: -5 }}
+      transition={{ type: "spring", stiffness: 400, damping: 28 }}
+      style={{
+        borderWidth: "1px", borderStyle: "solid",
+        borderColor: hovered ? "rgba(196,133,122,0.38)" : "rgba(196,133,122,0.1)",
+        borderRadius: 13, overflow: "hidden", background: "#110810",
+        boxShadow: hovered ? "0 14px 36px rgba(0,0,0,0.55)" : "none",
+        transition: "border-color 0.32s, box-shadow 0.32s",
+      }}
+    >
+      <Link href={`/courses/${course.slug}`} className="block">
+        {/* Image — aspect 3/2 */}
+        <div className="relative overflow-hidden" style={{ aspectRatio: "3/2" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={course.image}
+            alt={course.title}
+            className="w-full h-full object-cover"
+            style={{ objectPosition: "center 18%", transform: hovered ? "scale(1.04)" : "scale(1)", transition: "transform 0.55s ease" }}
+          />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,6,8,0.5) 0%, transparent 55%)" }} />
+          {/* Tier badge */}
+          <div
+            className="absolute top-2.5 left-2.5 z-10 px-1.5 py-[2px] rounded-[5px] text-[0.43rem] font-black tracking-[0.15em] uppercase"
+            style={{ color: "#C4857A", background: "rgba(8,6,8,0.82)", border: "1px solid rgba(196,133,122,0.25)", backdropFilter: "blur(4px)" }}
+          >
+            {course.tier}
+          </div>
+          {course.isNew && (
+            <div
+              className="absolute top-2.5 right-2.5 z-10 px-1.5 py-[2px] rounded-[5px] text-[0.43rem] font-black"
+              style={{ color: "#080608", background: "#C4857A" }}
+            >
+              חדש
+            </div>
+          )}
+        </div>
+        {/* Body */}
+        <div className="px-3 py-3" style={{ borderTop: "1px solid rgba(196,133,122,0.06)" }}>
+          <h3 className="text-[0.78rem] font-black leading-[1.28] mb-1.5" style={{ color: "#FFF8F5" }}>
+            {course.title}
+          </h3>
+          <p className="text-[0.54rem] font-bold tracking-[0.04em] mb-2" style={{ color: "rgba(196,133,122,0.5)" }}>
+            {course.lessons.length} שיעורים · {course.duration}
+          </p>
+          {course.tags && course.tags.length > 0 && (
+            <div className="flex gap-1 flex-wrap">
+              {course.tags.slice(0, 2).map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[0.47rem] font-bold px-1.5 py-[2px] rounded-[5px]"
+                  style={{ color: "rgba(255,248,245,0.32)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(196,133,122,0.1)" }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </Link>
     </motion.div>
   );
 }
