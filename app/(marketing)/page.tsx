@@ -273,13 +273,13 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
   return (
     <section className="text-right" style={{ paddingBottom: 56 }}>
       {/* Category filter */}
-      <div className="pt-12 pb-6 px-4 sidebar-safe md:px-10">
+      <div className="pt-12 pb-6 px-4 md:px-[var(--sidebar-offset)]">
         <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
       </div>
 
       {isFiltered ? (
         /* Filtered view: simple flat grid */
-        <div className="px-4 sidebar-safe md:px-10">
+        <div className="px-4 md:px-[var(--sidebar-offset)]">
           {visible.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {visible.map((course, i) => (
@@ -317,7 +317,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
                 ))}
               </div>
               {/* Desktop: 5-col grid */}
-              <div className="hidden md:grid grid-cols-5 gap-3 px-10 sidebar-safe">
+              <div className="hidden md:grid grid-cols-5 gap-3 md:px-[var(--sidebar-offset)]">
                 {row1.map((course, i) => (
                   <motion.div key={course.id} {...FI} transition={{ ...FI.transition, delay: i * 0.06 }}>
                     <PortraitCard course={course} />
@@ -329,7 +329,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
 
           {/* ── Natalie divider ── */}
           <motion.div
-            className="mx-4 md:mx-10 sidebar-safe mt-5 px-5 py-4 rounded-2xl flex items-center gap-5"
+            className="mx-4 md:mx-[var(--sidebar-offset)] mt-5 px-5 py-4 rounded-2xl flex items-center gap-5"
             style={{ background: "rgba(196,133,122,0.03)", border: "1px solid rgba(196,133,122,0.08)" }}
             {...FI}
           >
@@ -370,7 +370,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
                 ))}
               </div>
               {/* Desktop: 4-col grid */}
-              <div className="hidden md:grid grid-cols-4 gap-3 px-10 sidebar-safe">
+              <div className="hidden md:grid grid-cols-4 gap-3 md:px-[var(--sidebar-offset)]">
                 {row2.map((course, i) => (
                   <motion.div key={course.id} {...FI} transition={{ ...FI.transition, delay: i * 0.06 }}>
                     <PortraitCard course={course} />
@@ -382,7 +382,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
 
           {/* ── Text break ── */}
           {(row1.length > 0 || row2.length > 0) && (
-            <div className="mx-4 md:mx-10 sidebar-safe text-center" style={{ paddingTop: 72 }}>
+            <div className="mx-4 md:mx-[var(--sidebar-offset)] text-center" style={{ paddingTop: 72 }}>
               <motion.div {...FI}>
                 <p className="text-[0.5rem] font-bold tracking-[0.44em] uppercase mb-4" style={{ color: "rgba(196,133,122,0.45)" }}>
                   NATALIE ARTSI ACADEMY
@@ -430,7 +430,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
       <ComingSoonSection items={comingSoon} />
 
       {/* ── All courses link ── */}
-      <motion.div className="mt-8 flex justify-end px-4 md:px-10 sidebar-safe" {...FI}>
+      <motion.div className="mt-8 flex justify-end px-4 md:px-[var(--sidebar-offset)]" {...FI}>
         <Link href="/courses" className="inline-flex items-center gap-2 text-sm font-semibold transition-all hover:gap-3" style={{ color: "#C4857A" }}>
           כל הקורסים ←
         </Link>
@@ -442,7 +442,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
 // ─── Section header helper ────────────────────────────────────────
 function CoursesSectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
-    <motion.div className="pt-14 pb-5 px-4 md:px-10 sidebar-safe text-right md:text-center" {...FI}>
+    <motion.div className="pt-14 pb-5 px-4 md:px-[var(--sidebar-offset)] text-right md:text-center" {...FI}>
       <p className="text-[0.5rem] font-bold tracking-[0.44em] uppercase mb-3" style={{ color: "rgba(196,133,122,0.5)" }}>
         {eyebrow}
       </p>
