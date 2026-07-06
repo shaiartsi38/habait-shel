@@ -273,13 +273,13 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
   return (
     <section className="text-right" style={{ paddingBottom: 56 }}>
       {/* Category filter */}
-      <div className="pt-12 pb-6 px-4 md:px-[var(--sidebar-offset)]">
+      <div className="pt-12 pb-6 px-4 md:px-10">
         <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
       </div>
 
       {isFiltered ? (
         /* Filtered view: simple flat grid */
-        <div className="px-4 md:px-[var(--sidebar-offset)]">
+        <div className="px-4 md:px-10">
           {visible.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {visible.map((course, i) => (
@@ -317,7 +317,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
                 ))}
               </div>
               {/* Desktop: 5-col grid */}
-              <div className="hidden md:grid grid-cols-5 gap-3 md:px-[var(--sidebar-offset)]">
+              <div className="hidden md:grid grid-cols-5 gap-3 md:px-10">
                 {row1.map((course, i) => (
                   <motion.div key={course.id} {...FI} transition={{ ...FI.transition, delay: i * 0.06 }}>
                     <PortraitCard course={course} />
@@ -329,7 +329,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
 
           {/* ── Natalie divider ── */}
           <motion.div
-            className="mx-4 md:mx-[var(--sidebar-offset)] mt-5 px-5 py-4 rounded-2xl flex items-center gap-5"
+            className="mx-4 md:mx-10 mt-5 px-5 py-4 rounded-2xl flex items-center gap-5"
             style={{ background: "rgba(196,133,122,0.03)", border: "1px solid rgba(196,133,122,0.08)" }}
             {...FI}
           >
@@ -370,7 +370,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
                 ))}
               </div>
               {/* Desktop: 4-col grid */}
-              <div className="hidden md:grid grid-cols-4 gap-3 md:px-[var(--sidebar-offset)]">
+              <div className="hidden md:grid grid-cols-4 gap-3 md:px-10">
                 {row2.map((course, i) => (
                   <motion.div key={course.id} {...FI} transition={{ ...FI.transition, delay: i * 0.06 }}>
                     <PortraitCard course={course} />
@@ -382,7 +382,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
 
           {/* ── Text break ── */}
           {(row1.length > 0 || row2.length > 0) && (
-            <div className="mx-4 md:mx-[var(--sidebar-offset)] text-center" style={{ paddingTop: 72 }}>
+            <div className="mx-4 md:mx-10 text-center" style={{ paddingTop: 72 }}>
               <motion.div {...FI}>
                 <p className="text-[0.5rem] font-bold tracking-[0.44em] uppercase mb-4" style={{ color: "rgba(196,133,122,0.45)" }}>
                   NATALIE ARTSI ACADEMY
@@ -430,7 +430,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
       <ComingSoonSection items={comingSoon} />
 
       {/* ── All courses link ── */}
-      <motion.div className="mt-8 flex justify-end px-4 md:px-[var(--sidebar-offset)]" {...FI}>
+      <motion.div className="mt-8 flex justify-end px-4 md:px-10" {...FI}>
         <Link href="/courses" className="inline-flex items-center gap-2 text-sm font-semibold transition-all hover:gap-3" style={{ color: "#C4857A" }}>
           כל הקורסים ←
         </Link>
@@ -442,7 +442,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
 // ─── Section header helper ────────────────────────────────────────
 function CoursesSectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
-    <motion.div className="pt-14 pb-5 px-4 md:px-[var(--sidebar-offset)] text-right md:text-center" {...FI}>
+    <motion.div className="pt-14 pb-5 px-4 md:px-10 text-right md:text-center" {...FI}>
       <p className="text-[0.5rem] font-bold tracking-[0.44em] uppercase mb-3" style={{ color: "rgba(196,133,122,0.5)" }}>
         {eyebrow}
       </p>
@@ -454,16 +454,30 @@ function CoursesSectionHeader({ eyebrow, title }: { eyebrow: string; title: stri
   );
 }
 
-// ─── Portrait card (MasterClass style, no teaser button) ──────────
+// ─── Portrait card (MasterClass style, hover teaser video) ────────
 function PortraitCard({ course }: { course: CourseData }) {
   const [hovered, setHovered] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { favorites, isLoggedIn, toggle } = useFavorites();
   const isFav = favorites.has(course.id);
 
+  const handleMouseEnter = () => {
+    setHovered(true);
+    if (!course.videoId) return;
+    timerRef.current = setTimeout(() => setShowVideo(true), 380);
+  };
+
+  const handleMouseLeave = () => {
+    setHovered(false);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setShowVideo(false);
+  };
+
   return (
     <motion.div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 400, damping: 28 }}
       style={{
@@ -482,13 +496,29 @@ function PortraitCard({ course }: { course: CourseData }) {
             src={course.image}
             alt={course.title}
             className="w-full h-full object-cover"
-            style={{ objectPosition: "center 10%", transform: hovered ? "scale(1.04)" : "scale(1)", transition: "transform 0.55s ease" }}
+            style={{ objectPosition: "center 10%", transform: hovered ? "scale(1.04)" : "scale(1)", transition: "transform 0.55s ease", opacity: showVideo ? 0 : 1 }}
           />
+
+          {/* Teaser video on hover */}
+          {showVideo && course.videoId && (
+            <div className="absolute inset-0 z-10 overflow-hidden" style={{ animation: "fadeIn 0.3s ease" }}>
+              <iframe
+                src={
+                  course.videoProvider === "vimeo"
+                    ? `https://player.vimeo.com/video/${course.videoId}?autoplay=1&muted=1&loop=1&controls=0&background=1`
+                    : `https://www.youtube.com/embed/${course.videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${course.videoId}&modestbranding=1&rel=0&playsinline=1`
+                }
+                allow="autoplay; encrypted-media"
+                style={{ position: "absolute", width: "284%", height: "100%", left: "-92%", top: 0, border: "none", pointerEvents: "none" }}
+              />
+            </div>
+          )}
+
           {/* Gradient overlay */}
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,6,8,0.96) 0%, rgba(8,6,8,0.6) 28%, rgba(8,6,8,0.1) 60%, transparent 80%)" }} />
+          <div className="absolute inset-0 z-20" style={{ background: "linear-gradient(to top, rgba(8,6,8,0.96) 0%, rgba(8,6,8,0.6) 28%, rgba(8,6,8,0.1) 60%, transparent 80%)" }} />
           {/* Tier badge — top left */}
           <div
-            className="absolute top-2.5 left-2.5 z-10 px-1.5 py-[2px] rounded-[5px] text-[0.44rem] font-black tracking-[0.16em] uppercase"
+            className="absolute top-2.5 left-2.5 z-30 px-1.5 py-[2px] rounded-[5px] text-[0.44rem] font-black tracking-[0.16em] uppercase"
             style={{ color: "#C4857A", background: "rgba(8,6,8,0.82)", border: "1px solid rgba(196,133,122,0.28)", backdropFilter: "blur(4px)" }}
           >
             {course.tier}
@@ -496,7 +526,7 @@ function PortraitCard({ course }: { course: CourseData }) {
           {/* New badge — top right */}
           {course.isNew && (
             <div
-              className="absolute top-2.5 right-2.5 z-10 px-1.5 py-[2px] rounded-[5px] text-[0.46rem] font-black"
+              className="absolute top-2.5 right-2.5 z-30 px-1.5 py-[2px] rounded-[5px] text-[0.46rem] font-black"
               style={{ color: "#080608", background: "#C4857A" }}
             >
               חדש
@@ -506,7 +536,7 @@ function PortraitCard({ course }: { course: CourseData }) {
           {isLoggedIn && (
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(course.id); }}
-              className="absolute bottom-14 left-2.5 z-20 p-1.5 rounded-full transition-transform active:scale-90"
+              className="absolute bottom-14 left-2.5 z-30 p-1.5 rounded-full transition-transform active:scale-90"
               style={{ background: "rgba(8,6,8,0.55)", backdropFilter: "blur(8px)" }}
               aria-label={isFav ? "הסר ממועדפים" : "הוסף למועדפים"}
             >
@@ -514,7 +544,7 @@ function PortraitCard({ course }: { course: CourseData }) {
             </button>
           )}
           {/* Category + title on image */}
-          <div className="absolute inset-x-0 bottom-0 z-10 px-3 pb-3">
+          <div className="absolute inset-x-0 bottom-0 z-30 px-3 pb-3">
             {course.category && (
               <p className="text-[0.42rem] font-bold tracking-[0.28em] uppercase mb-1.5" style={{ color: "rgba(196,133,122,0.65)" }}>
                 {course.category}
