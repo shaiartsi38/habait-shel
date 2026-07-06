@@ -403,6 +403,60 @@ CREATE POLICY "users manage own favorites" ON user_favorites
 
 **גריד קורסים בדף הבית (דסקטופ)** — 4 עמודות × 3 שורות (0-4 / 4-8 / 8-12), `gap-5`. הוסרה "כרטיס קולקציה" (symmetry breaker).
 
+---
+
+## ⬜ עיצוב מחדש דף הבית — Layout חדש (סוכם יולי 2026, טרם יושם)
+
+### ההחלטות שסוכמו (ממתינות לביצוע בקוד)
+
+**Layout דסקטופ:**
+```
+Hero (מרכזי, כבר קיים)
+┌─────────────────────────────────────────────┐
+│ כותרת סקשן + eyebrow + קו ורוד (72px padding)│
+│ שורה 1: 5 קארדים פורטרט — CSS grid, ללא scroll│
+│ מחיצת נטלי                                   │
+│ כותרת סקשן שניה                               │
+│ שורה 2: 4 קארדים פורטרט — CSS grid, ללא scroll│
+│ Text Break (כותרת גדולה + subtitle)           │
+│ כותרת סקשן שלישית ("חדש")                    │
+│ שורה 3: 4 קארדים landscape — 4-col grid       │
+└─────────────────────────────────────────────┘
+```
+
+**Layout מובייל:**
+- שורות 1+2: `display: flex; overflow-x: auto; scroll-snap-type: x mandatory` — 2 קארדים נראים + ~30% peek של שלישי
+- שורה 3 (landscape): `grid-template-columns: repeat(2, 1fr)` — 2×2 grid, כולם נראים בבת אחת
+
+**עיצוב קארד פורטרט (MasterClass style):**
+- `aspect-ratio: 5/8` לאזור התמונה
+- כותרת + קטגוריה ON the image (overlay gradient חזק מלמטה)
+- `tier badge` top-left, `חדש badge` top-right
+- Footer מתחת לתמונה: שורת מטא בלבד (נטלי ארצי · X שיעורים · Y שעות)
+- **ללא "צפי בטיזר"** — הכרטיס כולו לחיץ, הכפתור מיותר
+
+**עיצוב קארד landscape:**
+- `aspect-ratio: 3/2`
+- כותרת + מטא + תגיות מתחת לתמונה (לא על התמונה)
+- desktop: 4-col grid / mobile: 2×2 grid
+
+**Text Break סקשן (בין שורה 2 לשורה 3):**
+- כותרת גדולה עם gradient (clamp(2rem, 5vw, 4rem))
+- subtitle קצר
+- קו אנכי דקורטיבי מתחת
+
+### Admin — עריכת כותרות הסקשן (לממש ביחד עם ה-layout)
+הכותרות הבאות יהיו עריכות מאדמין (להוסיף ל-`HeroContent` ב-`site_content`):
+- `sectionTitle1` — "מה מחכה לך בפנים" (שורה 1)
+- `sectionTitle2` — "עוד קורסים שתאהבי" (שורה 2)  
+- `textBreakTitle` — "תוכן חדש בכל שבוע" (text break כותרת)
+- `textBreakSub` — subtitle של ה-text break
+
+### קבצי דמו (לעיון בלבד — לא לייבא לקוד)
+- `/Users/shaiartsi/rows-demo-v4.html` — הדמו הסופי שאושר
+
+---
+
 **HeroSection (דף הבית)** — תמונת הרקע `heroBg` **תמיד** מוצגת. וידאו (כשמוגדר `heroType: "video"`) מוצג כ-overlay מעל התמונה עם fade-in אחרי `onCanPlay`. **אסור לחזור למבנה ישן (תמונה OR וידאו) — גורם להירו שחור לחלוטין כשהוידאו שבור.**
 
 - **Layout נוכחי (יולי 2026):** כותרת **מרכזית** אנכית ואופקית (`justify-center items-center text-center`), font-size `clamp(3.5rem, 11.5vw, 10rem)`. **אסור לחזור ל-`justify-end` / `text-right`** ללא אישור.
