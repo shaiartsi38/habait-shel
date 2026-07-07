@@ -178,7 +178,7 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
               <img
                 src="/logo-habait.png"
                 alt="הבית של המאפרים"
-                style={{ width: "clamp(280px, 55vw, 720px)", height: "auto", display: "block", margin: "0 auto" }}
+                style={{ width: "clamp(600px, 85vw, 1200px)", height: "auto", display: "block", margin: "0 auto" }}
               />
             </motion.div>
           ) : (

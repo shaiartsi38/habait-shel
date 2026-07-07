@@ -101,13 +101,12 @@ export default function Sidebar({ isAdmin: _isAdminProp = false }: { isAdmin?: b
                 }}
               >
                 {/* Brand */}
-                <div className="px-5 pt-6 pb-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <p className="text-[0.56rem] tracking-[0.34em] uppercase mb-1.5 font-semibold" style={{ color: "#C4857A" }}>
-                    Natalie Artsi
-                  </p>
-                  <p className="text-[0.9rem] font-bold leading-tight" style={{ color: "#FFF8F5" }}>
-                    הבית של המאפרים
-                  </p>
+                <div className="px-3 pt-4 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                  <img
+                    src="/logo-habait.png"
+                    alt="הבית של המאפרים"
+                    style={{ width: "100%", height: "auto", display: "block" }}
+                  />
                 </div>
 
                 {/* Nav */}

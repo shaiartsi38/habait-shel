@@ -66,9 +66,12 @@ export default function LoginPage() {
         <div className="px-8 py-9">
           {/* Brand */}
           <div className="text-center mb-8">
-            <p className="text-[0.55rem] tracking-[0.32em] uppercase mb-2" style={{ color: "#C4857A" }}>Natalie Artsi</p>
-            <h1 className="text-xl font-black" style={{ color: "#FFF8F5" }}>הבית של המאפרים</h1>
-            <p className="text-xs mt-2" style={{ color: "#5A3830" }}>כניסה לחשבון</p>
+            <img
+              src="/logo-habait.png"
+              alt="הבית של המאפרים"
+              style={{ width: "clamp(200px, 60vw, 320px)", height: "auto", display: "block", margin: "0 auto 12px" }}
+            />
+            <p className="text-xs" style={{ color: "#5A3830" }}>כניסה לחשבון</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
