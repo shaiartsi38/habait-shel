@@ -19,6 +19,7 @@ export type HeroContent = {
   sectionTitle2?: string;
   textBreakTitle?: string;
   textBreakSub?: string;
+  showLogo?: boolean;
 };
 
 export type ComingSoonItem = {

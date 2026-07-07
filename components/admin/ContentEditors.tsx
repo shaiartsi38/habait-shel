@@ -219,11 +219,38 @@ export function HomepageEditor() {
       {/* ── Hero tab ── */}
       {tab === "hero" && (
         <div className="space-y-5">
+
+          {/* ── Logo / Text toggle ── */}
           <div>
+            <FieldLabel>כותרת הירו — סוג תצוגה</FieldLabel>
+            <div className="flex gap-2">
+              {([false, true] as const).map((isLogo) => (
+                <button
+                  key={String(isLogo)}
+                  type="button"
+                  onClick={() => setHero({ ...hero, showLogo: isLogo })}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[0.75rem] font-semibold transition-all"
+                  style={(hero.showLogo ?? false) === isLogo
+                    ? { background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }
+                    : { background: "#140e12", color: "#5A3830", border: "1px solid rgba(196,133,122,0.12)" }
+                  }
+                >
+                  {isLogo ? "🏠 לוגו תמונה" : "✏️ כיתוב טקסט"}
+                </button>
+              ))}
+            </div>
+            {(hero.showLogo ?? false) && (
+              <p className="text-[0.6rem] mt-1.5" style={{ color: "rgba(196,133,122,0.5)" }}>
+                הלוגו מוצג כתמונה — שדות הכותרת למטה לא פעילים
+              </p>
+            )}
+          </div>
+
+          <div style={{ opacity: (hero.showLogo ?? false) ? 0.35 : 1, pointerEvents: (hero.showLogo ?? false) ? "none" : "auto" }}>
             <FieldLabel>כותרת שורה 1</FieldLabel>
             <Input value={hero.title1} onChange={(v) => setHero({ ...hero, title1: v })} placeholder="הבית של" />
           </div>
-          <div>
+          <div style={{ opacity: (hero.showLogo ?? false) ? 0.35 : 1, pointerEvents: (hero.showLogo ?? false) ? "none" : "auto" }}>
             <FieldLabel>כותרת שורה 2 (גרדיאנט)</FieldLabel>
             <Input value={hero.title2} onChange={(v) => setHero({ ...hero, title2: v })} placeholder="המאפרים" />
           </div>

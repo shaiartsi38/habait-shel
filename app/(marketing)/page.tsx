@@ -167,29 +167,43 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
 
       {/* Content — centered */}
       <div className="relative z-10 flex flex-col justify-center items-center flex-1 px-6 py-16 sidebar-safe md:px-14 text-center">
-        {/* Main headline */}
+        {/* Main headline — logo image OR editable text */}
         <div className="overflow-hidden mb-5">
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className="font-black leading-[0.9] tracking-tight"
-            style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)", textShadow: "0 2px 32px rgba(0,0,0,0.8)" }}
-          >
-            <span style={{ color: "#FFF8F5" }}>{hero.title1}</span>
-            <br />
-            <span
-              style={{
-                backgroundImage:
-                  "linear-gradient(135deg, #C4857A 0%, #D4998E 38%, #FFF8F5 58%, #D4998E 78%, #C4857A 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
+          {hero.showLogo ? (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
             >
-              {hero.title2}
-            </span>
-          </motion.h1>
+              <img
+                src="/logo-habait.png"
+                alt="הבית של המאפרים"
+                style={{ width: "clamp(280px, 55vw, 720px)", height: "auto", display: "block", margin: "0 auto" }}
+              />
+            </motion.div>
+          ) : (
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              className="font-black leading-[0.9] tracking-tight"
+              style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)", textShadow: "0 2px 32px rgba(0,0,0,0.8)" }}
+            >
+              <span style={{ color: "#FFF8F5" }}>{hero.title1}</span>
+              <br />
+              <span
+                style={{
+                  backgroundImage:
+                    "linear-gradient(135deg, #C4857A 0%, #D4998E 38%, #FFF8F5 58%, #D4998E 78%, #C4857A 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                {hero.title2}
+              </span>
+            </motion.h1>
+          )}
         </div>
 
         {/* Subtitle */}

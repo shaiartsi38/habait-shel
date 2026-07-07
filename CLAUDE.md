@@ -300,10 +300,10 @@ type VideoProvider = "youtube" | "vimeo" | "direct"
 ## מצב פתוח — SQL migrations שחייבים לרוץ
 
 ```sql
--- created_at לטבלת profiles — חובה להריץ! (תאריך הצטרפות בניהול משתמשות + ייצוא CSV)
+-- created_at לטבלת profiles ✅ הורץ ביולי 2026
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
 ```
-⚠️ עד שמריצים — "תאריך הצטרפות" מציג "—". משתמשים קיימים יקבלו תאריך ריצת המיגרציה (לא ניתן לשחזר).
+✅ הורץ — "תאריך הצטרפות" מציג תאריך תקין. משתמשים קיימים קיבלו תאריך ריצת המיגרציה.
 
 ```sql
 -- subscription_tier (שלב 3א)
@@ -671,6 +671,35 @@ Hero (מרכזי, קיים)
 - IP limiting
 - מערכת מייל יומי
 - RLS per-course (`course_purchases` table)
+
+---
+
+## עבודה בתהליך — יולי 2026
+
+### ✅ לוגו ראשי — הוטמע בירו
+
+- **קובץ לוגו:** `public/logo-habait.png` (PNG שקוף RGBA, 1366×768, עם גרדיאנט צבעי הפלטפורמה)
+- **שימוש בירו:** `HeroContent.showLogo: boolean` — toggle באדמין → ניהול → הירו
+  - `showLogo: true` → מציג `<img src="/logo-habait.png">` עם `clamp(280px, 55vw, 720px)`
+  - `showLogo: false` → מציג כותרת טקסט עריכה רגילה (ברירת מחדל)
+- **אדמין:** טאב "הירו" → "כותרת הירו — סוג תצוגה" → כפתורי "🏠 לוגו תמונה / ✏️ כיתוב טקסט"
+- **קבצים שעודכנו:** `lib/supabase/content-db.ts` (הוסף `showLogo?`), `app/(marketing)/page.tsx`, `components/admin/ContentEditors.tsx`
+- **הבא:** הטמעת הלוגו ב-Sidebar, דף לוגין, ואדמין header + Splash Screen
+
+### 🔴 ביטול מנוי עם קארדקום + דף תודה — דחוף
+- **ביטול מנוי:** תהליך ביטול דרך קארדקום — API / webhook / flow שעדיין לא מומש
+- **דף תודה:** דף `/thank-you` (או `/checkout/success`) שמוצג אחרי רכישה מוצלחת מקארדקום
+- שניהם חסרים לחלוטין — יש לתכנן ולממש לפני פתיחה מלאה לציבור
+
+### ⬜ תקנון מועדון ומדיניות פרטיות
+- יש לכתוב / לעדכן תקנון מועדון ומדיניות פרטיות
+- מוצג כיום ב-ClosingCTA (5 שורות preview) — מנוהל דרך אדמין → key: `terms`
+- מדיניות פרטיות — עדיין לא קיימת, יש להוסיף עמוד/modal
+
+### ⬜ ComingSoonSection → Coverflow
+- **החלטה:** ה-"בקרוב" section ישונה מגריד רגיל ל-Coverflow (scroll + cards ב-3D)
+- **תהליך:** קודם לבנות דמו ב-HTML נפרד → שי מאשר → רק אז לממש בקוד
+- **אסור לגעת בקוד לפני אישור הדמו**
 
 ---
 
