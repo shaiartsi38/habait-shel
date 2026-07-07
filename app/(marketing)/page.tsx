@@ -32,6 +32,7 @@ function scrollToSub() {
 // ─── Page ────────────────────────────────────────────────────────
 export default function HomePage() {
   const [hero, setHero]                   = useState<HeroContent>(DEFAULT_HERO);
+  const [heroLoaded, setHeroLoaded]       = useState(false);
   const [testimonials, setTestimonials]   = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
   const [plans, setPlans]                 = useState<SubPlan[]>(DEFAULT_PLANS);
   const [extraSections, setExtraSections] = useState<ExtraSection[]>(DEFAULT_EXTRA_SECTIONS);
@@ -43,7 +44,7 @@ export default function HomePage() {
   const [hasSubscription, setHasSubscription] = useState(false);
 
   useEffect(() => {
-    dbGetHero().then(setHero).catch(() => {});
+    dbGetHero().then(h => { setHero(h); setHeroLoaded(true); }).catch(() => setHeroLoaded(true));
     dbGetTestimonials().then(setTestimonials).catch(() => {});
     dbGetPlans().then(setPlans).catch(() => {});
     dbGetExtraSections().then(setExtraSections).catch(() => {});
@@ -65,7 +66,7 @@ export default function HomePage() {
   return (
     <div style={{ background: "var(--black)" }}>
       {!isLoggedIn && <JoinClubButton />}
-      <HeroSection hero={hero} isLoggedIn={isLoggedIn} />
+      <HeroSection hero={hero} isLoggedIn={isLoggedIn} heroLoaded={heroLoaded} />
       <CoursesSection comingSoon={comingSoon} hasSubscription={hasSubscription} hero={hero} />
       <TestimonialsSection testimonials={testimonials} />
       <NatalieSection natalie={natalie} />
@@ -103,7 +104,7 @@ function JoinClubButton() {
 }
 
 // ─── Full-Bleed Parallax Hero ─────────────────────────────────────
-function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: boolean }) {
+function HeroSection({ hero, isLoggedIn, heroLoaded }: { hero: HeroContent; isLoggedIn: boolean; heroLoaded: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const bgY = useTransform(scrollY, [0, 600], ["0%", "22%"]);
@@ -167,8 +168,8 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
 
       {/* Content — centered */}
       <div className="relative z-10 flex flex-col justify-center items-center flex-1 px-6 py-16 sidebar-safe md:px-14 text-center">
-        {/* Main headline — logo image OR editable text */}
-        <div className="overflow-hidden mb-5">
+        {/* Main headline — logo image OR editable text. Hidden until DB loaded to prevent flash. */}
+        <div className="overflow-hidden mb-5" style={{ opacity: heroLoaded ? 1 : 0, transition: "opacity 0.3s ease" }}>
           {hero.showLogo ? (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -178,7 +179,7 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
               <img
                 src="/logo-habait.png"
                 alt="הבית של המאפרים"
-                style={{ width: "clamp(600px, 85vw, 1200px)", height: "auto", display: "block", margin: "0 auto" }}
+                style={{ width: "clamp(200px, 38vw, 520px)", height: "auto", display: "block", margin: "0 auto" }}
               />
             </motion.div>
           ) : (
