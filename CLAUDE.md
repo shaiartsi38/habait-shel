@@ -684,7 +684,10 @@ Hero (מרכזי, קיים)
   - `showLogo: false` → מציג כותרת טקסט עריכה רגילה (ברירת מחדל)
 - **אדמין:** טאב "הירו" → "כותרת הירו — סוג תצוגה" → כפתורי "🏠 לוגו תמונה / ✏️ כיתוב טקסט"
 - **קבצים שעודכנו:** `lib/supabase/content-db.ts` (הוסף `showLogo?`), `app/(marketing)/page.tsx`, `components/admin/ContentEditors.tsx`
-- **הבא:** הטמעת הלוגו ב-Sidebar, דף לוגין, ואדמין header + Splash Screen
+- **Sidebar** (`components/layout/Sidebar.tsx`): לוגו תמונה במקום טקסט, `width:100%`
+- **Login** (`app/(auth)/login/page.tsx`): לוגו תמונה, `clamp(200px,60vw,320px)`
+- **Splash Screen** (`components/SplashScreen.tsx`): מוצג 2 שניות בטעינה ראשונה (sessionStorage guard), `clamp(260px,55vw,560px)`, fade-out 0.7s
+- **layout.tsx**: `<SplashScreen />` מעל כל התוכן
 
 ### 🔴 ביטול מנוי עם קארדקום + דף תודה — דחוף
 - **ביטול מנוי:** תהליך ביטול דרך קארדקום — API / webhook / flow שעדיין לא מומש
