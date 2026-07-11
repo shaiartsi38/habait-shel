@@ -107,6 +107,7 @@ export type NewestSectionContent = {
   imageUrl: string;
   videoId: string;
   videoProvider: "youtube" | "vimeo" | "direct";
+  featuredCourseIds: string[];
 };
 
 // ─── Defaults (fallback when Supabase isn't loaded yet) ───────────
@@ -267,6 +268,7 @@ export const DEFAULT_NEWEST_SECTION: NewestSectionContent = {
   imageUrl: "",
   videoId: "",
   videoProvider: "youtube",
+  featuredCourseIds: [],
 };
 
 export const dbGetNewestSection    = () => getContent<NewestSectionContent>("newest_section", DEFAULT_NEWEST_SECTION);

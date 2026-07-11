@@ -259,7 +259,10 @@ function CoursesSection({ comingSoon, hasSubscription, hero, newestSection }: {
   const isFiltered = activeCategory !== "הכל";
   const row1 = visible.slice(0, 5);
   const row2 = visible.slice(5, 9);
-  const row3 = visible.slice(9, 13);
+  const featuredIds = newestSection.featuredCourseIds ?? [];
+  const row3 = featuredIds.length > 0
+    ? featuredIds.map((id) => courses.find((c) => c.id === id)).filter(Boolean) as typeof courses
+    : [];
 
   return (
     <section className="text-right" style={{ paddingBottom: 56 }}>

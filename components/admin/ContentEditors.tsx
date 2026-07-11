@@ -12,6 +12,7 @@ import {
 } from "@/lib/supabase/content-db";
 import { dbUploadImage, dbUploadVideo } from "@/lib/supabase/courses-db";
 import { CATEGORIES } from "@/lib/courses-data";
+import { useCourses } from "@/lib/courses-context";
 
 // ─── Shared UI ────────────────────────────────────────────────────
 
@@ -688,13 +689,68 @@ function NewestSectionEditor({ value, onChange }: { value: NewestSectionContent;
   const [uploadingVid, setUploadingVid] = useState(false);
   const imgRef = useRef<HTMLInputElement>(null);
   const vidRef = useRef<HTMLInputElement>(null);
+  const { courses } = useCourses();
+  const publishedCourses = courses.filter((c) => c.isPublished && c.showOnHome !== false);
   const set = <K extends keyof NewestSectionContent>(key: K, val: NewestSectionContent[K]) => onChange({ ...value, [key]: val });
+  const selectedIds = value.featuredCourseIds ?? [];
+
+  const toggleCourse = (id: string) => {
+    if (selectedIds.includes(id)) {
+      set("featuredCourseIds", selectedIds.filter((x) => x !== id));
+    } else if (selectedIds.length < 4) {
+      set("featuredCourseIds", [...selectedIds, id]);
+    }
+  };
 
   return (
     <div className="space-y-5">
       <p className="text-[0.7rem]" style={{ color: "#5A3830" }}>
         סקשיין ״הכי חדש — עכשיו זמין״ בדף הבית — כותרת, תת-כותרת, תיאור, תמונה וטיזר וידאו.
       </p>
+
+      {/* Course multi-select */}
+      <div>
+        <FieldLabel>קורסים שיופיעו בסקשיין (עד 4) — אם לא נבחר, הסקשיין לא יופיע</FieldLabel>
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          {publishedCourses.map((course) => {
+            const isSelected = selectedIds.includes(course.id);
+            const isDisabled = !isSelected && selectedIds.length >= 4;
+            return (
+              <button
+                key={course.id}
+                type="button"
+                disabled={isDisabled}
+                onClick={() => toggleCourse(course.id)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-right transition-all"
+                style={{
+                  background: isSelected ? "rgba(196,133,122,0.15)" : "#140e12",
+                  border: isSelected ? "1px solid rgba(196,133,122,0.5)" : "1px solid rgba(196,133,122,0.1)",
+                  opacity: isDisabled ? 0.35 : 1,
+                  cursor: isDisabled ? "not-allowed" : "pointer",
+                }}
+              >
+                <div
+                  className="shrink-0 flex items-center justify-center rounded-[5px] w-4 h-4"
+                  style={{
+                    background: isSelected ? "linear-gradient(135deg,#C4857A,#D4998E)" : "transparent",
+                    border: isSelected ? "none" : "1px solid rgba(196,133,122,0.25)",
+                  }}
+                >
+                  {isSelected && <Check size={10} style={{ color: "#080608" }} strokeWidth={3} />}
+                </div>
+                <span className="text-[0.72rem] font-medium leading-tight" style={{ color: isSelected ? "#FFF8F5" : "#8B6355" }}>
+                  {course.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {selectedIds.length > 0 && (
+          <p className="text-[0.6rem] mt-2" style={{ color: "#5A3830" }}>
+            נבחרו {selectedIds.length}/4 קורסים
+          </p>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>

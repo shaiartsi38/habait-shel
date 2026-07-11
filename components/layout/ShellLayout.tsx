@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
-import SplashScreen from "./SplashScreen";
 
 const AUTH_PATHS = ["/login", "/signup"];
 
@@ -18,7 +17,6 @@ export default function ShellLayout({
 
   return (
     <>
-      {!isAuth && <SplashScreen />}
       {!isAuth && <Sidebar isAdmin={isAdmin} />}
       <main className={isAuth ? "min-h-screen" : "min-h-screen pb-24 md:pb-0"}>
         {children}
