@@ -44,7 +44,18 @@ export default function HomePage() {
   const [hasSubscription, setHasSubscription] = useState(false);
 
   useEffect(() => {
-    dbGetHero().then(h => { setHero(h); setHeroLoaded(true); }).catch(() => setHeroLoaded(true));
+    // SWR: apply cached showLogo immediately (no flash), then update from DB
+    const cached = localStorage.getItem("hbm-hero-show-logo");
+    if (cached !== null) {
+      setHero(prev => ({ ...prev, showLogo: cached === "true" }));
+      setHeroLoaded(true);
+    }
+
+    dbGetHero().then(h => {
+      setHero(h);
+      setHeroLoaded(true);
+      localStorage.setItem("hbm-hero-show-logo", String(h.showLogo ?? false));
+    }).catch(() => setHeroLoaded(true));
     dbGetTestimonials().then(setTestimonials).catch(() => {});
     dbGetPlans().then(setPlans).catch(() => {});
     dbGetExtraSections().then(setExtraSections).catch(() => {});
