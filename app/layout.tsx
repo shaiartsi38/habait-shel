@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import ShellLayout from "@/components/layout/ShellLayout";
-import SplashScreen from "@/components/SplashScreen";
 
 export const metadata: Metadata = {
   title: "הבית של המאפרים | Natalie Artzi",
@@ -28,7 +27,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body style={{ background: "#080608" }}>
-        <SplashScreen />
         <Providers>
           <ShellLayout>
             {children}

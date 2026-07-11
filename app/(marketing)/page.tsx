@@ -114,9 +114,14 @@ function JoinClubButton() {
   );
 }
 
+// module-level guard — splash מוצג פעם אחת בלבד לכל טעינת עמוד
+let heroSplashShown = false;
+
 // ─── Full-Bleed Parallax Hero ─────────────────────────────────────
 function HeroSection({ hero, isLoggedIn, heroLoaded }: { hero: HeroContent; isLoggedIn: boolean; heroLoaded: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [splashDone, setSplashDone] = useState(heroSplashShown);
+  const [splashFading, setSplashFading] = useState(false);
   const { scrollY } = useScroll();
   const bgY = useTransform(scrollY, [0, 600], ["0%", "22%"]);
   const isVideo = hero.heroType === "video" && hero.heroVideoUrl;
@@ -124,6 +129,15 @@ function HeroSection({ hero, isLoggedIn, heroLoaded }: { hero: HeroContent; isLo
 
   // fallback לURL ברירת מחדל אם heroBg ריק (למשל ב-Supabase הוגדר ריק)
   const bgSrc = hero.heroBg || DEFAULT_HERO.heroBg;
+
+  // Splash: מוצג פעם אחת בלבד לכל hard load
+  useEffect(() => {
+    if (heroSplashShown) return;
+    heroSplashShown = true;
+    const t1 = setTimeout(() => setSplashFading(true), 1800);
+    const t2 = setTimeout(() => setSplashDone(true), 2500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
 
   return (
     <section
@@ -177,10 +191,43 @@ function HeroSection({ hero, isLoggedIn, heroLoaded }: { hero: HeroContent; isLo
         }}
       />
 
+      {/* ── Splash overlay — מכסה את כל ה-hero עד שהתוכן מוכן ── */}
+      {!splashDone && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 30,
+          background: "#080608",
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          opacity: splashFading ? 0 : 1,
+          transition: "opacity 0.7s ease",
+          pointerEvents: splashFading ? "none" : "all",
+        }}>
+          <div style={{
+            position: "absolute", width: 600, height: 600, borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(196,133,122,0.06) 0%, transparent 65%)",
+            pointerEvents: "none",
+          }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-habait.png" alt="הבית של המאפרים"
+            style={{ width: "clamp(240px, 50vw, 460px)", height: "auto", position: "relative",
+              animation: "splashLogoIn 0.9s cubic-bezier(0.22,1,0.36,1) both" }} />
+          <div style={{ marginTop: 40, width: 80, height: 1, background: "rgba(196,133,122,0.12)",
+            borderRadius: 1, overflow: "hidden", position: "relative" }}>
+            <div style={{ position: "absolute", inset: 0,
+              background: "linear-gradient(to right, transparent, #C4857A 50%, transparent)",
+              animation: "splashBarMove 1.6s ease-in-out 0.5s both" }} />
+          </div>
+          <style>{`
+            @keyframes splashLogoIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+            @keyframes splashBarMove { from{transform:translateX(-200%)} to{transform:translateX(200%)} }
+          `}</style>
+        </div>
+      )}
+
       {/* Content — centered */}
       <div className="relative z-10 flex flex-col justify-center items-center flex-1 px-6 py-16 sidebar-safe md:px-14 text-center">
-        {/* Main headline — logo image OR editable text. Hidden until DB loaded to prevent flash. */}
-        <div className="overflow-hidden mb-5" style={{ opacity: heroLoaded ? 1 : 0, transition: "opacity 0.3s ease" }}>
+        {/* Main headline — hidden until both hero data loaded AND splash done */}
+        <div className="overflow-hidden mb-5" style={{ opacity: (heroLoaded || splashDone) ? 1 : 0, transition: "opacity 0.3s ease" }}>
           {hero.showLogo ? (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
