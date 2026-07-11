@@ -690,7 +690,7 @@ function NewestSectionEditor({ value, onChange }: { value: NewestSectionContent;
   const imgRef = useRef<HTMLInputElement>(null);
   const vidRef = useRef<HTMLInputElement>(null);
   const { courses } = useCourses();
-  const publishedCourses = courses.filter((c) => c.isPublished && c.showOnHome !== false);
+  const publishedCourses = courses;
   const set = <K extends keyof NewestSectionContent>(key: K, val: NewestSectionContent[K]) => onChange({ ...value, [key]: val });
   const selectedIds = value.featuredCourseIds ?? [];
 

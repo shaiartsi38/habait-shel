@@ -683,8 +683,8 @@ Hero (מרכזי, קיים)
 - **הירו:** `ProtectedLogo` hardcoded, `clamp(200px, 38vw, 520px)`, ללא conditional, ללא delay.
 - **Sidebar:** `ProtectedLogo width="40%"`
 - **Login:** `ProtectedLogo clamp(200px, 60vw, 320px)`
-- **Splash Screen (CSS-only):** `app/layout.tsx` — `<div id="__splash">` עם CSS keyframes ב-`<head>`. רץ לפני JS. `components/SplashHide.tsx` מסיר מה-DOM אחרי 2.6s. לוגו מוצג כ-background-image (מוגן).
-- **`newest_section`:** type `NewestSectionContent` ב-content-db.ts. טאב "הכי חדש" באדמין → ניהול → דף הבית. שדות: כותרת, eyebrow, תיאור, תמונה, וידאו טיזר. DB key: `newest_section`.
+- **Splash Screen (CSS-only):** `app/layout.tsx` — `<div id="__splash">` עם CSS keyframes ב-`<head>`. רץ לפני JS. `components/SplashHide.tsx` מסיר מה-DOM אחרי 2.6s. לוגו מוצג כ-background-image (מוגן). לוגו: `clamp(80px,28vw,130px)` (mobile-first). אנימציית pulse-blink. "BY NATALIE ARTSI" byline. `rel="preload"` על הלוגו. **אסור לייבא SplashScreen ישן מ-ShellLayout** — גורם לכפילות.
+- **`newest_section`:** type `NewestSectionContent` ב-content-db.ts + שדה `featuredCourseIds: string[]`. טאב "הכי חדש" באדמין → ניהול → דף הבית. multi-select של **כל** הקורסים (ללא פילטר) עד 4. אם לא נבחרו — הסקשיין לא מופיע. DB key: `newest_section`.
 
 ### 🔴 ביטול מנוי עם קארדקום + דף תודה — דחוף
 - **ביטול מנוי:** תהליך ביטול דרך קארדקום — API / webhook / flow שעדיין לא מומש
