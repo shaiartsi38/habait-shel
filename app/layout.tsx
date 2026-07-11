@@ -22,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preload" as="image" href="/logo-habait.png" />
         <link
           href="https://fonts.googleapis.com/css2?family=Heebo:wght@200;300;400;500;600;700;800;900&display=swap"
           rel="stylesheet"
@@ -36,22 +37,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }
           #__splash::before {
             content: '';
-            position: absolute; width: 600px; height: 600px;
+            position: absolute; width: 360px; height: 360px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(196,133,122,0.06) 0%, transparent 65%);
+            background: radial-gradient(circle, rgba(196,133,122,0.07) 0%, transparent 65%);
           }
           #__splash-logo {
-            width: clamp(200px, 45vw, 440px);
+            width: clamp(80px, 28vw, 130px);
             aspect-ratio: 483/276;
             background-image: url('/logo-habait.png');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
             position: relative;
-            animation: __splashIn 0.9s cubic-bezier(0.22,1,0.36,1) both;
+            animation: __splashIn 0.9s cubic-bezier(0.22,1,0.36,1) both,
+                       __splashPulse 1.1s ease-in-out 1s infinite;
           }
           #__splash-bar-wrap {
-            margin-top: 40px; width: 80px; height: 1px;
+            margin-top: 20px; width: 50px; height: 1px;
             background: rgba(196,133,122,0.12);
             border-radius: 1px; overflow: hidden; position: relative;
           }
@@ -61,9 +63,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             background: linear-gradient(to right, transparent, #C4857A 50%, transparent);
             animation: __splashBar 1.6s ease-in-out 0.5s both;
           }
+          #__splash-byline {
+            margin-top: 14px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 0.5rem;
+            font-weight: 500;
+            letter-spacing: 0.4em;
+            color: rgba(196,133,122,0.5);
+            text-transform: uppercase;
+            animation: __splashIn 0.9s cubic-bezier(0.22,1,0.36,1) 0.3s both;
+          }
           @keyframes __splashIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes __splashPulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.3; }
           }
           @keyframes __splashBar {
             from { transform: translateX(-200%); }
@@ -78,6 +94,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div id="__splash">
           <div id="__splash-logo" />
           <div id="__splash-bar-wrap" />
+          <div id="__splash-byline">BY NATALIE ARTSI</div>
         </div>
         <SplashHide />
         <Providers>
