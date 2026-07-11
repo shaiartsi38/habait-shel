@@ -2,23 +2,16 @@
 import { useEffect, useState } from "react";
 
 export default function SplashScreen() {
-  const [visible, setVisible] = useState(true);
   const [fading, setFading] = useState(false);
+  const [gone, setGone] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem("splash-shown")) {
-      setVisible(false);
-      return;
-    }
     const t1 = setTimeout(() => setFading(true), 1800);
-    const t2 = setTimeout(() => {
-      setVisible(false);
-      sessionStorage.setItem("splash-shown", "1");
-    }, 2500);
+    const t2 = setTimeout(() => setGone(true), 2500);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
-  if (!visible) return null;
+  if (gone) return null;
 
   return (
     <div
@@ -38,11 +31,12 @@ export default function SplashScreen() {
         pointerEvents: "none",
       }} />
 
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/logo-habait.png"
         alt="הבית של המאפרים"
         style={{
-          width: "clamp(260px, 55vw, 560px)",
+          width: "clamp(260px, 55vw, 480px)",
           height: "auto",
           position: "relative",
           animation: "splashIn 0.9s cubic-bezier(0.22,1,0.36,1) both",
