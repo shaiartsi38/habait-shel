@@ -616,19 +616,17 @@ function LandscapeCard({ course }: { course: CourseData }) {
           <p className="text-[0.54rem] font-bold tracking-[0.04em] mb-2" style={{ color: "rgba(196,133,122,0.5)" }}>
             {course.lessons.length} שיעורים · {course.duration}
           </p>
-          {course.tags && course.tags.length > 0 && (
-            <div className="flex gap-1 flex-wrap">
-              {course.tags.slice(0, 2).map((tag) => (
-                <span
-                  key={tag}
-                  className="text-[0.47rem] font-bold px-1.5 py-[2px] rounded-[5px]"
-                  style={{ color: "rgba(255,248,245,0.32)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(196,133,122,0.1)" }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex gap-1 flex-wrap" style={{ minHeight: "18px" }}>
+            {(course.tags?.length ? course.tags.slice(0, 2) : course.category ? [course.category] : []).map((tag) => (
+              <span
+                key={tag}
+                className="text-[0.47rem] font-bold px-1.5 py-[2px] rounded-[5px]"
+                style={{ color: "rgba(255,248,245,0.32)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(196,133,122,0.1)" }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
         </div>
       </Link>
     </motion.div>
