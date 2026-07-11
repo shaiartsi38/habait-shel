@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, CreditCard, Heart, Home, LayoutDashboard, Play, Settings, Sparkles, Users, PanelRightClose, PanelRightOpen, LogIn, LogOut, UserCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import ProtectedLogo from "@/components/ProtectedLogo";
 
 const NAV = [
   { href: "/",              label: "בית",         icon: Home },
@@ -102,11 +103,7 @@ export default function Sidebar({ isAdmin: _isAdminProp = false }: { isAdmin?: b
               >
                 {/* Brand */}
                 <div className="px-5 pt-5 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <img
-                    src="/logo-habait.png"
-                    alt="הבית של המאפרים"
-                    style={{ width: "40%", height: "auto", display: "block", margin: "0 auto" }}
-                  />
+                  <ProtectedLogo width="40%" style={{ margin: "0 auto" }} />
                 </div>
 
                 {/* Nav */}

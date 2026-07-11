@@ -676,18 +676,15 @@ Hero (מרכזי, קיים)
 
 ## עבודה בתהליך — יולי 2026
 
-### ✅ לוגו ראשי — הוטמע בירו
+### ✅ לוגו ראשי — הוטמע
 
-- **קובץ לוגו:** `public/logo-habait.png` (PNG שקוף RGBA, 1366×768, עם גרדיאנט צבעי הפלטפורמה)
-- **שימוש בירו:** `HeroContent.showLogo: boolean` — toggle באדמין → ניהול → הירו
-  - `showLogo: true` → מציג `<img src="/logo-habait.png">` עם `clamp(280px, 55vw, 720px)`
-  - `showLogo: false` → מציג כותרת טקסט עריכה רגילה (ברירת מחדל)
-- **אדמין:** טאב "הירו" → "כותרת הירו — סוג תצוגה" → כפתורי "🏠 לוגו תמונה / ✏️ כיתוב טקסט"
-- **קבצים שעודכנו:** `lib/supabase/content-db.ts` (הוסף `showLogo?`), `app/(marketing)/page.tsx`, `components/admin/ContentEditors.tsx`
-- **Sidebar** (`components/layout/Sidebar.tsx`): לוגו תמונה במקום טקסט, `width:100%`
-- **Login** (`app/(auth)/login/page.tsx`): לוגו תמונה, `clamp(200px,60vw,320px)`
-- **Splash Screen** (`components/SplashScreen.tsx`): מוצג 2 שניות בטעינה ראשונה (sessionStorage guard), `clamp(260px,55vw,560px)`, fade-out 0.7s
-- **layout.tsx**: `<SplashScreen />` מעל כל התוכן
+- **קובץ לוגו:** `public/logo-habait.png` (PNG שקוף RGBA, 483×276 — נחתך מ-1366×768, ללא padding)
+- **הגנה:** `components/ProtectedLogo.tsx` — div עם background-image (אין `<img>`), onContextMenu preventDefault, userSelect/pointerEvents none. בשימוש בהירו, Sidebar, Login.
+- **הירו:** `ProtectedLogo` hardcoded, `clamp(200px, 38vw, 520px)`, ללא conditional, ללא delay.
+- **Sidebar:** `ProtectedLogo width="40%"`
+- **Login:** `ProtectedLogo clamp(200px, 60vw, 320px)`
+- **Splash Screen (CSS-only):** `app/layout.tsx` — `<div id="__splash">` עם CSS keyframes ב-`<head>`. רץ לפני JS. `components/SplashHide.tsx` מסיר מה-DOM אחרי 2.6s. לוגו מוצג כ-background-image (מוגן).
+- **`newest_section`:** type `NewestSectionContent` ב-content-db.ts. טאב "הכי חדש" באדמין → ניהול → דף הבית. שדות: כותרת, eyebrow, תיאור, תמונה, וידאו טיזר. DB key: `newest_section`.
 
 ### 🔴 ביטול מנוי עם קארדקום + דף תודה — דחוף
 - **ביטול מנוי:** תהליך ביטול דרך קארדקום — API / webhook / flow שעדיין לא מומש

@@ -12,9 +12,11 @@ import { createClient } from "@/lib/supabase/client";
 import { CategoryFilter } from "@/components/courses/CategoryFilter";
 import {
   type HeroContent, type Testimonial, type SubPlan, type ExtraSection, type FaqItem, type ComingSoonItem, type NatalieContent,
-  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS, DEFAULT_FAQS, DEFAULT_COMING_SOON, DEFAULT_TERMS, DEFAULT_NATALIE,
-  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections, dbGetFaqs, dbGetComingSoon, dbGetTerms, dbGetNatalie,
+  type NewestSectionContent,
+  DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_PLANS, DEFAULT_EXTRA_SECTIONS, DEFAULT_FAQS, DEFAULT_COMING_SOON, DEFAULT_TERMS, DEFAULT_NATALIE, DEFAULT_NEWEST_SECTION,
+  dbGetHero, dbGetTestimonials, dbGetPlans, dbGetExtraSections, dbGetFaqs, dbGetComingSoon, dbGetTerms, dbGetNatalie, dbGetNewestSection,
 } from "@/lib/supabase/content-db";
+import ProtectedLogo from "@/components/ProtectedLogo";
 
 
 // ─── Animation preset — תנועה ברורה ומורגשת ──────────────────────
@@ -32,6 +34,7 @@ function scrollToSub() {
 // ─── Page ────────────────────────────────────────────────────────
 export default function HomePage() {
   const [hero, setHero]                   = useState<HeroContent>(DEFAULT_HERO);
+  const [newestSection, setNewestSection] = useState<NewestSectionContent>(DEFAULT_NEWEST_SECTION);
   const [testimonials, setTestimonials]   = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
   const [plans, setPlans]                 = useState<SubPlan[]>(DEFAULT_PLANS);
   const [extraSections, setExtraSections] = useState<ExtraSection[]>(DEFAULT_EXTRA_SECTIONS);
@@ -44,6 +47,7 @@ export default function HomePage() {
 
   useEffect(() => {
     dbGetHero().then(setHero).catch(() => {});
+    dbGetNewestSection().then(setNewestSection).catch(() => {});
     dbGetTestimonials().then(setTestimonials).catch(() => {});
     dbGetPlans().then(setPlans).catch(() => {});
     dbGetExtraSections().then(setExtraSections).catch(() => {});
@@ -66,7 +70,8 @@ export default function HomePage() {
     <div style={{ background: "var(--black)" }}>
       {!isLoggedIn && <JoinClubButton />}
       <HeroSection hero={hero} isLoggedIn={isLoggedIn} />
-      <CoursesSection comingSoon={comingSoon} hasSubscription={hasSubscription} hero={hero} />
+
+      <CoursesSection comingSoon={comingSoon} hasSubscription={hasSubscription} hero={hero} newestSection={newestSection} />
       <TestimonialsSection testimonials={testimonials} />
       <NatalieSection natalie={natalie} />
       <ExtraContentSections sections={extraSections} />
@@ -167,19 +172,14 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
 
       {/* Content — centered */}
       <div className="relative z-10 flex flex-col justify-center items-center flex-1 px-6 py-16 sidebar-safe md:px-14 text-center">
-        {/* לוגו — מוצג תמיד, ללא תנאי, ללא delay */}
+        {/* לוגו מוגן — ללא img element, ללא delay */}
         <motion.div
           className="mb-5"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo-habait.png"
-            alt="הבית של המאפרים"
-            style={{ width: "clamp(200px, 38vw, 520px)", height: "auto", display: "block", margin: "0 auto" }}
-          />
+          <ProtectedLogo width="clamp(200px, 38vw, 520px)" style={{ margin: "0 auto" }} />
         </motion.div>
 
         {/* Subtitle */}
@@ -237,10 +237,11 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
 }
 
 // ─── Courses Section ──────────────────────────────────────────────
-function CoursesSection({ comingSoon, hasSubscription, hero }: {
+function CoursesSection({ comingSoon, hasSubscription, hero, newestSection }: {
   comingSoon: ComingSoonItem[];
   hasSubscription: boolean;
   hero: HeroContent;
+  newestSection: NewestSectionContent;
 }) {
   const [activeCategory, setActiveCategory] = useState<Category>("הכל");
   const { courses, loading } = useCourses();
@@ -403,7 +404,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero }: {
           {/* ── Section 3: 4 landscape cards ── */}
           {row3.length > 0 && (
             <>
-              <CoursesSectionHeader eyebrow="חדש באקדמיה" title="הכי חדש — עכשיו זמין" />
+              <CoursesSectionHeader eyebrow={newestSection.eyebrow || "חדש באקדמיה"} title={newestSection.title || "הכי חדש — עכשיו זמין"} />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4 md:px-10 sidebar-safe">
                 {row3.map((course, i) => (
                   <motion.div key={course.id} {...FI} transition={{ ...FI.transition, delay: i * 0.06 }}>

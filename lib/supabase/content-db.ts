@@ -100,6 +100,15 @@ export type NatalieContent = {
   milestones: { year: string; text: string }[];
 };
 
+export type NewestSectionContent = {
+  title: string;
+  eyebrow: string;
+  description: string;
+  imageUrl: string;
+  videoId: string;
+  videoProvider: "youtube" | "vimeo" | "direct";
+};
+
 // ─── Defaults (fallback when Supabase isn't loaded yet) ───────────
 
 export const DEFAULT_HERO: HeroContent = {
@@ -251,6 +260,18 @@ export const dbGetComingSoon    = () => getContent<ComingSoonItem[]>("coming_soo
 export const dbGetTerms            = () => getContent<string>("terms", DEFAULT_TERMS);
 export const dbGetCancellationFlow = () => getContent<CancellationFlow>("cancellation_flow", DEFAULT_CANCELLATION_FLOW);
 export const dbGetOgImage          = () => getContent<string>("og_image", "");
+export const DEFAULT_NEWEST_SECTION: NewestSectionContent = {
+  title: "הכי חדש — עכשיו זמין",
+  eyebrow: "חדש באקדמיה",
+  description: "",
+  imageUrl: "",
+  videoId: "",
+  videoProvider: "youtube",
+};
+
+export const dbGetNewestSection    = () => getContent<NewestSectionContent>("newest_section", DEFAULT_NEWEST_SECTION);
+export const dbSetNewestSection    = (v: NewestSectionContent) => setContent("newest_section", v);
+
 export const dbGetCourseCategories = () => getContent<string[]>("course_categories", [
   "עיניים", "עור ובסיס", "כלות", "Editorial", "עסקים ומיתוג", "Contouring",
 ]);

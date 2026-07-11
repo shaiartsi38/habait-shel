@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, Loader2, Check, X, AlertCircle, Upload, Image as ImageIcon, Video } from "lucide-react";
 import {
   type HeroContent, type Testimonial, type ExtraSection, type SubPlan, type NatalieContent, type FaqItem, type ComingSoonItem,
-  type CancellationFlow, type CancellationOffer,
+  type CancellationFlow, type CancellationOffer, type NewestSectionContent,
   DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_EXTRA_SECTIONS, DEFAULT_PLANS, DEFAULT_NATALIE, DEFAULT_FAQS, DEFAULT_COMING_SOON, DEFAULT_TERMS,
-  DEFAULT_CANCELLATION_FLOW,
-  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs, dbGetComingSoon, dbGetTerms, dbGetCancellationFlow,
-  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs, dbSetComingSoon, dbSetTerms, dbSetCancellationFlow,
+  DEFAULT_CANCELLATION_FLOW, DEFAULT_NEWEST_SECTION,
+  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs, dbGetComingSoon, dbGetTerms, dbGetCancellationFlow, dbGetNewestSection,
+  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs, dbSetComingSoon, dbSetTerms, dbSetCancellationFlow, dbSetNewestSection,
 } from "@/lib/supabase/content-db";
 import { dbUploadImage, dbUploadVideo } from "@/lib/supabase/courses-db";
 import { CATEGORIES } from "@/lib/courses-data";
@@ -146,12 +146,13 @@ function LoadingScreen() {
 // ─── Homepage Editor ──────────────────────────────────────────────
 
 export function HomepageEditor() {
-  const [tab, setTab]                     = useState<"hero" | "testimonials" | "extra" | "faq" | "coming" | "terms">("hero");
+  const [tab, setTab]                     = useState<"hero" | "testimonials" | "extra" | "faq" | "coming" | "newest" | "terms">("hero");
   const [hero, setHero]                   = useState<HeroContent>(DEFAULT_HERO);
   const [testimonials, setTestimonials]   = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
   const [extraSections, setExtraSections] = useState<ExtraSection[]>(DEFAULT_EXTRA_SECTIONS);
   const [faqs, setFaqs]                   = useState<FaqItem[]>(DEFAULT_FAQS);
   const [comingSoon, setComingSoon]       = useState<ComingSoonItem[]>(DEFAULT_COMING_SOON);
+  const [newestSection, setNewestSection] = useState<NewestSectionContent>(DEFAULT_NEWEST_SECTION);
   const [terms, setTerms]               = useState<string>(DEFAULT_TERMS);
   const [loading, setLoading]             = useState(true);
   const [saving, setSaving]               = useState(false);
@@ -164,8 +165,8 @@ export function HomepageEditor() {
   const heroVidRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    Promise.all([dbGetHero(), dbGetTestimonials(), dbGetExtraSections(), dbGetFaqs(), dbGetComingSoon(), dbGetTerms()])
-      .then(([h, t, e, f, c, tr]) => { setHero(h); setTestimonials(t); setExtraSections(e); setFaqs(f); setComingSoon(c); setTerms(tr); })
+    Promise.all([dbGetHero(), dbGetTestimonials(), dbGetExtraSections(), dbGetFaqs(), dbGetComingSoon(), dbGetTerms(), dbGetNewestSection()])
+      .then(([h, t, e, f, c, tr, ns]) => { setHero(h); setTestimonials(t); setExtraSections(e); setFaqs(f); setComingSoon(c); setTerms(tr); setNewestSection(ns); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -179,6 +180,7 @@ export function HomepageEditor() {
       else if (tab === "extra")        await dbSetExtraSections(extraSections);
       else if (tab === "faq")          await dbSetFaqs(faqs);
       else if (tab === "coming")       await dbSetComingSoon(comingSoon);
+      else if (tab === "newest")       await dbSetNewestSection(newestSection);
       else                             await dbSetTerms(terms);
       setSuccess(true);
     } catch (e) {
@@ -211,7 +213,7 @@ export function HomepageEditor() {
       <Feedback success={success} error={error} onClose={clearFeedback} />
 
       <TabBar
-        tabs={[{ id: "hero", label: "הירו" }, { id: "testimonials", label: "המלצות" }, { id: "extra", label: "סקשיינים" }, { id: "faq", label: "שאלות נפוצות" }, { id: "coming", label: "בקרוב" }, { id: "terms", label: "תקנון" }]}
+        tabs={[{ id: "hero", label: "הירו" }, { id: "testimonials", label: "המלצות" }, { id: "extra", label: "סקשיינים" }, { id: "faq", label: "שאלות נפוצות" }, { id: "coming", label: "בקרוב" }, { id: "newest", label: "הכי חדש" }, { id: "terms", label: "תקנון" }]}
         active={tab}
         onChange={(id) => { setTab(id as typeof tab); clearFeedback(); }}
       />
@@ -557,6 +559,11 @@ export function HomepageEditor() {
         </div>
       )}
 
+      {/* ── Newest Section tab ── */}
+      {tab === "newest" && (
+        <NewestSectionEditor value={newestSection} onChange={setNewestSection} />
+      )}
+
       {/* ── Terms tab ── */}
       {tab === "terms" && (
         <div className="space-y-4">
@@ -670,6 +677,101 @@ function ComingSoonItemEditor({
             {uploadingVid ? <Loader2 size={10} className="animate-spin" /> : <Upload size={10} />} העלי
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Newest Section Editor ───────────────────────────────────────
+function NewestSectionEditor({ value, onChange }: { value: NewestSectionContent; onChange: (v: NewestSectionContent) => void }) {
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadingVid, setUploadingVid] = useState(false);
+  const imgRef = useRef<HTMLInputElement>(null);
+  const vidRef = useRef<HTMLInputElement>(null);
+  const set = <K extends keyof NewestSectionContent>(key: K, val: NewestSectionContent[K]) => onChange({ ...value, [key]: val });
+
+  return (
+    <div className="space-y-5">
+      <p className="text-[0.7rem]" style={{ color: "#5A3830" }}>
+        סקשיין ״הכי חדש — עכשיו זמין״ בדף הבית — כותרת, תת-כותרת, תיאור, תמונה וטיזר וידאו.
+      </p>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <FieldLabel>תת-כותרת (eyebrow)</FieldLabel>
+          <Input value={value.eyebrow} onChange={(v) => set("eyebrow", v)} placeholder="חדש באקדמיה" />
+        </div>
+        <div>
+          <FieldLabel>כותרת ראשית</FieldLabel>
+          <Input value={value.title} onChange={(v) => set("title", v)} placeholder="הכי חדש — עכשיו זמין" />
+        </div>
+      </div>
+
+      <div>
+        <FieldLabel>תיאור</FieldLabel>
+        <Textarea value={value.description} onChange={(v) => set("description", v)} rows={3} placeholder="תיאור קצר על מה שחדש..." />
+      </div>
+
+      <div>
+        <FieldLabel>תמונה</FieldLabel>
+        <div className="flex gap-2 mb-2 items-center">
+          {value.imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={value.imageUrl} alt="" className="w-16 h-10 object-cover rounded-lg shrink-0" />
+          )}
+          <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+            const file = e.target.files?.[0]; if (!file) return; e.target.value = "";
+            setUploadingImg(true);
+            try { const url = await dbUploadImage(file); set("imageUrl", url); }
+            catch { const r = new FileReader(); r.onload = (ev) => set("imageUrl", ev.target?.result as string); r.readAsDataURL(file); }
+            finally { setUploadingImg(false); }
+          }} />
+          <button type="button" onClick={() => imgRef.current?.click()} disabled={uploadingImg}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold hover:opacity-80 disabled:opacity-40"
+            style={{ background: "rgba(196,133,122,0.12)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
+          >
+            {uploadingImg ? <Loader2 size={10} className="animate-spin" /> : <Upload size={11} />} העלי מהמחשב
+          </button>
+        </div>
+        <Input value={value.imageUrl} onChange={(v) => set("imageUrl", v)} dir="ltr" placeholder="https://..." />
+      </div>
+
+      <div>
+        <FieldLabel>סוג וידאו טיזר</FieldLabel>
+        <div className="flex gap-2 mb-3">
+          {(["youtube", "vimeo", "direct"] as const).map((p) => (
+            <button key={p} type="button" onClick={() => set("videoProvider", p)}
+              className="flex-1 py-2 rounded-xl text-[0.72rem] font-semibold transition-all"
+              style={value.videoProvider === p
+                ? { background: "linear-gradient(135deg,#C4857A,#D4998E)", color: "#080608" }
+                : { background: "#140e12", color: "#5A3830", border: "1px solid rgba(196,133,122,0.12)" }
+              }
+            >{p}</button>
+          ))}
+        </div>
+        {value.videoProvider !== "direct" ? (
+          <Input value={value.videoId} onChange={(v) => set("videoId", v)} dir="ltr"
+            placeholder={value.videoProvider === "youtube" ? "https://youtube.com/watch?v=..." : "https://vimeo.com/..."} />
+        ) : (
+          <div className="space-y-2">
+            <Input value={value.videoId} onChange={(v) => set("videoId", v)} dir="ltr" placeholder="URL ישיר לוידאו..." />
+            <div>
+              <input ref={vidRef} type="file" accept="video/*" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0]; if (!file) return; e.target.value = "";
+                setUploadingVid(true);
+                try { const url = await dbUploadVideo(file); set("videoId", url); }
+                catch {/* ignore */}
+                finally { setUploadingVid(false); }
+              }} />
+              <button type="button" onClick={() => vidRef.current?.click()} disabled={uploadingVid}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold hover:opacity-80 disabled:opacity-40"
+                style={{ background: "rgba(196,133,122,0.12)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
+              >
+                {uploadingVid ? <Loader2 size={10} className="animate-spin" /> : <Upload size={11} />} העלי וידאו מהמחשב
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

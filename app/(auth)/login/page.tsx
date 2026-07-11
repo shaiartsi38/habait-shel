@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import ProtectedLogo from "@/components/ProtectedLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -66,11 +67,7 @@ export default function LoginPage() {
         <div className="px-8 py-9">
           {/* Brand */}
           <div className="text-center mb-8">
-            <img
-              src="/logo-habait.png"
-              alt="הבית של המאפרים"
-              style={{ width: "clamp(200px, 60vw, 320px)", height: "auto", display: "block", margin: "0 auto 12px" }}
-            />
+            <ProtectedLogo width="clamp(200px, 60vw, 320px)" style={{ margin: "0 auto 12px" }} />
             <p className="text-xs" style={{ color: "#5A3830" }}>כניסה לחשבון</p>
           </div>
 
