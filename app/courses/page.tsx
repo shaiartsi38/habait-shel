@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Search, X } from "lucide-react";
 import { CATEGORIES, type Category } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import { CourseCard } from "@/components/courses/CourseCard";
@@ -24,6 +25,8 @@ function CourseSkeleton() {
 
 export default function CoursesPage() {
   const [activeCategory, setActiveCategory] = useState<Category>("הכל");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
   const { courses, loading } = useCourses();
   const [hasSubscription, setHasSubscription] = useState(false);
 
@@ -37,10 +40,19 @@ export default function CoursesPage() {
     });
   }, []);
 
-  const visible =
-    activeCategory === "הכל"
-      ? courses
-      : courses.filter((c) => c.category === activeCategory);
+  const visible = (() => {
+    let list = activeCategory === "הכל" ? courses : courses.filter((c) => c.category === activeCategory);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter((c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.category?.toLowerCase().includes(q) ||
+        c.subtitle?.toLowerCase().includes(q) ||
+        (c.tags ?? []).some((t) => t.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  })();
 
   return (
     <div
@@ -72,6 +84,44 @@ export default function CoursesPage() {
         <p className="mt-3 text-sm leading-relaxed max-w-md" style={{ color: "#5A3830" }}>
           {courses.length} מאסטרקלאסים מקצועיים — מעיניים מרשימות ועד עסקים ומיתוג
         </p>
+      </motion.div>
+
+      {/* Search */}
+      <motion.div
+        className="relative mb-5"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.32, delay: 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+      >
+        <Search
+          size={14}
+          className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ color: "rgba(196,133,122,0.45)" }}
+        />
+        <input
+          type="text"
+          placeholder="חיפוש קורס..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
+          className="w-full pr-10 pl-9 py-2.5 rounded-xl text-sm outline-none transition-all"
+          style={{
+            background: "#0f0d0e",
+            border: `1px solid ${searchFocused ? "rgba(196,133,122,0.38)" : "rgba(196,133,122,0.13)"}`,
+            color: "#FFF8F5",
+            caretColor: "#C4857A",
+          }}
+          dir="rtl"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
+          >
+            <X size={13} style={{ color: "rgba(255,248,245,0.35)" }} />
+          </button>
+        )}
       </motion.div>
 
       {/* Category filter */}
@@ -135,9 +185,13 @@ export default function CoursesPage() {
             <motion.div className="text-center py-24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <p className="text-2xl mb-3">🔍</p>
               <p className="text-sm font-semibold mb-1" style={{ color: "rgba(255,248,245,0.3)" }}>
-                אין קורסים ב{activeCategory}
+                {searchQuery.trim()
+                  ? `לא נמצאו קורסים עבור "${searchQuery.trim()}"`
+                  : `אין קורסים ב${activeCategory}`}
               </p>
-              <p className="text-xs" style={{ color: "#3A2020" }}>נסי קטגוריה אחרת</p>
+              <p className="text-xs" style={{ color: "#3A2020" }}>
+                {searchQuery.trim() ? "נסי מילת חיפוש אחרת" : "נסי קטגוריה אחרת"}
+              </p>
             </motion.div>
           )}
           {courses.length === 0 && !loading && (
