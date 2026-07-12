@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             background: #080608;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            animation: __splashBgOut 0.35s ease 2.1s forwards;
+            animation: __splashBgOut 0.15s ease 2.05s forwards;
           }
           #__splash::before {
             content: '';
