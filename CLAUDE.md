@@ -686,6 +686,12 @@ Hero (מרכזי, קיים)
 - **Splash Screen (CSS-only):** `app/layout.tsx` — `<div id="__splash">` עם CSS keyframes ב-`<head>`. רץ לפני JS. `components/SplashHide.tsx` מסיר מה-DOM אחרי 2.6s. לוגו מוצג כ-background-image (מוגן). לוגו: `clamp(80px,28vw,130px)` (mobile-first). אנימציית pulse-blink. "BY NATALIE ARTSI" byline. `rel="preload"` על הלוגו. **אסור לייבא SplashScreen ישן מ-ShellLayout** — גורם לכפילות. **טיימינג סופי:** לוגו+byline נעלמים ב-1.55s (0.5s fade), רקע snap ב-2.05s (0.15s בלבד) → האתר מתגלה ב-2.2s. SplashHide מוחק DOM ב-2.6s. הרקע חייב להיעלם מהיר (≤0.15s) אחרי שהלוגו נעלם — אחרת נוצרת אשליה שהלוגו "מתכווץ" לתוך לוגו ההירו.
 - **`newest_section`:** type `NewestSectionContent` ב-content-db.ts + שדה `featuredCourseIds: string[]`. טאב "הכי חדש" באדמין → ניהול → דף הבית. multi-select של **כל** הקורסים (ללא פילטר) עד 4. אם לא נבחרו — הסקשיין לא מופיע. DB key: `newest_section`.
 
+### ✅ שיפורי UX — יולי 2026
+
+- **מרכוז נגן ותוכנית למידה** (`app/courses/[slug]/page.tsx`): הנגן, כפתורי ניווט שיעורים ורשימת הפרקים עוברים ל-`max-w-2xl mx-auto`. הסרת `md:px-16` מסקשיינים אלו לטובת מרכוז אמיתי.
+- **Vimeo preconnect** (`app/layout.tsx`): הוספת `<link rel="preconnect">` ל-`player.vimeo.com`, `i.vimeocdn.com`, `f.vimeocdn.com` — חוסך 2-4 שניות בטעינת פרקי Vimeo כי הדפדפן פותח חיבור TLS מראש.
+- **שורת חיפוש** (`app/courses/page.tsx`): חיפוש client-side real-time. מסנן לפי `title`, `category`, `subtitle`, `tags`. עובד **במקביל** לפילטר הקטגוריות הקיים. כפתור ✕ לניקוי. empty state מבחין בין חיפוש ריק לקטגוריה ריקה. נמצא מעל פילטר הקטגוריות.
+
 ### 🔴 ביטול מנוי עם קארדקום + דף תודה — דחוף
 - **ביטול מנוי:** תהליך ביטול דרך קארדקום — API / webhook / flow שעדיין לא מומש
 - **דף תודה:** דף `/thank-you` (או `/checkout/success`) שמוצג אחרי רכישה מוצלחת מקארדקום
