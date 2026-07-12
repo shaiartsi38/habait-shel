@@ -260,9 +260,8 @@ function CoursesSection({ comingSoon, hasSubscription, hero, newestSection }: {
   const row1 = visible.slice(0, 5);
   const row2 = visible.slice(5, 9);
   const featuredIds = newestSection.featuredCourseIds ?? [];
-  const publishedAll = loading ? [] : courses.filter((c) => c.isPublished);
   const row3 = featuredIds.length > 0
-    ? featuredIds.map((id) => publishedAll.find((c) => c.id === id)).filter(Boolean) as typeof courses
+    ? featuredIds.map((id) => courses.find((c) => c.id === id)).filter(Boolean) as typeof courses
     : [];
 
   return (
