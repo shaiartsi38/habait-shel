@@ -105,7 +105,7 @@ export default function CoursesPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={() => setSearchFocused(true)}
           onBlur={() => setSearchFocused(false)}
-          className="w-full pr-10 pl-9 py-2.5 rounded-xl text-sm outline-none transition-all"
+          className="w-full md:max-w-xs pr-10 pl-9 py-2.5 rounded-xl text-sm outline-none transition-all"
           style={{
             background: "#0f0d0e",
             border: `1px solid ${searchFocused ? "rgba(196,133,122,0.38)" : "rgba(196,133,122,0.13)"}`,

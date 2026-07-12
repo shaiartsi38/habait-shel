@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, CreditCard, Heart, Home, LayoutDashboard, Play, Settings, Sparkles, Users, PanelRightClose, PanelRightOpen, LogIn, LogOut, UserCircle } from "lucide-react";
+import { BookOpen, CreditCard, Heart, Home, LayoutDashboard, Play, Search, Settings, Sparkles, Users, X, PanelRightClose, PanelRightOpen, LogIn, LogOut, UserCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import ProtectedLogo from "@/components/ProtectedLogo";
+import { useCourses } from "@/lib/courses-context";
 
 const NAV = [
   { href: "/",              label: "בית",         icon: Home },
@@ -26,6 +27,22 @@ export default function Sidebar({ isAdmin: _isAdminProp = false }: { isAdmin?: b
   const [open, setOpen]       = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [searchOpen, setSearchOpen]   = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { courses } = useCourses();
+
+  const searchResults = searchQuery.trim()
+    ? courses.filter((c) => {
+        const q = searchQuery.trim().toLowerCase();
+        return (
+          c.title.toLowerCase().includes(q) ||
+          c.category?.toLowerCase().includes(q) ||
+          c.subtitle?.toLowerCase().includes(q) ||
+          (c.tags ?? []).some((t) => t.toLowerCase().includes(q))
+        );
+      }).slice(0, 8)
+    : [];
 
   useEffect(() => {
     const sb = createClient();
@@ -42,6 +59,18 @@ export default function Sidebar({ isAdmin: _isAdminProp = false }: { isAdmin?: b
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    setTimeout(() => searchInputRef.current?.focus(), 80);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [searchOpen]);
+
+  const closeSearch = () => { setSearchOpen(false); setSearchQuery(""); };
 
   const handleLogout = async () => {
     const sb = createClient();
@@ -118,6 +147,19 @@ export default function Sidebar({ isAdmin: _isAdminProp = false }: { isAdmin?: b
                       onClick={item.href === "/courses" ? () => setOpen(false) : undefined}
                     />
                   ))}
+
+                  {/* Search button */}
+                  <button
+                    onClick={() => setSearchOpen(true)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.82rem] font-medium transition-colors"
+                    style={{ color: "#8B6355" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#C4857A")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#8B6355")}
+                  >
+                    <Search size={15} className="shrink-0" />
+                    <span>חיפוש</span>
+                  </button>
+
                   {isAdmin && (
                     <>
                       <div className="my-2 mx-2 h-px" style={{ background: "rgba(255,255,255,0.04)" }} />
@@ -167,6 +209,92 @@ export default function Sidebar({ isAdmin: _isAdminProp = false }: { isAdmin?: b
           )}
         </AnimatePresence>
       </>
+
+      {/* ── Search overlay (desktop) ────────────────────────── */}
+      <AnimatePresence>
+        {searchOpen && (
+          <motion.div
+            className="hidden md:block fixed inset-0 z-[200]"
+            style={{ background: "rgba(8,6,8,0.88)", backdropFilter: "blur(14px)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={closeSearch}
+          >
+            <div
+              className="absolute top-20 left-1/2 -translate-x-1/2 w-full max-w-lg px-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Input */}
+              <div className="relative">
+                <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{ color: "rgba(196,133,122,0.55)" }} />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="חיפוש קורס..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pr-12 pl-12 py-4 rounded-2xl text-base outline-none"
+                  style={{
+                    background: "#140e12",
+                    border: "1px solid rgba(196,133,122,0.28)",
+                    color: "#FFF8F5",
+                    caretColor: "#C4857A",
+                    boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
+                  }}
+                  dir="rtl"
+                />
+                <button onClick={closeSearch} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-90 transition-opacity">
+                  <X size={16} style={{ color: "#FFF8F5" }} />
+                </button>
+              </div>
+
+              {/* Results */}
+              {searchResults.length > 0 && (
+                <motion.div
+                  className="mt-2 rounded-2xl overflow-hidden"
+                  style={{ background: "#0f0d0e", border: "1px solid rgba(196,133,122,0.1)", boxShadow: "0 16px 48px rgba(0,0,0,0.55)" }}
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.16 }}
+                >
+                  {searchResults.map((course, i) => (
+                    <button
+                      key={course.id}
+                      onClick={() => { router.push(`/courses/${course.slug}`); closeSearch(); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-right hover:bg-white/[0.04] transition-colors"
+                      style={{ borderBottom: i < searchResults.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={course.image} alt="" className="w-9 h-12 object-cover rounded-lg shrink-0"
+                        style={{ filter: "brightness(0.65)" }} />
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className="text-sm font-semibold truncate" style={{ color: "#FFF8F5" }}>{course.title}</p>
+                        <p className="text-[0.6rem] mt-0.5 tracking-wide" style={{ color: "rgba(196,133,122,0.6)" }}>{course.category}</p>
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+
+              {/* Empty state */}
+              {searchQuery.trim() && searchResults.length === 0 && (
+                <motion.div
+                  className="mt-2 rounded-2xl px-4 py-6 text-center"
+                  style={{ background: "#0f0d0e", border: "1px solid rgba(196,133,122,0.1)" }}
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                >
+                  <p className="text-sm" style={{ color: "rgba(255,248,245,0.3)" }}>לא נמצאו תוצאות עבור "{searchQuery}"</p>
+                </motion.div>
+              )}
+
+              <p className="text-center mt-4 text-[0.58rem] tracking-widest" style={{ color: "rgba(255,255,255,0.12)" }}>ESC לסגירה</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Mobile — bottom tab bar ──────────────────────────── */}
       <motion.nav
