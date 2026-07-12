@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             background: #080608;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            animation: __splashOut 0.7s ease 1.9s forwards;
+            animation: __splashBgOut 0.35s ease 2.1s forwards;
           }
           #__splash::before {
             content: '';
@@ -50,12 +50,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             background-position: center;
             position: relative;
             animation: __splashIn 0.9s cubic-bezier(0.22,1,0.36,1) both,
-                       __splashPulse 1.1s ease-in-out 1s infinite;
+                       __splashPulse 1.1s ease-in-out 1s infinite,
+                       __splashLogoOut 0.5s ease 1.55s forwards;
           }
           #__splash-bar-wrap {
             margin-top: 20px; width: 50px; height: 1px;
             background: rgba(196,133,122,0.12);
             border-radius: 1px; overflow: hidden; position: relative;
+            animation: __splashLogoOut 0.5s ease 1.55s forwards;
           }
           #__splash-bar-wrap::after {
             content: '';
@@ -71,7 +73,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             letter-spacing: 0.4em;
             color: rgba(196,133,122,0.5);
             text-transform: uppercase;
-            animation: __splashIn 0.9s cubic-bezier(0.22,1,0.36,1) 0.3s both;
+            animation: __splashIn 0.9s cubic-bezier(0.22,1,0.36,1) 0.3s both,
+                       __splashLogoOut 0.5s ease 1.55s forwards;
           }
           @keyframes __splashIn {
             from { opacity: 0; transform: translateY(16px); }
@@ -81,11 +84,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             0%, 100% { opacity: 1; }
             50%       { opacity: 0.3; }
           }
+          @keyframes __splashLogoOut {
+            to { opacity: 0; }
+          }
           @keyframes __splashBar {
             from { transform: translateX(-200%); }
             to   { transform: translateX(200%); }
           }
-          @keyframes __splashOut {
+          @keyframes __splashBgOut {
             to { opacity: 0; pointer-events: none; }
           }
         ` }} />
