@@ -690,7 +690,8 @@ Hero (מרכזי, קיים)
 
 - **מרכוז נגן ותוכנית למידה** (`app/courses/[slug]/page.tsx`): הנגן, כפתורי ניווט שיעורים ורשימת הפרקים עוברים ל-`max-w-2xl mx-auto`. הסרת `md:px-16` מסקשיינים אלו לטובת מרכוז אמיתי.
 - **Vimeo preconnect** (`app/layout.tsx`): הוספת `<link rel="preconnect">` ל-`player.vimeo.com`, `i.vimeocdn.com`, `f.vimeocdn.com` — חוסך 2-4 שניות בטעינת פרקי Vimeo כי הדפדפן פותח חיבור TLS מראש.
-- **שורת חיפוש** (`app/courses/page.tsx`): חיפוש client-side real-time. מסנן לפי `title`, `category`, `subtitle`, `tags`. עובד **במקביל** לפילטר הקטגוריות הקיים. כפתור ✕ לניקוי. empty state מבחין בין חיפוש ריק לקטגוריה ריקה. נמצא מעל פילטר הקטגוריות.
+- **שורת חיפוש** (`app/courses/page.tsx`): חיפוש client-side real-time. מסנן לפי `title`, `category`, `subtitle`, `tags`. עובד **במקביל** לפילטר הקטגוריות הקיים. כפתור ✕ לניקוי. empty state מבחין בין חיפוש ריק לקטגוריה ריקה. נמצא מעל פילטר הקטגוריות. רוחב: `max-w-xs` בדסקטופ, full-width במובייל.
+- **חיפוש ב-Sidebar** (`components/layout/Sidebar.tsx`): כפתור "חיפוש" בתפריט הדסקטופ פותח overlay כהה מלא-מסך. שדה חיפוש ממורכז, תוצאות עם thumbnail+שם+קטגוריה (עד 8). לחיצה על תוצאה מנווטת לקורס. ESC או לחיצה על רקע סוגרת. `useCourses` hook — אין fetch נוסף.
 
 ### 🔴 ביטול מנוי עם קארדקום + דף תודה — דחוף
 - **ביטול מנוי:** תהליך ביטול דרך קארדקום — API / webhook / flow שעדיין לא מומש

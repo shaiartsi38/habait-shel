@@ -380,8 +380,16 @@ function CoursesSection({
   const [orderChanged, setOrderChanged] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
   const dragIdx = useRef<number | null>(null);
+  const knownCourseIds = useRef<string>(courses.map(c => c.id).sort().join(','));
 
-  useEffect(() => { setOrdered(courses); setOrderChanged(false); }, [courses]);
+  useEffect(() => {
+    const incoming = courses.map(c => c.id).sort().join(',');
+    if (incoming !== knownCourseIds.current) {
+      knownCourseIds.current = incoming;
+      setOrdered(courses);
+      setOrderChanged(false);
+    }
+  }, [courses]);
 
   const handleToggle = async (id: string) => {
     setToggling(id);
@@ -489,11 +497,21 @@ function CoursesSection({
               {/* Drag handle + order arrows */}
               <div className="flex flex-col items-center gap-1 shrink-0">
                 <GripVertical size={16} style={{ color: "rgba(196,133,122,0.35)", cursor: "grab" }} />
-                <button onClick={() => move(idx, idx - 1)} disabled={idx === 0} className="p-0.5 rounded hover:opacity-80 disabled:opacity-20">
+                <button
+                  onClick={(e) => { e.stopPropagation(); move(idx, idx - 1); }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  disabled={idx === 0}
+                  className="p-0.5 rounded hover:opacity-80 disabled:opacity-20"
+                >
                   <ChevronUp size={14} style={{ color: "#C4857A" }} />
                 </button>
                 <span className="text-[0.48rem] font-bold" style={{ color: "#3A2020" }}>{idx + 1}</span>
-                <button onClick={() => move(idx, idx + 1)} disabled={idx === ordered.length - 1} className="p-0.5 rounded hover:opacity-80 disabled:opacity-20">
+                <button
+                  onClick={(e) => { e.stopPropagation(); move(idx, idx + 1); }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  disabled={idx === ordered.length - 1}
+                  className="p-0.5 rounded hover:opacity-80 disabled:opacity-20"
+                >
                   <ChevronDown size={14} style={{ color: "#C4857A" }} />
                 </button>
               </div>
