@@ -261,13 +261,13 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
       {course.lessons.length > 0 && <SkillsSection course={course} vimeoThumbnails={vimeoThumbnails} />}
 
       {/* ── Video Player ── */}
-      <div ref={playerSectionRef} className="px-4 md:px-16 py-8">
+      <div ref={playerSectionRef} className="px-4 py-8">
+        <div className="max-w-2xl mx-auto">
         <p className="text-[0.62rem] tracking-[0.2em] uppercase font-bold mb-4"
           style={{ color: "rgba(196,133,122,0.6)" }}>
           {activeLessonId ? `▶ ${displayTitle}` : "▶ צפי בטריילר"}
         </p>
 
-        <div className="md:max-w-2xl">
         <motion.div
           className={activeLessonId ? "mb-3" : "mb-4"}
           initial={{ opacity: 0, y: 16 }}
@@ -315,8 +315,6 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
           ) : null}
         </motion.div>
 
-        </div> {/* md:max-w-2xl */}
-
         {/* Lesson prev/next navigation — always visible */}
         {course.lessons.length > 0 && (
           <div className="flex gap-2 mt-4">
@@ -357,10 +355,12 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
             </button>
           </div>
         )}
+        </div>
       </div>
 
       {/* ── Lesson Plan ── */}
-      <div className="px-4 md:px-16 pb-12">
+      <div className="px-4 pb-12">
+        <div className="max-w-2xl mx-auto">
         <div className="flex items-baseline gap-3 mb-1">
           <h2 className="text-xl font-black" style={{ color: "#FFF8F5" }}>תוכנית הלמידה</h2>
           <span className="text-sm" style={{ color: "rgba(255,248,245,0.35)" }}>
@@ -390,6 +390,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
               />
             );
           })}
+        </div>
         </div>
       </div>
 
