@@ -683,7 +683,7 @@ Hero (מרכזי, קיים)
 - **הירו:** `ProtectedLogo` hardcoded, `clamp(200px, 38vw, 520px)`, ללא conditional, ללא delay.
 - **Sidebar:** `ProtectedLogo width="40%"`
 - **Login:** `ProtectedLogo clamp(200px, 60vw, 320px)`
-- **Splash Screen (CSS-only):** `app/layout.tsx` — `<div id="__splash">` עם CSS keyframes ב-`<head>`. רץ לפני JS. `components/SplashHide.tsx` מסיר מה-DOM אחרי 2.6s. לוגו מוצג כ-background-image (מוגן). לוגו: `clamp(80px,28vw,130px)` (mobile-first). אנימציית pulse-blink. "BY NATALIE ARTSI" byline. `rel="preload"` על הלוגו. **אסור לייבא SplashScreen ישן מ-ShellLayout** — גורם לכפילות.
+- **Splash Screen (CSS-only):** `app/layout.tsx` — `<div id="__splash">` עם CSS keyframes ב-`<head>`. רץ לפני JS. `components/SplashHide.tsx` מסיר מה-DOM אחרי 2.6s. לוגו מוצג כ-background-image (מוגן). לוגו: `clamp(80px,28vw,130px)` (mobile-first). אנימציית pulse-blink. "BY NATALIE ARTSI" byline. `rel="preload"` על הלוגו. **אסור לייבא SplashScreen ישן מ-ShellLayout** — גורם לכפילות. **טיימינג סופי:** לוגו+byline נעלמים ב-1.55s (0.5s fade), רקע snap ב-2.05s (0.15s בלבד) → האתר מתגלה ב-2.2s. SplashHide מוחק DOM ב-2.6s. הרקע חייב להיעלם מהיר (≤0.15s) אחרי שהלוגו נעלם — אחרת נוצרת אשליה שהלוגו "מתכווץ" לתוך לוגו ההירו.
 - **`newest_section`:** type `NewestSectionContent` ב-content-db.ts + שדה `featuredCourseIds: string[]`. טאב "הכי חדש" באדמין → ניהול → דף הבית. multi-select של **כל** הקורסים (ללא פילטר) עד 4. אם לא נבחרו — הסקשיין לא מופיע. DB key: `newest_section`.
 
 ### 🔴 ביטול מנוי עם קארדקום + דף תודה — דחוף
