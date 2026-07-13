@@ -36,7 +36,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             background: #080608;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            animation: __splashBgOut 0.15s ease 2.05s forwards;
+          }
+          #__splash.waiting::after {
+            content: '';
+            position: absolute;
+            bottom: 80px;
+            left: calc(50% - 3px);
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: rgba(196,133,122,0.65);
+            box-shadow: -16px 0 0 rgba(196,133,122,0.3), 16px 0 0 rgba(196,133,122,0.3);
+            animation: __splashDot 1.4s ease-in-out infinite;
           }
           #__splash::before {
             content: '';
@@ -94,8 +104,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             from { transform: translateX(-200%); }
             to   { transform: translateX(200%); }
           }
-          @keyframes __splashBgOut {
-            to { opacity: 0; pointer-events: none; }
+          @keyframes __splashDot {
+            0%, 100% { opacity: 0.4; transform: scale(0.75); }
+            50%       { opacity: 1;   transform: scale(1);    }
           }
         ` }} />
       </head>
@@ -106,8 +117,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div id="__splash-bar-wrap" />
           <div id="__splash-byline">BY NATALIE ARTSI</div>
         </div>
-        {/* Vanilla JS — removes splash at 2.6s without waiting for React hydration */}
-        <script dangerouslySetInnerHTML={{ __html: `setTimeout(function(){var e=document.getElementById('__splash');if(e)e.remove()},2600)` }} />
+        {/* Splash waits for React ready signal + 2.1s minimum for animation */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var m=false,r=false;function go(){if(m&&r){var e=document.getElementById('__splash');if(!e)return;e.style.transition='opacity 0.3s ease';e.style.opacity='0';e.style.pointerEvents='none';setTimeout(function(){if(e.parentNode)e.parentNode.removeChild(e);},320);}else if(m&&!r){var e=document.getElementById('__splash');if(e)e.classList.add('waiting');}}setTimeout(function(){m=true;go();},2100);window.addEventListener('habait-ready',function(){r=true;go();},{once:true});setTimeout(function(){if(!r){r=true;go();}},9000);})()` }} />
         <SplashHide />
         <Providers>
           <ShellLayout>
