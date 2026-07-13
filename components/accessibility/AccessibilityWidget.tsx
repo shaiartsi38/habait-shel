@@ -191,6 +191,7 @@ export function AccessibilityWidget() {
       {/* ── Floating trigger button ── */}
       <button
         id="a11y-trigger"
+        type="button"
         onClick={() => setIsOpen(o => !o)}
         aria-label="פתח תפריט נגישות (CTRL+U)"
         aria-expanded={isOpen}
