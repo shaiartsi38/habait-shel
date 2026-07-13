@@ -633,77 +633,278 @@ function LandscapeCard({ course }: { course: CourseData }) {
   );
 }
 
-// ─── Coming Soon — max 3 cards, float on hover ────────────────────
+// ─── Coming Soon — Coverflow 3D ──────────────────────────────────
 function ComingSoonSection({ items }: { items: ComingSoonItem[] }) {
   const SOON = (items.length > 0 ? items : []).slice(0, 3);
+  const N    = SOON.length;
+  const [current, setCurrent] = useState(0);
+  const stageRef   = useRef<HTMLDivElement>(null);
+  const dragStartX = useRef<number | null>(null);
+  const mouseDownX = useRef<number | null>(null);
+  const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Responsive card width — mobile-first, sized to stay within overflow:hidden stage
+  const [cardW, setCardW] = useState(160);
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setCardW(w < 400 ? 145 : w < 768 ? 165 : 200);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const cardH      = Math.round(cardW * 1.5);
+  const sideOffset = Math.round(cardW * 0.68);
+  const stageH     = cardH + 60;
+
+  // Wheel — must be non-passive to call preventDefault
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || N === 0) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (wheelTimer.current) clearTimeout(wheelTimer.current);
+      wheelTimer.current = setTimeout(() => {
+        const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+        if (delta > 30)       setCurrent(c => (c + 1) % N);
+        else if (delta < -30) setCurrent(c => (c - 1 + N) % N);
+      }, 40);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [N]);
+
+  if (N === 0) return null;
+
+  const goPrev = () => setCurrent(c => (c - 1 + N) % N);
+  const goNext = () => setCurrent(c => (c + 1) % N);
+
+  function offsetFor(i: number) {
+    let off = ((i - current) % N + N) % N;
+    if (off > N / 2) off -= N;
+    return off;
+  }
+
+  function transformFor(off: number): { t: string; o: number; z: number } {
+    if (off === 0)
+      return { t: "rotateY(0deg) scale(1)", o: 1, z: 10 };
+    const s = off > 0 ? 1 : -1;
+    if (Math.abs(off) === 1)
+      return { t: `translateX(${s * sideOffset}px) rotateY(${-s * 62}deg) scale(0.84)`, o: 0.72, z: 7 };
+    return { t: `translateX(${s * sideOffset * 2.5}px) rotateY(${-s * 72}deg) scale(0.5)`, o: 0, z: 1 };
+  }
 
   return (
-    <div className="mt-14 text-right">
-      <motion.div className="mb-2" {...FI}>
+    <div className="mt-14">
+      {/* Header — centered like other section headers */}
+      <motion.div className="px-4 md:px-10 text-right md:text-center mb-10" {...FI}>
         <p className="text-[0.54rem] tracking-[0.32em] uppercase font-semibold mb-2" style={{ color: "rgba(196,133,122,0.48)" }}>
           בקרוב
         </p>
         <h3 className="text-xl md:text-2xl font-black mb-4" style={{ color: "#FFF8F5" }}>
           מה הולך לקרות בקרוב
         </h3>
-        <div className="h-px mb-6" style={{ background: "linear-gradient(to left, transparent, rgba(196,133,122,0.2), transparent)" }} />
+        <div className="h-px" style={{ background: "linear-gradient(to left, transparent, rgba(196,133,122,0.2), transparent)" }} />
       </motion.div>
 
-      <div className="flex gap-4 justify-start">
-        {SOON.map((item, i) => (
-          <ComingSoonCard key={item.id} item={item} index={i} />
+      {/* 3D Coverflow stage — full width + overflow:hidden so body's overflow-x:hidden doesn't clip */}
+      <div
+        ref={stageRef}
+        style={{
+          position: "relative",
+          width: "100%",
+          height: stageH,
+          perspective: "1400px",
+          perspectiveOrigin: "50% 50%",
+          overflow: "hidden",
+          cursor: "grab",
+          touchAction: "pan-y",
+        }}
+        onTouchStart={e => { dragStartX.current = e.touches[0].clientX; }}
+        onTouchEnd={e => {
+          if (dragStartX.current === null) return;
+          const dx = dragStartX.current - e.changedTouches[0].clientX;
+          if (Math.abs(dx) > 40) dx > 0 ? goNext() : goPrev();
+          dragStartX.current = null;
+        }}
+        onMouseDown={e => { mouseDownX.current = e.clientX; }}
+        onMouseUp={e => {
+          if (mouseDownX.current === null) return;
+          const dx = mouseDownX.current - e.clientX;
+          if (Math.abs(dx) > 40) dx > 0 ? goNext() : goPrev();
+          mouseDownX.current = null;
+        }}
+      >
+        {/* Cards positioned absolutely from stage center — no preserve-3d needed */}
+        {SOON.map((item, i) => {
+          const off = offsetFor(i);
+          const { t, o, z } = transformFor(off);
+          return (
+            <CoverflowCard
+              key={item.id}
+              item={item}
+              isCenter={off === 0}
+              transform={t}
+              opacity={o}
+              zIndex={z}
+              cardW={cardW}
+              cardH={cardH}
+              onClick={() => { if (off === 1) goNext(); if (off === -1) goPrev(); }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Dots */}
+      <div className="flex gap-2 justify-center mt-8">
+        {SOON.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            aria-label={`קארד ${i + 1}`}
+            style={{
+              width: current === i ? 22 : 5,
+              height: 5,
+              borderRadius: current === i ? 3 : "50%",
+              background: current === i ? "#C4857A" : "rgba(196,133,122,0.25)",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+              transition: "all 0.35s cubic-bezier(0.25,0.46,0.45,0.94)",
+            }}
+          />
         ))}
+      </div>
+
+      {/* Nav arrows */}
+      <div className="flex items-center justify-center gap-6 mt-5">
+        <button
+          onClick={goPrev}
+          style={{ width: 40, height: 40, borderRadius: "50%", border: "1px solid rgba(196,133,122,0.22)", background: "rgba(196,133,122,0.05)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#C4857A" }}
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <path d="M6 12.5L10.5 8L6 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <button
+          onClick={goNext}
+          style={{ width: 40, height: 40, borderRadius: "50%", border: "1px solid rgba(196,133,122,0.22)", background: "rgba(196,133,122,0.05)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#C4857A" }}
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <path d="M10 12.5L5.5 8L10 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
       </div>
     </div>
   );
 }
 
-function ComingSoonCard({ item, index }: { item: ComingSoonItem; index: number }) {
+function CoverflowCard({
+  item,
+  isCenter,
+  transform,
+  opacity,
+  zIndex,
+  cardW,
+  cardH,
+  onClick,
+}: {
+  item: ComingSoonItem;
+  isCenter: boolean;
+  transform: string;
+  opacity: number;
+  zIndex: number;
+  cardW: number;
+  cardH: number;
+  onClick: () => void;
+}) {
   const [imgError, setImgError] = useState(false);
+
   return (
-    <motion.div
-      className="relative rounded-xl overflow-hidden cursor-default flex-shrink-0 group"
-      style={{ aspectRatio: "2/3", width: "calc((100% - 2rem) / 3)", maxWidth: 200, background: "#140e12" }}
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.15 }}
-      whileHover={{ y: -6, scale: 1.03, transition: { type: "spring", stiffness: 380, damping: 28 } }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: index * 0.1 }}
+    <div
+      onClick={onClick}
+      style={{
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        width: cardW,
+        height: cardH,
+        marginLeft: -cardW / 2,
+        marginTop: -cardH / 2,
+        borderRadius: 16,
+        overflow: "hidden",
+        cursor: isCenter ? "default" : "pointer",
+        transform,
+        opacity,
+        zIndex,
+        background: "#140e12",
+        transition: "transform 0.58s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.58s ease, box-shadow 0.58s ease",
+        boxShadow: isCenter
+          ? "0 28px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(196,133,122,0.22)"
+          : "0 12px 30px rgba(0,0,0,0.5)",
+      }}
     >
-      {!item.image || imgError ? (
-        <div className="w-full h-full" style={{ background: "linear-gradient(160deg, rgba(196,133,122,0.09) 0%, rgba(8,6,8,0.96) 100%)" }} />
-      ) : (
+      {/* Image or gradient fallback */}
+      {item.image && !imgError ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-all duration-500 group-hover:opacity-70 group-hover:brightness-90"
-          style={{ opacity: 0.5 }} onError={() => setImgError(true)} />
+        <img
+          src={item.image}
+          alt={item.title}
+          className="w-full h-full object-cover"
+          style={{ filter: isCenter ? "brightness(1)" : "brightness(0.4) saturate(0.5)", transition: "filter 0.5s ease" }}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div className="w-full h-full" style={{ background: "linear-gradient(160deg, rgba(196,133,122,0.11) 0%, rgba(8,6,8,0.97) 100%)" }} />
       )}
-      <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,6,8,0.98) 0%, rgba(8,6,8,0.4) 55%, transparent 100%)" }} />
 
-      {/* Badge */}
-      <div className="absolute top-2 right-2 px-1.5 py-[2px] rounded-full text-[0.4rem] font-black uppercase tracking-wider"
-        style={{ border: "1px solid rgba(196,133,122,0.2)", color: "rgba(196,133,122,0.6)", background: "rgba(196,133,122,0.05)" }}>
-        בקרוב
-      </div>
+      {/* Shine on center card */}
+      {isCenter && (
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%)", pointerEvents: "none", zIndex: 2 }} />
+      )}
 
-      {/* Tooltip — fade in on hover via CSS group */}
-      <div className="absolute inset-0 flex items-center justify-center px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <div className="text-center px-3 py-2.5 rounded-xl" style={{ background: "rgba(8,6,8,0.82)", backdropFilter: "blur(10px)", border: "1px solid rgba(196,133,122,0.12)" }}>
-          <p className="text-[0.62rem] font-black leading-snug" style={{ color: "#FFF8F5" }}>{item.title}</p>
-          {item.category && (
-            <p className="text-[0.48rem] mt-1" style={{ color: "#C4857A" }}>{item.category}</p>
+      {/* Bottom overlay */}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 18%, rgba(8,6,8,0.28) 50%, rgba(8,6,8,0.93) 100%)", zIndex: 3 }} />
+
+      {/* "בקרוב" badge — center only */}
+      {isCenter && (
+        <div className="absolute" style={{ top: 10, left: 10, zIndex: 5 }}>
+          <span style={{ display: "block", padding: "4px 10px", borderRadius: 8, fontSize: "0.44rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", background: "rgba(8,6,8,0.65)", border: "1px solid rgba(196,133,122,0.35)", color: "rgba(196,133,122,0.9)", backdropFilter: "blur(8px)" }}>
+            בקרוב
+          </span>
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="absolute inset-x-0 bottom-0" style={{ padding: "1.2rem 1rem", zIndex: 4, direction: "rtl" }}>
+        {item.category && (
+          <p style={{ fontSize: "0.52rem", fontWeight: 600, letterSpacing: "0.28em", textTransform: "uppercase", color: "rgba(196,133,122,0.65)", marginBottom: "0.3rem" }}>
+            {item.category}
+          </p>
+        )}
+        <h3 style={{ fontSize: "0.95rem", fontWeight: 800, lineHeight: 1.22, color: "#FFF8F5", marginBottom: "0.25rem" }}>
+          {item.title}
+        </h3>
+        {/* Subtitle + button visible only on center card */}
+        <div style={{ maxHeight: isCenter ? 80 : 0, overflow: "hidden", opacity: isCenter ? 1 : 0, transition: "max-height 0.4s ease, opacity 0.35s ease" }}>
+          {item.subtitle && (
+            <p style={{ fontSize: "0.65rem", fontWeight: 300, color: "rgba(255,248,245,0.48)", lineHeight: 1.4, marginBottom: "0.8rem" }}>
+              {item.subtitle}
+            </p>
           )}
-          {item.releaseDate && (
-            <p className="text-[0.44rem] mt-1" style={{ color: "rgba(255,248,245,0.35)" }}>{item.releaseDate}</p>
-          )}
+          <button
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", width: "100%", padding: "0.55rem", borderRadius: 10, fontSize: "0.68rem", fontWeight: 700, background: "rgba(196,133,122,0.12)", border: "1px solid rgba(196,133,122,0.28)", color: "#C4857A", cursor: "pointer", fontFamily: "inherit" }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            עדכנ/י אותי כשיוצא
+          </button>
         </div>
       </div>
-
-      {/* Info at bottom — hides on hover */}
-      <div className="absolute inset-x-0 bottom-0 p-2.5 text-right group-hover:opacity-0 transition-opacity duration-150">
-        <p className="text-[0.56rem] font-bold leading-snug" style={{ color: "rgba(255,248,245,0.45)" }}>{item.title}</p>
-        <p className="text-[0.42rem] mt-0.5" style={{ color: "rgba(255,248,245,0.2)" }}>{item.subtitle}</p>
-      </div>
-    </motion.div>
+    </div>
   );
 }
 
