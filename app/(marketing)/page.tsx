@@ -648,7 +648,7 @@ function ComingSoonSection({ items }: { items: ComingSoonItem[] }) {
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
-      setCardW(w < 400 ? 145 : w < 768 ? 165 : 200);
+      setCardW(w < 400 ? 145 : w < 768 ? 165 : 240);
     };
     update();
     window.addEventListener("resize", update);
