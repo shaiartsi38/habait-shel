@@ -163,3 +163,113 @@
     z-index: 2;
   }
 }
+
+/* ─── Accessibility classes ─────────────────────────────────────── */
+
+/* Large text */
+.a11y-large-text { font-size: 122% !important; }
+.a11y-large-text * { font-size: inherit !important; }
+
+/* High contrast (light mode via invert) */
+.a11y-high-contrast body { filter: invert(1) hue-rotate(180deg) !important; }
+.a11y-high-contrast img,
+.a11y-high-contrast video,
+.a11y-high-contrast iframe { filter: invert(1) hue-rotate(180deg) !important; }
+
+/* Text spacing */
+.a11y-text-spacing,
+.a11y-text-spacing * {
+  letter-spacing: 0.14em !important;
+  word-spacing:   0.18em !important;
+}
+
+/* Hide images & videos */
+.a11y-hide-images img,
+.a11y-hide-images video,
+.a11y-hide-images iframe { visibility: hidden !important; }
+
+/* Stop all animations */
+.a11y-no-animations *,
+.a11y-no-animations *::before,
+.a11y-no-animations *::after {
+  animation-duration:       0.001ms !important;
+  animation-iteration-count: 1      !important;
+  transition-duration:      0.001ms !important;
+}
+
+/* Large cursor — hide native, JS ring takes over */
+.a11y-large-cursor,
+.a11y-large-cursor * { cursor: none !important; }
+
+/* Dyslexia-friendly */
+.a11y-dyslexia,
+.a11y-dyslexia * {
+  font-family:    Georgia, "Times New Roman", serif !important;
+  letter-spacing: 0.08em !important;
+  word-spacing:   0.22em !important;
+  line-height:    1.85   !important;
+}
+
+/* Increased line height */
+.a11y-line-height p,
+.a11y-line-height li,
+.a11y-line-height span,
+.a11y-line-height label,
+.a11y-line-height div { line-height: 1.95 !important; }
+
+/* Highlight links */
+.a11y-highlight-links a {
+  text-decoration:           underline         !important;
+  text-decoration-thickness: 2px               !important;
+  text-underline-offset:     4px               !important;
+  outline:                   1px dashed currentColor !important;
+  outline-offset:            2px               !important;
+}
+
+/* Tooltips — show alt text as pseudo-element on images */
+.a11y-tooltips img[alt]::after {
+  content:       attr(alt);
+  display:       block;
+  background:    rgba(0,0,0,0.82);
+  color:         #fff;
+  padding:       4px 8px;
+  font-size:     0.68rem;
+  border-radius: 4px;
+  margin-top:    4px;
+}
+
+/* Grayscale */
+.a11y-grayscale body { filter: grayscale(100%) !important; }
+
+/* Text alignment — centre all body text */
+.a11y-text-align p,
+.a11y-text-align li,
+.a11y-text-align h1,
+.a11y-text-align h2,
+.a11y-text-align h3,
+.a11y-text-align h4 { text-align: center !important; }
+
+/* Focus ring — visible in brand style for keyboard users */
+:focus-visible {
+  outline: 2px solid #C4857A !important;
+  outline-offset: 3px        !important;
+  border-radius: 4px;
+}
+
+/* Skip to content link */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a3a5c;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 0 0 8px 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  z-index: 99999;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+.skip-link:focus { top: 0; }

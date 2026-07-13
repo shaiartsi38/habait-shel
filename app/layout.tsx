@@ -3,6 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import ShellLayout from "@/components/layout/ShellLayout";
 import SplashHide from "@/components/SplashHide";
+import { AccessibilityWidget } from "@/components/accessibility/AccessibilityWidget";
 
 export const metadata: Metadata = {
   title: "הבית של המאפרים | Natalie Artzi",
@@ -100,6 +101,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ` }} />
       </head>
       <body style={{ background: "#080608" }}>
+        <a href="#main-content" className="skip-link">דלג לתוכן הראשי</a>
+        <AccessibilityWidget />
         <div id="__splash">
           <div id="__splash-logo" />
           <div id="__splash-bar-wrap" />
