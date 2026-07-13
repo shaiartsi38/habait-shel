@@ -102,7 +102,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ background: "#080608" }}>
         <a href="#main-content" className="skip-link">דלג לתוכן הראשי</a>
-        <AccessibilityBoundary />
         <div id="__splash">
           <div id="__splash-logo" />
           <div id="__splash-bar-wrap" />
@@ -114,6 +113,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </ShellLayout>
         </Providers>
+        <AccessibilityBoundary />
       </body>
     </html>
   );
