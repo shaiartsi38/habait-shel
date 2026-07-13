@@ -703,10 +703,12 @@ Hero (מרכזי, קיים)
 - מוצג כיום ב-ClosingCTA (5 שורות preview) — מנוהל דרך אדמין → key: `terms`
 - מדיניות פרטיות — עדיין לא קיימת, יש להוסיף עמוד/modal
 
-### ⬜ ComingSoonSection → Coverflow
-- **החלטה:** ה-"בקרוב" section ישונה מגריד רגיל ל-Coverflow (scroll + cards ב-3D)
-- **תהליך:** קודם לבנות דמו ב-HTML נפרד → שי מאשר → רק אז לממש בקוד
-- **אסור לגעת בקוד לפני אישור הדמו**
+### ✅ ComingSoonSection → Coverflow (הושלם יולי 2026)
+- 3D Coverflow מחליף את ה-"בקרוב" section הישן
+- `ComingSoonSection` + `CoverflowCard` ב-`app/(marketing)/page.tsx`
+- Mobile-first: 145px / 165px / 240px לפי viewport
+- **באג קריטי שנפתר:** `body { overflow-x: hidden }` חוסם קארדים שמשתמשים ב-`inset:0` על track wrapper קטן. הפיתרון: stage `width:100%` + `overflow:hidden`; קארדים ממוקמים `left:50%` + `marginLeft:-cardW/2` (ללא track wrapper, ללא preserve-3d)
+- **תמונות:** נשלטות מהניהול → "בקרוב" → כל פריט חייב להכיל URL תמונה
 
 ---
 
