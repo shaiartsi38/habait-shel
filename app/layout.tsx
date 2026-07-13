@@ -107,6 +107,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div id="__splash-bar-wrap" />
           <div id="__splash-byline">BY NATALIE ARTSI</div>
         </div>
+        {/* Vanilla JS — removes splash at 2.6s without waiting for React hydration */}
+        <script dangerouslySetInnerHTML={{ __html: `setTimeout(function(){var e=document.getElementById('__splash');if(e)e.remove()},2600)` }} />
         <SplashHide />
         <Providers>
           <ShellLayout>
