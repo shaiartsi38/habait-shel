@@ -1,9 +1,14 @@
 "use client";
 
 import React from "react";
-import { AccessibilityWidget } from "./AccessibilityWidget";
+import dynamic from "next/dynamic";
 
-interface State { hasError: boolean; errorMsg: string }
+const AccessibilityWidget = dynamic(
+  () => import("./AccessibilityWidget").then(m => ({ default: m.AccessibilityWidget })),
+  { ssr: false, loading: () => null }
+);
+
+interface State { hasError: boolean }
 
 export class AccessibilityBoundary extends React.Component<
   { children?: React.ReactNode },
@@ -11,11 +16,11 @@ export class AccessibilityBoundary extends React.Component<
 > {
   constructor(props: { children?: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false, errorMsg: "" };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, errorMsg: error.message };
+  static getDerivedStateFromError(): State {
+    return { hasError: true };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
