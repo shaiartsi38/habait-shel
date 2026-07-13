@@ -32,7 +32,18 @@ export class AccessibilityBoundary extends React.Component<
   }
 
   render() {
-    if (this.state.hasError) return null; // widget silently fails — rest of page is fine
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          position: "fixed", bottom: 24, left: 24, zIndex: 99999,
+          background: "#b91c1c", color: "#fff", padding: "10px 14px",
+          borderRadius: 10, fontSize: 11, maxWidth: 280, wordBreak: "break-word",
+          fontFamily: "monospace", lineHeight: 1.4,
+        }}>
+          <strong>A11y Error:</strong> {this.state.errorMsg || "unknown"}
+        </div>
+      );
+    }
     return <Widget />;
   }
 }
