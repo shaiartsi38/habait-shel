@@ -229,6 +229,7 @@ export function AccessibilityWidget() {
       {/* ── Panel ── */}
       {isOpen && (
         <div
+          id="a11y-panel"
           ref={panelRef}
           role="dialog"
           aria-label="תפריט נגישות"

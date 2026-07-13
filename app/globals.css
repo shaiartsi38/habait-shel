@@ -170,11 +170,15 @@
 .a11y-large-text { font-size: 122% !important; }
 .a11y-large-text * { font-size: inherit !important; }
 
-/* High contrast (light mode via invert) */
-.a11y-high-contrast body { filter: invert(1) hue-rotate(180deg) !important; }
+/* High contrast — filter on <html> so position:fixed children stay viewport-anchored */
+.a11y-high-contrast { filter: invert(1) hue-rotate(180deg) !important; }
+/* counter-invert images/videos back to original colors */
 .a11y-high-contrast img,
 .a11y-high-contrast video,
 .a11y-high-contrast iframe { filter: invert(1) hue-rotate(180deg) !important; }
+/* counter-invert the accessibility widget so it stays visible */
+.a11y-high-contrast #a11y-trigger,
+.a11y-high-contrast #a11y-panel { filter: invert(1) hue-rotate(180deg) !important; }
 
 /* Text spacing */
 .a11y-text-spacing,
@@ -238,8 +242,10 @@
   margin-top:    4px;
 }
 
-/* Grayscale */
-.a11y-grayscale body { filter: grayscale(100%) !important; }
+/* Grayscale — same pattern: filter on <html>, counter on widget */
+.a11y-grayscale { filter: grayscale(100%) !important; }
+.a11y-grayscale #a11y-trigger,
+.a11y-grayscale #a11y-panel { filter: grayscale(100%) !important; }
 
 /* Text alignment — centre all body text */
 .a11y-text-align p,
