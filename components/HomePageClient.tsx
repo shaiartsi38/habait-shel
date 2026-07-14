@@ -227,7 +227,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero, newestSection }: {
 }) {
   const [activeCategory, setActiveCategory] = useState<Category>("הכל");
   const { courses, loading } = useCourses();
-  const published = loading ? [] : courses.filter((c) => c.isPublished && c.showOnHome !== false);
+  const published = courses.filter((c) => c.isPublished && c.showOnHome !== false);
   const visible =
     activeCategory === "הכל"
       ? published
