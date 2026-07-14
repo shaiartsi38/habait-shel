@@ -51,7 +51,8 @@ git add <files> && git commit -m "..." && GIT_SSH_COMMAND="ssh -i ~/.ssh/github_
 ## ארכיטקטורה — קבצים מרכזיים
 
 ```
-app/(marketing)/page.tsx              ← דף הבית
+app/(marketing)/page.tsx              ← דף הבית (Server Component async — מביא נתונים מהשרת)
+components/HomePageClient.tsx         ← כל ה-UI של דף הבית ("use client") — מקבל נתונים כ-props
 app/admin/page.tsx                    ← CMS מלא
 app/courses/[slug]/page.tsx           ← דף קורס + נגן + ניווט שיעורים + המשך צפייה
 app/checkout/[slug]/page.tsx          ← דף רכישה בודדת (₪489, placeholder לCardcom)
@@ -93,7 +94,7 @@ middleware.ts                         ← הגנת routes לפי role
 
 ## Admin CMS — `site_content` (Supabase)
 
-כל פנייה ל-DB שולפת את **כל הטבלה בפנייה אחת** (`prefetchAll`) ושומרת ב-in-memory cache. הcache מתרענן רק אחרי `setContent`. זה מה שמונע את הטעינה האיטית.
+כל פנייה ל-DB שולפת את **כל הטבלה בפנייה אחת** (`prefetchAll`) ושומרת ב-in-memory cache. הcache מתרענן רק אחרי `setContent`. **חשוב:** `content-db.ts` משתמש ב-browser Supabase client — להשתמש רק מ-Client Components (admin, dashboard). דפים ציבוריים כמו דף הבית משתמשים בשרת (ראה RSC Conversion).
 
 | Key | Type | תיאור |
 |-----|------|--------|
@@ -683,7 +684,13 @@ Hero (מרכזי, קיים)
 - **הירו:** `ProtectedLogo` hardcoded, `clamp(200px, 38vw, 520px)`, ללא conditional, ללא delay.
 - **Sidebar:** `ProtectedLogo width="40%"`
 - **Login:** `ProtectedLogo clamp(200px, 60vw, 320px)`
-- **Splash Screen (CSS-only):** `app/layout.tsx` — `<div id="__splash">` עם CSS keyframes ב-`<head>`. רץ לפני JS. `components/SplashHide.tsx` מסיר מה-DOM אחרי 2.6s. לוגו מוצג כ-background-image (מוגן). לוגו: `clamp(80px,28vw,130px)` (mobile-first). אנימציית pulse-blink. "BY NATALIE ARTSI" byline. `rel="preload"` על הלוגו. **אסור לייבא SplashScreen ישן מ-ShellLayout** — גורם לכפילות. **טיימינג סופי:** לוגו+byline נעלמים ב-1.55s (0.5s fade), רקע snap ב-2.05s (0.15s בלבד) → האתר מתגלה ב-2.2s. SplashHide מוחק DOM ב-2.6s. הרקע חייב להיעלם מהיר (≤0.15s) אחרי שהלוגו נעלם — אחרת נוצרת אשליה שהלוגו "מתכווץ" לתוך לוגו ההירו.
+- **Splash Screen — Smart Event-Based (יולי 2026):** `app/layout.tsx` — `<div id="__splash">` עם CSS keyframes ב-`<head>`. רץ לפני JS. לוגו מוצג כ-background-image (מוגן). לוגו: `clamp(80px,28vw,130px)` (mobile-first). אנימציית pulse-blink. "BY NATALIE ARTSI" byline. `rel="preload"` על הלוגו. **אסור לייבא SplashScreen ישן מ-ShellLayout** — גורם לכפילות.
+  - **טיימינג:** לוגו+byline נעלמים ב-1.55s, רקע snap ב-2.05s.
+  - **Smart sync:** Splash נעלם רק כשמתקיים גם: `m=true` (2.1s minimum) **וגם** `r=true` (ה-event `habait-ready` נורה).
+  - **`components/SplashHide.tsx`:** `"use client"`, מפעיל `window.dispatchEvent(new Event("habait-ready"))` בתוך `useEffect`. **לא** מוחק DOM ישירות.
+  - **Waiting state:** כשה-2.1s עבר אבל React עדיין לא מוכן — `#__splash` מקבל class `.waiting` ומציג 3 נקודות מוניטור פועמות (CSS `::after` + box-shadow).
+  - **Fallback 9s:** אם `habait-ready` לא הגיע תוך 9s — הספלאש נעלם בכל מקרה.
+  - הרקע חייב להיעלם מהיר (≤0.15s) אחרי שהלוגו נעלם — אחרת נוצרת אשליה שהלוגו "מתכווץ" לתוך לוגו ההירו.
 - **`newest_section`:** type `NewestSectionContent` ב-content-db.ts + שדה `featuredCourseIds: string[]`. טאב "הכי חדש" באדמין → ניהול → דף הבית. multi-select של **כל** הקורסים (ללא פילטר) עד 4. אם לא נבחרו — הסקשיין לא מופיע. DB key: `newest_section`.
 
 ### ✅ שיפורי UX — יולי 2026
@@ -806,3 +813,38 @@ Hero (מרכזי, קיים)
 
 ### הערת תזכורת
 ⚠️ אם שי לא הזכיר את הקוויז — להזכיר לו שהמשימה ממתינה לתמונות.
+
+---
+
+## ✅ ביצועים מובייל — שיפורים יולי 2026
+
+### בעיה שנפתרה: זמן טעינה איטי במובייל
+הפלטפורמה סבלה מ-15-17 שניות טעינה במובייל, הוחזר ל~2 שניות בשני שלבים:
+
+### שלב א — ויג'ט נגישות → Vanilla JS (commit: 4253840)
+- **הבעיה:** `AccessibilityBoundary` (React class component) + `AccessibilityWidget` (React component עם `next/dynamic`) הוסיפו לבאנדל והאטו את ה-hydration.
+- **הפתרון:** הסרת שני הקומפוננטות מה-layout לחלוטין. הוספת ויג'ט נגישות מלא כ-**vanilla JS inline script** בתחתית `<body>` ב-`app/layout.tsx`.
+- **תוצאה:** אפס bytes נוספים לבאנדל React. כל 12 אפשרויות הנגישות עובדות, localStorage נשמר, CTRL+U קיצור, ARIA תקין.
+- **קבצים שנותרו (לא בשימוש):** `components/accessibility/AccessibilityBoundary.tsx`, `components/accessibility/AccessibilityWidget.tsx` — ניתן למחוק.
+- **CSS נגישות:** נשמר ב-`app/globals.css` (`.a11y-high-contrast`, `.a11y-grayscale` וכו'). `filter` על `<html>` (לא `<body>`) — חיוני כדי ש-`position:fixed` ילד ישמור את מיקומו.
+
+### שלב ב — Smart Splash Sync (commit: 5be88f9)
+- **הבעיה:** הספלאש הוסר אחרי 2.6s קבועים גם אם React עדיין לא הסתיים → מסך ריק.
+- **הפתרון:** `SplashHide.tsx` מפעיל event `habait-ready`. הספלאש מחכה לשני התנאים: 2.1s minimum + event.
+- ראה פירוט בסקשיין "Splash Screen" למעלה.
+
+### שלב ג — RSC Conversion דף הבית (קוד מוכן, טרם נדחף)
+- **הבעיה:** `app/(marketing)/page.tsx` היה `"use client"` עם 9 קריאות Supabase ב-`useEffect` — הכל רץ אחרי שהבאנדל (843KB) נטען ו-React היידרט.
+- **הפתרון:** `page.tsx` → Server Component async שמביא את כל 9 הפריטים + auth **בשרת לפני שה-HTML נשלח**. כל ה-UI עבר ל-`components/HomePageClient.tsx` ("use client", מקבל data כ-props).
+- **ארכיטקטורה:**
+  - Server (`page.tsx`): `const sb = createClient()` (מ-`lib/supabase/server`), `Promise.all([sb.from("site_content").select(...)`, `sb.auth.getUser()])` → מביא נתונים → מעביר ל-`<HomePageClient {...data} />`.
+  - Client (`HomePageClient.tsx`): כל הקוד הקיים של ה-UI + Framer Motion + hooks. מקבל data כ-props, ללא useEffect לנתונים.
+  - `useCourses()` context עדיין client-side (localStorage SWR) — זה מקובל, הנתונים האחרים (hero, testimonials, plans וכו') מגיעים מהשרת.
+- **TypeScript:** עבר ללא שגיאות.
+- **השפעה על auth:** כעת auth נבדק בשרת (cookie-based) — מדויק יותר ואין flash של כפתור "הצטרפי" למנויות.
+- **⚠️ כלל:** אסור לייבא `dbGet*` functions מ-`content-db.ts` ב-Server Components — ה-functions משתמשים ב-browser Supabase client. להשתמש ב-`lib/supabase/server` + `.from("site_content").select(...)` ישירות.
+
+---
+
+## הצהרת נגישות (`/accessibility`)
+⬜ דרושה חוקית בישראל — טרם נוצרה. לבנות כדף סטטי עם תיאור הנגישות של האתר וכפתור ויג'ט.
