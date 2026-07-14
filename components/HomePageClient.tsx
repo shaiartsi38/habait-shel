@@ -113,7 +113,8 @@ function HeroSection({ hero, isLoggedIn }: { hero: HeroContent; isLoggedIn: bool
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={bgSrc}
-          alt="Hero"
+          alt=""
+          role="presentation"
           className="w-full h-full object-cover"
           style={{ objectPosition: "50% 25%" }}
           loading="eager"
@@ -270,7 +271,7 @@ function CoursesSection({ comingSoon, hasSubscription, hero, newestSection }: {
               ))}
             </div>
           ) : (
-            <p className="text-center py-12 text-sm" style={{ color: "rgba(255,248,245,0.3)" }}>
+            <p className="text-center py-12 text-sm" style={{ color: "rgba(255,248,245,0.55)" }}>
               אין קורסים בקטגוריה זו
             </p>
           )}
@@ -603,7 +604,7 @@ function LandscapeCard({ course }: { course: CourseData }) {
               <span
                 key={tag}
                 className="text-[0.47rem] font-bold px-1.5 py-[2px] rounded-[5px]"
-                style={{ color: "rgba(255,248,245,0.32)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(196,133,122,0.1)" }}
+                style={{ color: "rgba(255,248,245,0.55)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(196,133,122,0.1)" }}
               >
                 {tag}
               </span>
@@ -862,7 +863,7 @@ function CoverflowCard({
       {/* Content */}
       <div className="absolute inset-x-0 bottom-0" style={{ padding: "1.2rem 1rem", zIndex: 4, direction: "rtl" }}>
         {item.category && (
-          <p style={{ fontSize: "0.52rem", fontWeight: 600, letterSpacing: "0.28em", textTransform: "uppercase", color: "rgba(196,133,122,0.65)", marginBottom: "0.3rem" }}>
+          <p style={{ fontSize: "0.52rem", fontWeight: 600, letterSpacing: "0.28em", textTransform: "uppercase", color: "rgba(196,133,122,0.9)", marginBottom: "0.3rem" }}>
             {item.category}
           </p>
         )}

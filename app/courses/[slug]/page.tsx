@@ -440,9 +440,9 @@ function CourseHeroMobile({ course, auth }: { course: CourseData; auth: AuthStat
       <div className="absolute inset-x-0 bottom-0 px-5 pb-12 pt-24">
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 mb-4 text-[0.52rem] tracking-widest uppercase">
-          <Link href="/courses" style={{ color: "rgba(196,133,122,0.6)" }}>קורסים</Link>
-          <span style={{ color: "rgba(196,133,122,0.3)" }}>›</span>
-          <span style={{ color: "rgba(255,248,245,0.4)" }}>{course.category}</span>
+          <Link href="/courses" style={{ color: "rgba(196,133,122,0.85)" }}>קורסים</Link>
+          <span style={{ color: "rgba(196,133,122,0.55)" }}>›</span>
+          <span style={{ color: "rgba(255,248,245,0.65)" }}>{course.category}</span>
         </div>
 
         {/* Badges */}
@@ -471,7 +471,7 @@ function CourseHeroMobile({ course, auth }: { course: CourseData; auth: AuthStat
           <p className="text-sm mb-1 leading-snug" style={{ color: "rgba(255,248,245,0.55)" }}>{course.subtitle}</p>
         )}
 
-        <div className="flex gap-3 text-[0.62rem] mb-6" style={{ color: "rgba(255,248,245,0.4)" }}>
+        <div className="flex gap-3 text-[0.62rem] mb-6" style={{ color: "rgba(255,248,245,0.65)" }}>
           <span>{course.lessons.length} שיעורים</span>
           <span>·</span>
           <span>{course.duration}</span>
@@ -511,9 +511,9 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 mb-6 text-[0.52rem] tracking-widest uppercase">
           <Link href="/courses" className="transition-colors hover:text-rose-400"
-            style={{ color: "rgba(196,133,122,0.6)" }}>קורסים</Link>
-          <span style={{ color: "rgba(196,133,122,0.3)" }}>›</span>
-          <span style={{ color: "rgba(255,248,245,0.4)" }}>{course.category}</span>
+            style={{ color: "rgba(196,133,122,0.85)" }}>קורסים</Link>
+          <span style={{ color: "rgba(196,133,122,0.55)" }}>›</span>
+          <span style={{ color: "rgba(255,248,245,0.65)" }}>{course.category}</span>
         </div>
 
         {/* Badges */}
@@ -554,7 +554,7 @@ function CourseHeroDesktop({ course, auth }: { course: CourseData; auth: AuthSta
         )}
 
         {course.shortDesc && (
-          <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(255,248,245,0.4)" }}>
+          <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(255,248,245,0.65)" }}>
             {course.shortDesc}
           </p>
         )}
@@ -653,7 +653,7 @@ function CourseCTA({ course, auth }: { course: CourseData; auth: AuthState }) {
     return (
       <>
         <a href={buyHref} target={buyTarget} rel={buyRel} className={btnClass} style={btnStyle}>{label}</a>
-        <p className="text-center text-[0.55rem] mt-2" style={{ color: "rgba(255,248,245,0.3)" }}>
+        <p className="text-center text-[0.55rem] mt-2" style={{ color: "rgba(255,248,245,0.55)" }}>
           גישה מלאה עם מנוי {TIER_LABEL[course.tier]}
         </p>
       </>
@@ -672,7 +672,7 @@ function CourseCTA({ course, auth }: { course: CourseData; auth: AuthState }) {
   return (
     <>
       <a href={buyHref} target={buyTarget} rel={buyRel} className={btnClass} style={btnStyle}>{upgradeLabel}</a>
-      <p className="text-center text-[0.55rem] mt-2" style={{ color: "rgba(255,248,245,0.3)" }}>
+      <p className="text-center text-[0.55rem] mt-2" style={{ color: "rgba(255,248,245,0.55)" }}>
         נדרש מנוי {TIER_LABEL[course.tier]}
       </p>
     </>

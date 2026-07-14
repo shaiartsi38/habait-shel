@@ -248,6 +248,11 @@ function buildWidget(){
   resetBtn.style.cssText='margin-top:12px;width:100%;padding:11px 12px;border-radius:10px;background:#1a3a5c;color:#fff;border:none;cursor:pointer;font-weight:700;font-size:0.82rem;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;letter-spacing:0.01em';
   resetBtn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> \\u05D0\\u05E4\\u05E1 \\u05D0\\u05EA \\u05DB\\u05DC \\u05D4\\u05D2\\u05D3\\u05E8\\u05D5\\u05EA \\u05D4\\u05E0\\u05D2\\u05D9\\u05E9\\u05D5\\u05EA';
   body.appendChild(resetBtn);
+  var a11yLink=document.createElement('a');
+  a11yLink.href='/accessibility';
+  a11yLink.style.cssText='display:block;margin-top:10px;text-align:center;font-size:0.72rem;color:#1a3a5c;text-decoration:underline;font-family:inherit;opacity:0.7';
+  a11yLink.textContent='\\u05D4\\u05E6\\u05D4\\u05E8\\u05EA \\u05E0\\u05D2\\u05D9\\u05E9\\u05D5\\u05EA';
+  body.appendChild(a11yLink);
   panel.appendChild(body);
   document.body.appendChild(panel);
   function refreshOpt(ob,k){

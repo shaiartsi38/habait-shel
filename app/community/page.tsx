@@ -320,7 +320,7 @@ function PostBubble({ post, replies, userId, isAdmin, onReply, onDelete, onPin }
                 </p>
                 {reply.attachment_url && reply.attachment_type === "image" && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={safeUrl(reply.attachment_url)} alt="" className="mt-1.5 max-w-[160px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  <img src={safeUrl(reply.attachment_url)} alt={reply.attachment_name ?? "תמונה מצורפת"} className="mt-1.5 max-w-[160px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() => { const u = safeUrl(reply.attachment_url); if (u !== "#") window.open(u, "_blank"); }} />
                 )}
                 {(reply.user_id === null || isAdmin) && (

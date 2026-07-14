@@ -162,7 +162,7 @@ export default async function BlogPage({
               padding: "6px 18px", borderRadius: 100, fontSize: "0.78rem", fontWeight: 500,
               textDecoration: "none",
               background: !activeCat ? "rgba(196,133,122,0.18)" : "rgba(255,255,255,0.04)",
-              color: !activeCat ? "#C4857A" : "rgba(255,248,245,0.4)",
+              color: !activeCat ? "#C4857A" : "rgba(255,248,245,0.65)",
               border: `1px solid ${!activeCat ? "rgba(196,133,122,0.35)" : "rgba(255,255,255,0.08)"}`,
             }} className="cat-pill">הכל</Link>
             {ALL_CATS.map((c) => {
@@ -173,7 +173,7 @@ export default async function BlogPage({
                   padding: "6px 18px", borderRadius: 100, fontSize: "0.78rem", fontWeight: 500,
                   textDecoration: "none",
                   background: isActive ? s.bg : "rgba(255,255,255,0.04)",
-                  color: isActive ? s.color : "rgba(255,248,245,0.4)",
+                  color: isActive ? s.color : "rgba(255,248,245,0.65)",
                   border: `1px solid ${isActive ? s.border : "rgba(255,255,255,0.08)"}`,
                 }} className="cat-pill">{c}</Link>
               );
@@ -186,7 +186,7 @@ export default async function BlogPage({
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px 100px" }}>
 
         {posts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "80px 0", color: "rgba(255,248,245,0.2)" }}>
+          <div style={{ textAlign: "center", padding: "80px 0", color: "rgba(255,248,245,0.55)" }}>
             <div style={{ fontSize: "3rem", marginBottom: 16 }}>✍️</div>
             <p style={{ fontSize: "1.1rem" }}>מאמרים בדרך...</p>
           </div>
@@ -195,7 +195,7 @@ export default async function BlogPage({
             {/* Divider label */}
             <div style={{
               fontSize: "0.62rem", letterSpacing: "0.25em", textTransform: "uppercase",
-              color: "rgba(255,248,245,0.2)", marginBottom: 32,
+              color: "rgba(255,248,245,0.45)", marginBottom: 32,
               display: "flex", alignItems: "center", gap: 16,
             }}>
               <span>{posts.length} מאמרים</span>
@@ -274,7 +274,7 @@ export default async function BlogPage({
                           <p style={{
                             fontSize: "0.85rem",
                             lineHeight: 1.7,
-                            color: "rgba(255,248,245,0.4)",
+                            color: "rgba(255,248,245,0.65)",
                             flex: 1,
                             display: "-webkit-box",
                             WebkitLineClamp: 3,

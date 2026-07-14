@@ -214,12 +214,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             {post.category}
           </span>
           {post.published_at && (
-            <span style={{ fontSize: "0.75rem", color: "rgba(255,248,245,0.3)" }}>
+            <span style={{ fontSize: "0.75rem", color: "rgba(255,248,245,0.55)" }}>
               {formatDate(post.published_at)}
             </span>
           )}
-          <span style={{ fontSize: "0.75rem", color: "rgba(255,248,245,0.3)" }}>·</span>
-          <span style={{ fontSize: "0.75rem", color: "rgba(255,248,245,0.3)" }}>
+          <span style={{ fontSize: "0.75rem", color: "rgba(255,248,245,0.55)" }}>·</span>
+          <span style={{ fontSize: "0.75rem", color: "rgba(255,248,245,0.55)" }}>
             {mins} דק׳ קריאה
           </span>
         </div>
