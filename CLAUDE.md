@@ -821,6 +821,20 @@ Hero (מרכזי, קיים)
 ### בעיה שנפתרה: זמן טעינה איטי במובייל
 הפלטפורמה סבלה מ-15-17 שניות טעינה במובייל, הוחזר ל~2 שניות בשני שלבים:
 
+### ✅ נגישות — ציות לחוק הישראלי (יולי 2026, commit: 9cb9b6d)
+
+- **`/accessibility`** — דף הצהרת נגישות (תקן 5568, WCAG 2.1 AA). איש קשר: שי ארצי, 054-674-2039, office@natalieartsi.com.
+- **Alt text** — תמונת הרקע בהירו: `alt="" role="presentation"`. תמונות מצורפות בקהילה: alt מתואר.
+- **ניגודיות צבעים** — תוקנה ב-4 קבצים (`HomePageClient`, `courses/[slug]`, `blog/page`, `blog/[slug]`). כל opacity מתחת ל-0.55 על טקסט רגיל הועלה.
+- **קישור לוידג'ט** — "הצהרת נגישות" בתחתית פאנל הנגישות מוביל ל-`/accessibility`.
+- **ניווט מקלדת:**
+  - `:focus-visible` בצבע מותג `#C4857A` — כבר קיים ב-`globals.css`
+  - Skip link ("דלג לתוכן הראשי") — `id="main-content"` נוסף ל-`<main>` ב-`ShellLayout.tsx`
+  - Escape סוגר את פאנל הוידג'ט + מחזיר focus לכפתור (`layout.tsx`)
+  - `aria-expanded` + `aria-controls` על כפתורי FAQ (`HomePageClient.tsx`)
+
+---
+
 ### שלב א — ויג'ט נגישות → Vanilla JS (commit: 4253840)
 - **הבעיה:** `AccessibilityBoundary` (React class component) + `AccessibilityWidget` (React component עם `next/dynamic`) הוסיפו לבאנדל והאטו את ה-hydration.
 - **הפתרון:** הסרת שני הקומפוננטות מה-layout לחלוטין. הוספת ויג'ט נגישות מלא כ-**vanilla JS inline script** בתחתית `<body>` ב-`app/layout.tsx`.
