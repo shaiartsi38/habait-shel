@@ -27,7 +27,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch { /* ignore */ }
-    return [];
+    return COURSES;
   });
 
   useEffect(() => {
