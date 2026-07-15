@@ -1249,6 +1249,8 @@ function FaqItem({
       >
         <button
           onClick={onToggle}
+          aria-expanded={isOpen}
+          aria-controls={`faq-answer-${index}`}
           className="w-full flex items-center justify-between px-5 py-4 text-right gap-4"
         >
           <motion.div
@@ -1274,6 +1276,7 @@ function FaqItem({
               style={{ overflow: "hidden" }}
             >
               <div
+                id={`faq-answer-${index}`}
                 className="px-5 pb-5 pt-0"
                 style={{ borderTop: "1px solid rgba(196,133,122,0.07)" }}
               >

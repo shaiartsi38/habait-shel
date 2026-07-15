@@ -303,6 +303,7 @@ function buildWidget(){
   });
   document.addEventListener('keydown',function(e){
     if(e.ctrlKey&&e.key==='u'){e.preventDefault();isOpen?closePanel():openPanel();}
+    if(e.key==='Escape'&&isOpen){closePanel();btn.focus();}
   });
 }
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',buildWidget);}

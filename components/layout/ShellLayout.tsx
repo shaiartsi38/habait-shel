@@ -18,7 +18,7 @@ export default function ShellLayout({
   return (
     <>
       {!isAuth && <Sidebar isAdmin={isAdmin} />}
-      <main className={isAuth ? "min-h-screen" : "min-h-screen pb-24 md:pb-0"}>
+      <main id="main-content" className={isAuth ? "min-h-screen" : "min-h-screen pb-24 md:pb-0"}>
         {children}
       </main>
     </>
