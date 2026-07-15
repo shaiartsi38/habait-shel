@@ -117,8 +117,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div id="__splash-bar-wrap" />
           <div id="__splash-byline">BY NATALIE ARTSI</div>
         </div>
-        {/* Splash waits for React ready signal + 2.1s minimum for animation */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){var m=false,r=false;function go(){if(m&&r){var e=document.getElementById('__splash');if(!e)return;e.style.transition='opacity 0.3s ease';e.style.opacity='0';e.style.pointerEvents='none';setTimeout(function(){if(e.parentNode)e.parentNode.removeChild(e);},320);}else if(m&&!r){var e=document.getElementById('__splash');if(e)e.classList.add('waiting');}}setTimeout(function(){m=true;go();},2100);window.addEventListener('habait-ready',function(){r=true;go();},{once:true});setTimeout(function(){if(!r){r=true;go();}},3000);})()` }} />
+        {/* Splash hides after 2.1s animation — no React dependency */}
+        <script dangerouslySetInnerHTML={{ __html: `setTimeout(function(){var e=document.getElementById('__splash');if(!e)return;e.style.transition='opacity 0.3s ease';e.style.opacity='0';e.style.pointerEvents='none';setTimeout(function(){if(e.parentNode)e.parentNode.removeChild(e);},320);},2100);` }} />
         <SplashHide />
         <Providers>
           <ShellLayout>
