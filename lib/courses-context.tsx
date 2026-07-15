@@ -5,7 +5,7 @@ import { COURSES, type CourseData } from "./courses-data";
 import { dbFetchCourses } from "./supabase/courses-db";
 import { prefetchAllContent } from "./supabase/content-db";
 
-const STORAGE_KEY = "hbm-courses-v4";
+const STORAGE_KEY = "hbm-courses-v5";
 
 interface CoursesContextValue {
   courses: CourseData[];
@@ -27,7 +27,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch { /* ignore */ }
-    return COURSES;
+    return [];
   });
 
   useEffect(() => {
