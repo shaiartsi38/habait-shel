@@ -48,6 +48,28 @@ export type FaqItem = {
   a: string;
 };
 
+export type QuizOption = {
+  value: string;
+  title: string;
+  desc: string;
+};
+
+export type QuizQuestion = {
+  key: string;
+  label: string;
+  title: string;
+  sub: string;
+  imageUrl: string;
+  options: QuizOption[];
+};
+
+export type QuizConfig = {
+  enabled: boolean;
+  welcomeMessage: string;
+  ctaText: string;
+  questions: QuizQuestion[];
+};
+
 export type ExtraSection = {
   id: string;
   title: string;
@@ -278,6 +300,56 @@ export const dbGetCourseCategories = () => getContent<string[]>("course_categori
   "עיניים", "עור ובסיס", "כלות", "Editorial", "עסקים ומיתוג", "Contouring",
 ]);
 
+export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
+  enabled: true,
+  welcomeMessage: "ברוכה הבאה לבית של המאפרים.\n\nכדי שניקח אותך לרמה הבאה שלך, ונתאים לך את התכנים הכי מדויקים עבורך,\nתסמני בבקשה וי במקום הנכון בשאלות הבאות. יאללה, מחכה לך 🤍",
+  ctaText: "יאללה, מתחילים",
+  questions: [
+    {
+      key: "level", label: "השלב שלך", title: "איפה את נמצאת היום?",
+      sub: "ספרי לנו על הרמה הנוכחית שלך", imageUrl: "",
+      options: [
+        { value: "beginner", title: "מתחילה לגמרי", desc: "עוד לא למדתי בצורה מסודרת" },
+        { value: "basic", title: "יש לי בסיס", desc: "מתאפרת לבד ורוצה להתקדם" },
+        { value: "pro", title: "עובדת בתחום", desc: "מאפרת לקוחות ורוצה להתחדד" },
+        { value: "teaching", title: "מלמדת ומאפרת", desc: "מחפשת כלים ורעיונות חדשים" },
+      ],
+    },
+    {
+      key: "topic", label: "האתגר שלך", title: "מה הכי מאתגר אותך?",
+      sub: "נמקד את הקורסים לאזור שהכי חשוב לך", imageUrl: "",
+      options: [
+        { value: "eyes", title: "עיניים", desc: "ריסים, איילינר, עשן" },
+        { value: "lips", title: "שפתיים", desc: "קונטור, גלוס, lip liner" },
+        { value: "skin", title: "עור ובסיס", desc: "פאונדיישן, קונסילר, הדגשות" },
+        { value: "face", title: "הפנים כולן", desc: "קונטורינג, סומק, הארה" },
+      ],
+    },
+    {
+      key: "domain", label: "עולם העבודה", title: "באיזה עולם את עובדת?",
+      sub: "כל תחום דורש גישה וכלים שונים", imageUrl: "",
+      options: [
+        { value: "bridal", title: "כלות", desc: "איפור חתונות ואירועים" },
+        { value: "evening", title: "ערב", desc: "גאלות, אירועים, לילה" },
+        { value: "photo", title: "צילום", desc: "פוטושוטים, קמפיינים" },
+        { value: "daily", title: "יומיומי", desc: "לוקים טבעיים לכל יום" },
+      ],
+    },
+    {
+      key: "goal", label: "המטרה שלך", title: "מה הצעד הבא שלך?",
+      sub: "נבין לאן את רוצה להגיע", imageUrl: "",
+      options: [
+        { value: "clients", title: "עוד לקוחות", desc: "להרחיב את הלקוחות שלי" },
+        { value: "level", title: "לשדרג את הסטייל", desc: "לקחת את הטכניקה רמה קדימה" },
+        { value: "structured", title: "לימוד מסודר", desc: "לבנות בסיס מקצועי אמיתי" },
+        { value: "confidence", title: "ביטחון עצמי", desc: "להרגיש בטוחה עם מה שאני עושה" },
+      ],
+    },
+  ],
+};
+
+export const dbGetQuizConfig = () => getContent<QuizConfig>("quiz_config", DEFAULT_QUIZ_CONFIG);
+
 export const dbSetHero          = (v: HeroContent)       => setContent("hero", v);
 export const dbSetTestimonials  = (v: Testimonial[])     => setContent("testimonials", v);
 export const dbSetExtraSections = (v: ExtraSection[])    => setContent("extra_sections", v);
@@ -289,3 +361,4 @@ export const dbSetTerms            = (v: string)             => setContent("term
 export const dbSetOgImage          = (v: string)             => setContent("og_image", v);
 export const dbSetCancellationFlow = (v: CancellationFlow)   => setContent("cancellation_flow", v);
 export const dbSetCourseCategories = (v: string[])            => setContent("course_categories", v);
+export const dbSetQuizConfig       = (v: QuizConfig)          => setContent("quiz_config", v);

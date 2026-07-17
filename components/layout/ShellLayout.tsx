@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 
-const AUTH_PATHS = ["/login", "/signup"];
+const NO_SIDEBAR_PATHS = ["/login", "/signup", "/onboarding"];
 
 export default function ShellLayout({
   isAdmin,
@@ -13,12 +13,12 @@ export default function ShellLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isAuth = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  const hideSidebar = NO_SIDEBAR_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
   return (
     <>
-      {!isAuth && <Sidebar isAdmin={isAdmin} />}
-      <main id="main-content" className={isAuth ? "min-h-screen" : "min-h-screen pb-24 md:pb-0"}>
+      {!hideSidebar && <Sidebar isAdmin={isAdmin} />}
+      <main id="main-content" className={hideSidebar ? "min-h-screen" : "min-h-screen pb-24 md:pb-0"}>
         {children}
       </main>
     </>

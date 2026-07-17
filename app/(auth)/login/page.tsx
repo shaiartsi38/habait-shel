@@ -30,9 +30,10 @@ export default function LoginPage() {
         .select("role, first_name")
         .eq("id", user!.id)
         .single();
+      const quizDone = typeof window !== "undefined" && localStorage.getItem("quiz_done") === "true";
       if (profile?.role === "admin") router.push("/admin");
       else if (!profile?.first_name) router.push("/profile");
-      else router.push("/dashboard");
+      else router.push(quizDone ? "/dashboard" : "/onboarding");
       router.refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? "אימייל או סיסמה שגויים" : "שגיאה לא ידועה");

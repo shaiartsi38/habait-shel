@@ -139,3 +139,8 @@ revoke execute on function auth.custom_access_token_hook from authenticated, ano
 --
 -- UPDATE public.profiles SET role = 'admin' WHERE email = 'shaiartsi26@gmail.com';
 -- ═══════════════════════════════════════════════════════
+
+-- ── Onboarding Quiz — יולי 2026 ──────────────────────────
+-- עמודת תיוג לכל קורס, לצורך matching בקוויז ה-onboarding.
+-- RLS: מכוסה כבר ע"י admin_write_courses (ALL) + read_courses (SELECT) הקיימות למעלה.
+alter table public.courses add column if not exists quiz_tags jsonb;

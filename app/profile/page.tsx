@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, Check, AlertCircle, Loader2, User, KeyRound } from "lucide-react";
+import Link from "next/link";
+import { Camera, Check, AlertCircle, Loader2, User, KeyRound, Compass } from "lucide-react";
 import { dbGetMyProfile, dbUpdateProfile, dbUploadAvatar, type UserProfile } from "@/lib/supabase/profile-db";
 import { createClient } from "@/lib/supabase/client";
 
@@ -283,6 +284,16 @@ export default function ProfilePage() {
           {saving && <Loader2 size={14} className="animate-spin" />}
           שמרי שינויים
         </button>
+
+        {/* Onboarding quiz — תמיד נגיש */}
+        <Link
+          href="/onboarding"
+          className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:opacity-80 mt-3"
+          style={{ background: "rgba(196,133,122,0.08)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}
+        >
+          <Compass size={14} />
+          מפת הדרכים שלי
+        </Link>
 
         {/* Password change */}
         <div

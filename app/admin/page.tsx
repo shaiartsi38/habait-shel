@@ -9,10 +9,10 @@ import {
   Plus, Edit2, Eye, EyeOff, Trash2, X,
   GripVertical, Upload, Check, ChevronDown, ChevronUp, Save,
   Users, BarChart3, Settings, Video, Loader2,
-  RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles, Download, BookOpen, Tag,
+  RefreshCw, AlertCircle, LogOut, Home, Globe, CreditCard, Sparkles, Download, BookOpen, Tag, HelpCircle,
 } from "lucide-react";
-import { HomepageEditor, SubscriptionEditor, NatalieEditor } from "@/components/admin/ContentEditors";
-import { dbGetOgImage, dbSetOgImage, dbGetCourseCategories, dbSetCourseCategories } from "@/lib/supabase/content-db";
+import { HomepageEditor, SubscriptionEditor, NatalieEditor, QuizEditor } from "@/components/admin/ContentEditors";
+import { dbGetOgImage, dbSetOgImage, dbGetCourseCategories, dbSetCourseCategories, dbGetQuizConfig, type QuizConfig } from "@/lib/supabase/content-db";
 import { CATEGORIES, type CourseData, type CourseLesson, type CourseHighlight } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
 import {
@@ -28,7 +28,7 @@ import type { VideoProvider } from "@/lib/courses-data";
 
 // ─── Types ────────────────────────────────────────────────────────
 
-type AdminSection = "courses" | "homepage" | "subscription" | "natalie" | "users" | "analytics" | "settings";
+type AdminSection = "courses" | "homepage" | "subscription" | "natalie" | "quiz" | "users" | "analytics" | "settings";
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -202,6 +202,7 @@ export default function AdminPage() {
     { id: "homepage",     label: "דף הבית",  icon: Globe },
     { id: "subscription", label: "מנויים",   icon: CreditCard },
     { id: "natalie",      label: "נטלי",     icon: Sparkles },
+    { id: "quiz",         label: "קוויז",    icon: HelpCircle },
     { id: "users",        label: "משתמשות",  icon: Users },
     { id: "analytics",    label: "אנליטיקס", icon: BarChart3 },
     { id: "settings",     label: "הגדרות",   icon: Settings },
@@ -323,6 +324,8 @@ export default function AdminPage() {
             <SubscriptionEditor />
           ) : section === "natalie" ? (
             <NatalieEditor />
+          ) : section === "quiz" ? (
+            <QuizEditor />
           ) : section === "users" ? (
             <UsersSection />
           ) : section === "analytics" ? (
@@ -635,6 +638,21 @@ function CourseEditForm({
   useEffect(() => {
     dbGetCourseCategories().then((cats) => { setDbCategories(cats); setCatDraft(cats); }).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Quiz tags (level/topic/domain/goal) — נשלף דינמית מהקוויז החי ──
+  const [quizConfig, setQuizConfig] = useState<QuizConfig | null>(null);
+  useEffect(() => {
+    dbGetQuizConfig().then(setQuizConfig).catch(() => {});
+  }, []);
+
+  const toggleQuizTag = (questionKey: string, value: string) => {
+    setForm((p) => {
+      const current = p.quizTags ?? {};
+      const list = (current as Record<string, string[] | undefined>)[questionKey] ?? [];
+      const next = list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+      return { ...p, quizTags: { ...current, [questionKey]: next } };
+    });
+  };
 
   const openCatManager = () => { setCatDraft([...dbCategories]); setShowCatManager(true); };
   const saveCats = async () => {
@@ -1000,6 +1018,41 @@ function CourseEditForm({
             </div>
           </div>
         </FormSection>
+
+        {/* ── תיוג לקוויז Onboarding ── */}
+        {quizConfig && quizConfig.questions.length > 0 && (
+          <FormSection title="תיוג לקוויז Onboarding" icon="🧭">
+            <p className="text-[0.62rem] mb-2" style={{ color: "#5A3830" }}>
+              סמני אילו תשובות בקוויז מתאימות לקורס הזה — לפיהן הוא יומלץ במסך התוצאה.
+            </p>
+            <div className="space-y-3">
+              {quizConfig.questions.map((q) => (
+                <div key={q.key}>
+                  <FieldLabel>{q.label || q.title}</FieldLabel>
+                  <div className="flex flex-wrap gap-1.5">
+                    {q.options.map((o) => {
+                      const selected = ((form.quizTags as Record<string, string[] | undefined> | undefined)?.[q.key] ?? []).includes(o.value);
+                      return (
+                        <button
+                          key={o.value}
+                          type="button"
+                          onClick={() => toggleQuizTag(q.key, o.value)}
+                          className="px-2.5 py-1 rounded-lg text-[0.68rem] font-semibold transition-all"
+                          style={selected
+                            ? { background: "rgba(196,133,122,0.16)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.4)" }
+                            : { background: "#140e12", color: "#5A3830", border: "1px solid rgba(255,255,255,0.06)" }
+                          }
+                        >
+                          {o.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </FormSection>
+        )}
 
         {/* ── תיאורים ── */}
         <FormSection title="תיאורים" icon="✍️">

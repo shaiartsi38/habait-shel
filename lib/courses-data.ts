@@ -28,6 +28,13 @@ export interface CourseProduct {
   url: string;
 }
 
+export interface QuizTags {
+  level?: string[];
+  topic?: string[];
+  domain?: string[];
+  goal?: string[];
+}
+
 export interface CourseData {
   id: string;
   slug: string;
@@ -56,6 +63,7 @@ export interface CourseData {
   instructor: CourseInstructor;
   lessons: CourseLesson[];
   tags: string[];
+  quizTags?: QuizTags;
 }
 
 export const CATEGORIES = [

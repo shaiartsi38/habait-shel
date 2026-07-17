@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Loader2, Check, X, AlertCircle, Upload, Image as ImageIcon, Video } from "lucide-react";
+import { Plus, Trash2, Loader2, Check, X, AlertCircle, Upload, Image as ImageIcon, Video, ChevronUp, ChevronDown } from "lucide-react";
 import {
   type HeroContent, type Testimonial, type ExtraSection, type SubPlan, type NatalieContent, type FaqItem, type ComingSoonItem,
-  type CancellationFlow, type CancellationOffer, type NewestSectionContent,
+  type CancellationFlow, type CancellationOffer, type NewestSectionContent, type QuizConfig, type QuizQuestion, type QuizOption,
   DEFAULT_HERO, DEFAULT_TESTIMONIALS, DEFAULT_EXTRA_SECTIONS, DEFAULT_PLANS, DEFAULT_NATALIE, DEFAULT_FAQS, DEFAULT_COMING_SOON, DEFAULT_TERMS,
-  DEFAULT_CANCELLATION_FLOW, DEFAULT_NEWEST_SECTION,
-  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs, dbGetComingSoon, dbGetTerms, dbGetCancellationFlow, dbGetNewestSection,
-  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs, dbSetComingSoon, dbSetTerms, dbSetCancellationFlow, dbSetNewestSection,
+  DEFAULT_CANCELLATION_FLOW, DEFAULT_NEWEST_SECTION, DEFAULT_QUIZ_CONFIG,
+  dbGetHero, dbGetTestimonials, dbGetExtraSections, dbGetPlans, dbGetNatalie, dbGetFaqs, dbGetComingSoon, dbGetTerms, dbGetCancellationFlow, dbGetNewestSection, dbGetQuizConfig,
+  dbSetHero, dbSetTestimonials, dbSetExtraSections, dbSetPlans, dbSetNatalie, dbSetFaqs, dbSetComingSoon, dbSetTerms, dbSetCancellationFlow, dbSetNewestSection, dbSetQuizConfig,
 } from "@/lib/supabase/content-db";
 import { dbUploadImage, dbUploadVideo } from "@/lib/supabase/courses-db";
 import { CATEGORIES } from "@/lib/courses-data";
@@ -1252,6 +1252,213 @@ export function NatalieEditor() {
       </div>
 
       <SaveBar onSave={handleSave} saving={saving} />
+    </div>
+  );
+}
+
+// ─── Quiz Editor ──────────────────────────────────────────────────
+
+function emptyQuizQuestion(): QuizQuestion {
+  return {
+    key: "",
+    label: "",
+    title: "",
+    sub: "",
+    imageUrl: "",
+    options: [
+      { value: "", title: "", desc: "" },
+      { value: "", title: "", desc: "" },
+    ],
+  };
+}
+
+export function QuizEditor() {
+  const [config, setConfig]   = useState<QuizConfig>(DEFAULT_QUIZ_CONFIG);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
+
+  useEffect(() => {
+    dbGetQuizConfig().then(setConfig).finally(() => setLoading(false));
+  }, []);
+
+  const clearFeedback = () => { setSuccess(false); setError(null); };
+
+  const set = <K extends keyof QuizConfig>(key: K, val: QuizConfig[K]) =>
+    setConfig((prev) => ({ ...prev, [key]: val }));
+
+  const handleSave = async () => {
+    setSaving(true); clearFeedback();
+    try { await dbSetQuizConfig(config); setSuccess(true); }
+    catch (e) { setError(e instanceof Error ? e.message : "שגיאה בשמירה"); }
+    finally { setSaving(false); }
+  };
+
+  const updateQuestion = (i: number, patch: Partial<QuizQuestion>) =>
+    setConfig((prev) => ({ ...prev, questions: prev.questions.map((q, j) => j === i ? { ...q, ...patch } : q) }));
+
+  if (loading) return <LoadingScreen />;
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-lg font-black" style={{ color: "#FFF8F5" }}>קוויז Onboarding</h2>
+        <p className="text-xs mt-0.5" style={{ color: "#5A3830" }}>הקוויז שמשתמשת חדשה עונה עליו בכניסה הראשונה שלה</p>
+      </div>
+
+      <Feedback success={success} error={error} onClose={clearFeedback} />
+
+      <div className="space-y-6">
+
+        <div>
+          <SectionHeader title="הפעלה" />
+          <Checkbox checked={config.enabled} onChange={(v) => set("enabled", v)} label="הקוויז פעיל — משתמשות חדשות יראו אותו בכניסה הראשונה" />
+        </div>
+
+        <div>
+          <SectionHeader title="מסך ברוכה הבאה" />
+          <FieldLabel>הודעת פתיחה</FieldLabel>
+          <Textarea value={config.welcomeMessage} onChange={(v) => set("welcomeMessage", v)} rows={5} />
+          <FieldLabel className="mt-3">טקסט כפתור</FieldLabel>
+          <Input value={config.ctaText} onChange={(v) => set("ctaText", v)} placeholder="יאללה, מתחילים" />
+        </div>
+
+        <div>
+          <SectionHeader title="שאלות" />
+          <div className="space-y-4">
+            {config.questions.map((q, i) => (
+              <QuizQuestionEditor
+                key={i}
+                question={q}
+                index={i}
+                onChange={(patch) => updateQuestion(i, patch)}
+                onRemove={() => setConfig((prev) => ({ ...prev, questions: prev.questions.filter((_, j) => j !== i) }))}
+                onMove={(dir) => setConfig((prev) => {
+                  const arr = [...prev.questions];
+                  const target = i + dir;
+                  if (target < 0 || target >= arr.length) return prev;
+                  [arr[i], arr[target]] = [arr[target], arr[i]];
+                  return { ...prev, questions: arr };
+                })}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => setConfig((prev) => ({ ...prev, questions: [...prev.questions, emptyQuizQuestion()] }))}
+            className="w-full mt-3 py-2.5 rounded-xl text-[0.75rem] font-semibold flex items-center justify-center gap-2 hover:opacity-70 transition-opacity"
+            style={{ border: "1px dashed rgba(196,133,122,0.25)", color: "#C4857A", background: "rgba(196,133,122,0.05)" }}
+          >
+            <Plus size={13} /> הוסף שאלה
+          </button>
+        </div>
+
+      </div>
+
+      <SaveBar onSave={handleSave} saving={saving} />
+    </div>
+  );
+}
+
+function QuizQuestionEditor({
+  question, index, onChange, onRemove, onMove,
+}: {
+  question: QuizQuestion;
+  index: number;
+  onChange: (patch: Partial<QuizQuestion>) => void;
+  onRemove: () => void;
+  onMove: (dir: 1 | -1) => void;
+}) {
+  const [uploadingImg, setUploadingImg] = useState(false);
+
+  const updateOption = (i: number, patch: Partial<QuizOption>) =>
+    onChange({ options: question.options.map((o, j) => j === i ? { ...o, ...patch } : o) });
+
+  return (
+    <div className="rounded-xl p-4 space-y-3" style={{ background: "#140e12", border: "1px solid rgba(196,133,122,0.08)" }}>
+      <div className="flex items-center justify-between">
+        <span className="text-[0.7rem] font-bold" style={{ color: "#C4857A" }}>שאלה {index + 1}{question.key ? ` — ${question.key}` : ""}</span>
+        <div className="flex items-center gap-1">
+          <button onClick={() => onMove(-1)} className="p-1 rounded-lg hover:bg-white/5"><ChevronUp size={12} style={{ color: "#5A3830" }} /></button>
+          <button onClick={() => onMove(1)} className="p-1 rounded-lg hover:bg-white/5"><ChevronDown size={12} style={{ color: "#5A3830" }} /></button>
+          <button onClick={onRemove} className="p-1 rounded-lg hover:bg-white/5"><Trash2 size={12} style={{ color: "#5A3830" }} /></button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <FieldLabel>מפתח (key) — ייחודי, אנגלית</FieldLabel>
+          <Input value={question.key} onChange={(v) => onChange({ key: v })} dir="ltr" placeholder="level" />
+        </div>
+        <div>
+          <FieldLabel>תווית (למעקב פנימי)</FieldLabel>
+          <Input value={question.label} onChange={(v) => onChange({ label: v })} placeholder="השלב שלך" />
+        </div>
+      </div>
+
+      <div>
+        <FieldLabel>כותרת השאלה</FieldLabel>
+        <Input value={question.title} onChange={(v) => onChange({ title: v })} placeholder="איפה את נמצאת היום?" />
+      </div>
+      <div>
+        <FieldLabel>תת-כותרת</FieldLabel>
+        <Input value={question.sub} onChange={(v) => onChange({ sub: v })} placeholder="ספרי לנו על הרמה הנוכחית שלך" />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="w-14 h-20 rounded-lg overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "#0f0b0e", border: "1px solid rgba(196,133,122,0.15)" }}>
+          {uploadingImg
+            ? <Loader2 size={14} className="animate-spin" style={{ color: "#C4857A" }} />
+            // eslint-disable-next-line @next/next/no-img-element
+            : question.imageUrl ? <img src={question.imageUrl} alt="" className="w-full h-full object-cover" />
+            : <ImageIcon size={14} style={{ color: "#5A3830" }} />
+          }
+        </div>
+        <div className="flex-1 space-y-2">
+          <FieldLabel>URL תמונה</FieldLabel>
+          <Input value={question.imageUrl} onChange={(v) => onChange({ imageUrl: v })} dir="ltr" placeholder="https://..." />
+          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold cursor-pointer hover:opacity-80 transition-opacity" style={{ background: "rgba(196,133,122,0.12)", color: "#C4857A", border: "1px solid rgba(196,133,122,0.2)" }}>
+            <Upload size={11} /> העלה מהמחשב
+            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+              const file = e.target.files?.[0]; if (!file) return;
+              e.target.value = "";
+              setUploadingImg(true);
+              try { const url = await dbUploadImage(file); onChange({ imageUrl: url }); }
+              catch {
+                const reader = new FileReader();
+                reader.onload = (ev) => onChange({ imageUrl: ev.target?.result as string });
+                reader.readAsDataURL(file);
+              } finally { setUploadingImg(false); }
+            }} />
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <FieldLabel>תשובות</FieldLabel>
+        <div className="space-y-2">
+          {question.options.map((o, i) => (
+            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
+              <Input value={o.value} onChange={(v) => updateOption(i, { value: v })} dir="ltr" placeholder="value" />
+              <Input value={o.title} onChange={(v) => updateOption(i, { title: v })} placeholder="טקסט" />
+              <Input value={o.desc} onChange={(v) => updateOption(i, { desc: v })} placeholder="תיאור" />
+              <button
+                onClick={() => onChange({ options: question.options.filter((_, j) => j !== i) })}
+                className="p-2 rounded-lg hover:bg-white/5"
+              >
+                <X size={12} style={{ color: "#5A3830" }} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => onChange({ options: [...question.options, { value: "", title: "", desc: "" }] })}
+          className="mt-2 text-[0.7rem] font-semibold flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+          style={{ color: "#C4857A" }}
+        >
+          <Plus size={12} /> הוסף תשובה
+        </button>
+      </div>
     </div>
   );
 }

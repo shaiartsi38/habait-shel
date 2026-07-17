@@ -62,6 +62,7 @@ function courseFromRow(row: Record<string, unknown>): CourseData {
     instructor: (meta.instructor as CourseData["instructor"]) ?? { name: "נטלי ארצי", bio: "", photoUrl: "" },
     lessons,
     tags: cleanTags,
+    quizTags: (row.quiz_tags as CourseData["quizTags"]) ?? undefined,
   };
 }
 
@@ -93,6 +94,7 @@ function courseToRow(c: CourseData): Record<string, unknown> {
     duration_minutes: Number(c.durationMinutes) || 0,
     lesson_count: c.lessons.length,
     tags,
+    quiz_tags: c.quizTags ?? null,
     updated_at: new Date().toISOString(),
   };
 }
