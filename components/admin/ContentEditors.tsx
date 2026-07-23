@@ -13,6 +13,7 @@ import {
 import { dbUploadImage, dbUploadVideo } from "@/lib/supabase/courses-db";
 import { CATEGORIES } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
+import { uploadImageStrict } from "@/lib/upload-helpers";
 
 // ─── Shared UI ────────────────────────────────────────────────────
 
@@ -305,8 +306,8 @@ export function HomepageEditor() {
                 <input ref={heroBgRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
                   const file = e.target.files?.[0]; if (!file) return; e.target.value = "";
                   setUploadingHeroBg(true);
-                  try { const url = await dbUploadImage(file); setHero({ ...hero, heroBg: url }); }
-                  catch { const r = new FileReader(); r.onload = (ev) => setHero({ ...hero, heroBg: ev.target?.result as string }); r.readAsDataURL(file); }
+                  try { const url = await uploadImageStrict(file, dbUploadImage, "hero background"); setHero({ ...hero, heroBg: url }); }
+                  catch (err) { setError(err instanceof Error ? err.message : "שגיאה בהעלאת התמונה"); }
                   finally { setUploadingHeroBg(false); }
                 }} />
                 <button type="button" onClick={() => heroBgRef.current?.click()} disabled={uploadingHeroBg}
@@ -401,12 +402,10 @@ export function HomepageEditor() {
                     setUploadingIdx(i);
                     try {
                       const { dbUploadImage } = await import("@/lib/supabase/courses-db");
-                      const url = await dbUploadImage(file);
+                      const url = await uploadImageStrict(file, dbUploadImage, "testimonial avatar");
                       updateTestimonial(i, "photoUrl", url);
-                    } catch {
-                      const reader = new FileReader();
-                      reader.onload = (ev) => updateTestimonial(i, "photoUrl", ev.target?.result as string);
-                      reader.readAsDataURL(file);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "שגיאה בהעלאת התמונה");
                     } finally { setUploadingIdx(null); }
                   }} />
                 </label>
@@ -613,8 +612,8 @@ function ComingSoonItemEditor({
           <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
             const file = e.target.files?.[0]; if (!file) return; e.target.value = "";
             setUploadingImg(true);
-            try { const url = await dbUploadImage(file); onChange("image", url); }
-            catch { const r = new FileReader(); r.onload = (ev) => onChange("image", ev.target?.result as string); r.readAsDataURL(file); }
+            try { const url = await uploadImageStrict(file, dbUploadImage, "coming soon image"); onChange("image", url); }
+            catch (err) { alert(err instanceof Error ? err.message : "שגיאה בהעלאת התמונה"); }
             finally { setUploadingImg(false); }
           }} />
           <button type="button" onClick={() => imgRef.current?.click()} disabled={uploadingImg}
@@ -778,8 +777,8 @@ function NewestSectionEditor({ value, onChange }: { value: NewestSectionContent;
           <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
             const file = e.target.files?.[0]; if (!file) return; e.target.value = "";
             setUploadingImg(true);
-            try { const url = await dbUploadImage(file); set("imageUrl", url); }
-            catch { const r = new FileReader(); r.onload = (ev) => set("imageUrl", ev.target?.result as string); r.readAsDataURL(file); }
+            try { const url = await uploadImageStrict(file, dbUploadImage, "newest section image"); set("imageUrl", url); }
+            catch (err) { alert(err instanceof Error ? err.message : "שגיאה בהעלאת התמונה"); }
             finally { setUploadingImg(false); }
           }} />
           <button type="button" onClick={() => imgRef.current?.click()} disabled={uploadingImg}
@@ -1075,12 +1074,10 @@ export function NatalieEditor() {
     e.target.value = "";
     setUploading(true);
     try {
-      const url = await dbUploadImage(file);
+      const url = await uploadImageStrict(file, dbUploadImage, "natalie photo");
       set("photo", url);
-    } catch {
-      const reader = new FileReader();
-      reader.onload = (ev) => set("photo", ev.target?.result as string);
-      reader.readAsDataURL(file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "שגיאה בהעלאת התמונה");
     } finally {
       setUploading(false);
     }
@@ -1423,11 +1420,9 @@ function QuizQuestionEditor({
               const file = e.target.files?.[0]; if (!file) return;
               e.target.value = "";
               setUploadingImg(true);
-              try { const url = await dbUploadImage(file); onChange({ imageUrl: url }); }
-              catch {
-                const reader = new FileReader();
-                reader.onload = (ev) => onChange({ imageUrl: ev.target?.result as string });
-                reader.readAsDataURL(file);
+              try { const url = await uploadImageStrict(file, dbUploadImage, "quiz question image"); onChange({ imageUrl: url }); }
+              catch (err) {
+                alert(err instanceof Error ? err.message : "שגיאה בהעלאת התמונה");
               } finally { setUploadingImg(false); }
             }} />
           </label>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Camera, Check, AlertCircle, Loader2, User, KeyRound, Compass } from "lucide-react";
 import { dbGetMyProfile, dbUpdateProfile, dbUploadAvatar, type UserProfile } from "@/lib/supabase/profile-db";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImageStrict } from "@/lib/upload-helpers";
 
 export default function ProfilePage() {
   const [profile, setProfile]       = useState<UserProfile | null>(null);
@@ -50,13 +51,11 @@ export default function ProfilePage() {
     setUploadingPhoto(true);
     setError(null);
     try {
-      const url = await dbUploadAvatar(file);
+      const url = await uploadImageStrict(file, dbUploadAvatar, "profile avatar");
       setForm((f) => ({ ...f, photo_url: url }));
       await dbUpdateProfile({ photo_url: url });
-    } catch {
-      const reader = new FileReader();
-      reader.onload = (ev) => setForm((f) => ({ ...f, photo_url: ev.target?.result as string }));
-      reader.readAsDataURL(file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "שגיאה בהעלאת התמונה");
     } finally {
       setUploadingPhoto(false);
     }

@@ -15,6 +15,7 @@ import { HomepageEditor, SubscriptionEditor, NatalieEditor, QuizEditor } from "@
 import { dbGetOgImage, dbSetOgImage, dbGetCourseCategories, dbSetCourseCategories, dbGetQuizConfig, type QuizConfig } from "@/lib/supabase/content-db";
 import { CATEGORIES, type CourseData, type CourseLesson, type CourseHighlight } from "@/lib/courses-data";
 import { useCourses } from "@/lib/courses-context";
+import { uploadImageStrict } from "@/lib/upload-helpers";
 import {
   dbFetchCourses,
   dbUpsertCourse,
@@ -713,12 +714,10 @@ function CourseEditForm({
     e.target.value = "";
     setUploadingHighlightIdx(idx);
     try {
-      const url = await dbUploadImage(file);
+      const url = await uploadImageStrict(file, dbUploadImage, "course highlight image");
       setHighlight(idx, "imageUrl", url);
-    } catch {
-      const reader = new FileReader();
-      reader.onload = (ev) => setHighlight(idx, "imageUrl", ev.target?.result as string);
-      reader.readAsDataURL(file);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "שגיאה בהעלאת התמונה");
     } finally {
       setUploadingHighlightIdx(null);
     }
@@ -735,19 +734,12 @@ function CourseEditForm({
     else setUploadingPhoto(true);
 
     try {
-      const url = await dbUploadImage(file);
+      const url = await uploadImageStrict(file, dbUploadImage, `course ${target} image`);
       if (target === "image") set("image", url);
       else if (target === "videoThumb") set("videoThumbnailUrl", url);
       else setInstructor("photoUrl", url);
-    } catch {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const b64 = ev.target?.result as string;
-        if (target === "image") set("image", b64);
-        else if (target === "videoThumb") set("videoThumbnailUrl", b64);
-        else setInstructor("photoUrl", b64);
-      };
-      reader.readAsDataURL(file);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "שגיאה בהעלאת התמונה");
     } finally {
       if (target === "image") setUploadingImg(false);
       else if (target === "videoThumb") setUploadingThumb(false);
@@ -1355,12 +1347,10 @@ function LessonRow({
     e.target.value = "";
     setUploadingThumb(true);
     try {
-      const url = await dbUploadImage(file);
+      const url = await uploadImageStrict(file, dbUploadImage, "lesson thumbnail");
       onThumbnailChange(url);
-    } catch {
-      const reader = new FileReader();
-      reader.onload = (ev) => onThumbnailChange(ev.target?.result as string);
-      reader.readAsDataURL(file);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "שגיאה בהעלאת התמונה");
     } finally {
       setUploadingThumb(false);
     }
